@@ -1,0 +1,72 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle stickman
+
+actor "Guest\n(not logged in)" as Guest
+actor "User\n(logged in)" as User
+actor "Roommate\n(group member)" as Roommate
+actor "Group Admin / Owner" as Admin
+
+' --- Actor generalization (keeps the diagram clean) ---
+User --|> Guest
+Roommate --|> User
+Admin --|> Roommate
+
+  ' --- Auth ---
+  usecase "Create Account" as UC_Signup
+  usecase "Log In" as UC_Login
+
+  ' --- Groups ---
+  usecase "Create Roommate Group" as UC_CreateGroup
+  usecase "Join Roommate Group\n(via Join Code)" as UC_JoinGroup
+  usecase "View Group Dashboard" as UC_Dashboard
+
+  ' --- Chores ---
+  usecase "Create Chore" as UC_CreateChore
+  usecase "Assign Chore" as UC_AssignChore
+  usecase "Mark Chore Complete" as UC_CompleteChore
+
+  ' --- Bills / Mini Splitwise ---
+  usecase "Create Bill" as UC_CreateBill
+  usecase "Split Bill" as UC_SplitBill
+  usecase "Record Payment" as UC_RecordPayment
+  usecase "View Balances\n(Who owes who)" as UC_ViewBalances
+
+  ' --- Contract ---
+  usecase "View Roommate Contract" as UC_ViewContract
+  usecase "Edit/Publish Contract" as UC_EditContract
+
+  ' --- Admin Controls ---
+  usecase "Reset/Generate Join Code" as UC_ResetCode
+  usecase "Manage Members\n(remove/change role)" as UC_ManageMembers
+
+' --- Guest actions ---
+Guest --> UC_Signup
+Guest --> UC_Login
+
+' --- User actions ---
+User --> UC_CreateGroup
+User --> UC_JoinGroup
+
+' --- Roommate actions ---
+Roommate --> UC_Dashboard
+Roommate --> UC_CreateChore
+Roommate --> UC_AssignChore
+Roommate --> UC_CompleteChore
+Roommate --> UC_CreateBill
+Roommate --> UC_SplitBill
+Roommate --> UC_RecordPayment
+Roommate --> UC_ViewBalances
+Roommate --> UC_ViewContract
+
+' --- Admin actions ---
+Admin --> UC_EditContract
+Admin --> UC_ResetCode
+Admin --> UC_ManageMembers
+
+' --- Optional relationships (nice UML detail, still basic) ---
+UC_SplitBill ..> UC_ViewBalances : <<include>>
+UC_RecordPayment ..> UC_ViewBalances : <<include>>
+
+@enduml
