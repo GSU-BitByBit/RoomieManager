@@ -1,0 +1,83 @@
+1) Functional Requirements:
+
+User Accounts
+
+The system shall allow users to create an account.
+
+The system shall allow users to log in.
+
+The system shall restrict certain actions to logged-in users.
+
+Roommate Groups
+
+The system shall allow a user to create a roommate group.
+
+The system shall allow a user to join a roommate group using a join code.
+
+The system shall assign the group creator as the group admin.
+
+The system shall allow the group admin to reset or generate join codes.
+
+Member Management
+
+The system shall allow the group admin to remove members.
+
+The system shall allow the group admin to change member roles.
+
+The system shall prevent non-admin users from managing members.
+
+Chores
+
+The system shall allow users to create and assign chores.
+
+The system shall allow users to mark chores as complete.
+
+Bills and Payments
+
+The system shall allow users to create and split bills.
+
+The system shall allow users to record payments.
+
+The system shall automatically update balances.
+
+The system shall allow users to view balances showing who owes whom.
+
+Contract
+
+The system shall allow users to view the roommate contract.
+
+The system shall allow only the group admin to edit or publish the contract.
+
+2) Non-Functional Requirements:
+
+Usability
+
+The system shall be easy to use and understand.
+
+The system shall provide a clear user interface.
+
+Performance
+
+The system shall respond to user actions in a reasonable time.
+
+The system shall support multiple users at the same time.
+
+Security
+
+The system shall require authentication for protected actions.
+
+The system shall enforce role-based access control.
+
+The system shall protect user data.
+
+Reliability
+
+The system shall maintain accurate chore, bill, and balance data.
+
+The system shall handle errors without crashing.
+
+Scalability and Compatibility
+
+The system shall support multiple roommate groups.
+
+The system shall work on modern web browsers and devices.
