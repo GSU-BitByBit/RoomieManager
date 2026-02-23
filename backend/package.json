@@ -10,8 +10,8 @@
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",
-    "start": "node dist/main.js",
-    "start:prod": "cross-env NODE_ENV=production node dist/main.js",
+    "start": "node dist/src/main.js",
+    "start:prod": "cross-env NODE_ENV=production node dist/src/main.js",
     "lint": "eslint \"{src,test}/**/*.ts\" --max-warnings=0",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.json\" \"*.md\" \"*.yml\" \"*.yaml\"",
     "test": "jest --config ./jest.config.ts",
@@ -20,9 +20,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name 0001_init_platform",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:seed": "prisma db seed",
-    "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "prisma:seed": "prisma db seed"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"

@@ -29,17 +29,16 @@ Architecture decision:
 - Use a 3-tier model: Frontend -> Backend API -> Supabase Postgres/Auth.
 - Keep business rules (especially bills/payments/balances and RBAC) in backend services, not directly in the frontend.
 
-### Recommended Backend Stack
-- Runtime and language: `Node.js` + `TypeScript`
-- API framework: `NestJS` (preferred for module structure) or `Fastify` (performance-focused)
-- Database: `Supabase Postgres`
+### Selected Backend Stack (Current)
+- Runtime and language: `Node.js 20` + `TypeScript`
+- API framework: `NestJS`
+- Database: `Supabase Postgres` (cloud-first; no local Docker DB workflow in repo)
 - ORM and migrations: `Prisma`
 - Auth: `Supabase Auth` token verification in backend middleware
-- Validation: `zod` or `class-validator` (framework-dependent)
+- Validation: `zod` for env config + `class-validator`/`ValidationPipe` for request DTOs
 - API contract: `OpenAPI/Swagger`
 - Testing: `Jest` + `Supertest`
-- Background jobs (optional, for reminders/reconciliation): `BullMQ` + Redis
-- Observability: structured logs + Sentry + metrics endpoint
+- Observability: structured logs + request IDs + health/readiness endpoints
 
 ## Technology Rollout by Phase
 
@@ -67,7 +66,7 @@ Architecture decision:
 - CI quality gates: tests, linting, migration checks, and contract test enforcement.
 
 ## Module-to-Technology Mapping
-- Module 1 (Platform Foundation): `Node.js`, `TypeScript`, `NestJS/Fastify`, configuration, logging, health endpoints.
+- Module 1 (Platform Foundation): `Node.js`, `TypeScript`, `NestJS`, configuration, logging, health endpoints.
 - Module 2 (Authentication and Identity): `Supabase Auth` + backend token verification + auth middleware.
 - Module 3 (Groups and Join Codes): `Prisma` models on `Supabase Postgres`, join code generation rules.
 - Module 4 (Member Management and RBAC): centralized authorization middleware and audit logging.
@@ -78,6 +77,75 @@ Architecture decision:
 - Module 9 (Security): rate limiting, sanitization, secure headers, RBAC abuse testing.
 - Module 10 (Reliability/Operations): structured logs, metrics, tracing IDs, health/readiness checks.
 - Module 11 (Testing/Quality): `Jest`, `Supertest`, e2e workflows, CI pipeline gates.
+
+## Current Progress (As of 2026-02-23)
+
+### Completed
+- Module 1 (Platform Foundation) is implemented and validated.
+- Backend is running against Supabase cloud Postgres with successful Prisma migration/seed.
+- Unified success/error response envelope is live.
+- Health endpoints are implemented and verified:
+  - `GET /api/v1/health/live`
+  - `GET /api/v1/health/ready`
+- CI workflow exists and now expects Supabase secrets (instead of local Postgres service).
+
+### Verification Evidence
+- Code paths:
+  - `src/main.ts`
+  - `src/app.module.ts`
+  - `src/common/http/response.interceptor.ts`
+  - `src/common/http/http-exception.filter.ts`
+  - `src/modules/health/health.controller.ts`
+  - `src/modules/health/health.service.ts`
+  - `prisma/migrations/0001_init_platform/migration.sql`
+  - `.github/workflows/backend-ci.yml`
+- Automated checks (last pass on `2026-02-23`):
+  - `pnpm lint`
+  - `pnpm test`
+  - `pnpm test:e2e`
+  - `pnpm build`
+  - `pnpm prisma:migrate:deploy`
+  - `pnpm prisma:seed`
+
+### Environment and Infra Notes
+- Use direct Supabase DB URL for Prisma migrations (`:5432`, `sslmode=require`).
+- Pooler URL (`:6543`) can be introduced later for runtime workload if needed.
+- Required CI secrets:
+  - `SUPABASE_DATABASE_URL`
+  - `SUPABASE_URL`
+  - `SUPABASE_JWT_AUDIENCE`
+
+## Future Delivery Plan
+
+### Next Milestone (Phase 1 completion: Modules 2-4)
+1. Module 2: Authentication and Identity
+- Implement Supabase JWT verification guard and current-user extraction.
+- Deliver endpoints:
+  - `POST /api/v1/auth/register`
+  - `POST /api/v1/auth/login`
+  - `GET /api/v1/auth/me`
+- Add integration tests for valid/invalid token paths and `/auth/me`.
+
+2. Module 3: Groups and Join Codes
+- Add Prisma models + migrations for `groups`, `group_members`, and `join_codes`.
+- Implement group creation/join/reset flows with service-layer validation.
+- Add tests for duplicate joins, invalid/expired code, and admin assignment.
+
+3. Module 4: Member Management and RBAC
+- Add role model and centralized authorization checks for group scope.
+- Implement member list/role change/remove endpoints.
+- Add audit trail records for admin actions.
+
+### Near-Term Follow-up (Phase 2 preparation)
+1. Finalize API UX conventions (pagination/filter schema and error code catalog).
+2. Expand Swagger docs from health endpoints to full auth/group/member routes.
+3. Add frontend-ready seed fixtures for demo group/member states.
+
+### Risks to Track in Upcoming Work
+- Auth drift between Supabase claims and backend role model.
+- Join code race conditions under concurrent joins.
+- RBAC gaps from inconsistent group-scoped authorization checks.
+- Contract drift if endpoint DTOs and Swagger schema diverge.
 
 ## AI Module Tracking
 Purpose:
@@ -110,10 +178,10 @@ Update rules (for AI agents):
 | 5 | Chore Management | Phase 2 | NOT_STARTED | 0% | N/A |
 | 6 | Bills, Splits, Payments, and Balances | Phase 3 | NOT_STARTED | 0% | N/A |
 | 7 | Contract Management | Phase 2 | NOT_STARTED | 0% | N/A |
-| 8 | API UX Layer for Frontend Integration | Phase 2/3 | PARTIAL | 30% | `src/main.ts` (Swagger setup), `src/common/http/response.interceptor.ts`, `src/common/http/http-error-code.ts` |
+| 8 | API UX Layer for Frontend Integration | Phase 2/3 | PARTIAL | 35% | `src/main.ts` (Swagger setup), `src/common/http/response.interceptor.ts`, `src/common/http/http-error-code.ts` |
 | 9 | Security and Compliance Hardening | Phase 4 | NOT_STARTED | 0% | N/A |
-| 10 | Reliability, Observability, and Operations | Phase 4 | PARTIAL | 35% | `src/app.module.ts` (structured logging), `src/modules/health/health.controller.ts`, `src/modules/health/health.service.ts` |
-| 11 | Testing and Quality Gates | Phase 4 | PARTIAL | 40% | `test/health.e2e-spec.ts`, `test/modules/health/health.service.spec.ts`, `.github/workflows/backend-ci.yml` |
+| 10 | Reliability, Observability, and Operations | Phase 4 | PARTIAL | 45% | `src/app.module.ts` (structured logging + request IDs), `src/modules/health/health.controller.ts`, `src/modules/health/health.service.ts` |
+| 11 | Testing and Quality Gates | Phase 4 | PARTIAL | 55% | `test/health.e2e-spec.ts`, `test/modules/health/health.service.spec.ts`, `test/config/env.schema.spec.ts`, `.github/workflows/backend-ci.yml` |
 
 ### Machine-Readable Snapshot (JSON)
 
@@ -129,10 +197,10 @@ Update rules (for AI agents):
     { "id": 5, "name": "Chore Management", "phase": "Phase 2", "status": "NOT_STARTED", "progress_pct": 0 },
     { "id": 6, "name": "Bills, Splits, Payments, and Balances", "phase": "Phase 3", "status": "NOT_STARTED", "progress_pct": 0 },
     { "id": 7, "name": "Contract Management", "phase": "Phase 2", "status": "NOT_STARTED", "progress_pct": 0 },
-    { "id": 8, "name": "API UX Layer for Frontend Integration", "phase": "Phase 2/3", "status": "PARTIAL", "progress_pct": 30 },
+    { "id": 8, "name": "API UX Layer for Frontend Integration", "phase": "Phase 2/3", "status": "PARTIAL", "progress_pct": 35 },
     { "id": 9, "name": "Security and Compliance Hardening", "phase": "Phase 4", "status": "NOT_STARTED", "progress_pct": 0 },
-    { "id": 10, "name": "Reliability, Observability, and Operations", "phase": "Phase 4", "status": "PARTIAL", "progress_pct": 35 },
-    { "id": 11, "name": "Testing and Quality Gates", "phase": "Phase 4", "status": "PARTIAL", "progress_pct": 40 }
+    { "id": 10, "name": "Reliability, Observability, and Operations", "phase": "Phase 4", "status": "PARTIAL", "progress_pct": 45 },
+    { "id": 11, "name": "Testing and Quality Gates", "phase": "Phase 4", "status": "PARTIAL", "progress_pct": 55 }
   ]
 }
 ```
@@ -419,6 +487,12 @@ Exit criteria:
 - Security controls enabled and verified.
 - Monitoring, logging, and health checks operational.
 - CI enforces quality gates with high-confidence regression coverage.
+
+## Phase Progress Snapshot (As of 2026-02-23)
+- Phase 1: `IN_PROGRESS` (Module 1 complete; Modules 2-4 pending)
+- Phase 2: `NOT_STARTED`
+- Phase 3: `NOT_STARTED`
+- Phase 4: `PARTIAL_FOUNDATION` (early reliability/testing foundations exist via Module 1 work)
 
 ## Frontend-Readiness Checklist
 - Stable API versioning (`/api/v1`).
