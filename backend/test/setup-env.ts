@@ -12,3 +12,6 @@ process.env.DATABASE_URL =
     : defaultDatabaseUrl;
 process.env.LOG_LEVEL = process.env.LOG_LEVEL ?? 'silent';
 process.env.CORS_ORIGINS = process.env.CORS_ORIGINS ?? 'http://localhost:3000';
+process.env.SUPABASE_URL = process.env.SUPABASE_URL ?? 'https://project-ref.supabase.co';
+process.env.SUPABASE_JWT_AUDIENCE = process.env.SUPABASE_JWT_AUDIENCE ?? 'authenticated';
+process.env.SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? 'anon-key-for-tests';

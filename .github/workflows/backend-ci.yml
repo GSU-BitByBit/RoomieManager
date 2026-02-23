@@ -23,6 +23,7 @@ jobs:
       API_PREFIX: api/v1
       DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       SUPABASE_JWT_AUDIENCE: ${{ secrets.SUPABASE_JWT_AUDIENCE }}
       LOG_LEVEL: info
       CORS_ORIGINS: http://localhost:3000
@@ -59,14 +60,5 @@ jobs:
       - name: Run migrations
         run: pnpm prisma:migrate:deploy
 
-      - name: Lint
-        run: pnpm lint
-
-      - name: Unit tests
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
-
-      - name: E2E tests
-        run: pnpm test:e2e
+      - name: Verify (lint + tests + build + OpenAPI contract)
+        run: pnpm verify

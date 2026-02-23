@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaModule } from './common/prisma/prisma.module';
 import type { EnvConfig } from './config/env.schema';
 import { validateEnv } from './config/env.schema';
+import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 
 @Module({
@@ -37,6 +38,7 @@ import { HealthModule } from './modules/health/health.module';
       })
     }),
     PrismaModule,
+    AuthModule,
     HealthModule
   ]
 })

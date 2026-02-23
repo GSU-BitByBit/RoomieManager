@@ -19,8 +19,12 @@
     "test:cov": "jest --coverage --config ./jest.config.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name 0001_init_platform",
+    "prisma:migrate:status": "prisma migrate status",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "openapi:generate": "ts-node --transpile-only scripts/generate-openapi.ts openapi/openapi.json",
+    "openapi:check": "ts-node --transpile-only scripts/check-openapi.ts",
+    "verify": "pnpm prisma:generate && pnpm prisma:migrate:status && pnpm lint && pnpm test && pnpm test:e2e && pnpm build && pnpm openapi:check"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"
@@ -34,6 +38,7 @@
     "@prisma/client": "^5.22.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "jose": "^5.10.0",
     "nestjs-pino": "^4.1.0",
     "pino": "^9.6.0",
     "pino-http": "^10.4.0",

@@ -54,8 +54,17 @@ async function bootstrap(): Promise<void> {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('RoomieManager Backend API')
-    .setDescription('Module 1 platform foundation')
+    .setDescription('Module 1-2 platform and authentication')
     .setVersion('1.0.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Supabase access token'
+      },
+      'bearer'
+    )
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);

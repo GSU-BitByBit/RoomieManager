@@ -8,12 +8,13 @@ Scope: Practical integration guide for frontend engineers and frontend AI agents
 
 Current backend implementation level:
 - Module 1 (Platform Foundation): COMPLETE
-- Modules 2-7, 9: NOT_STARTED
+- Module 2 (Authentication and Identity): PARTIAL (implemented, requires `SUPABASE_ANON_KEY` for register/login)
+- Modules 3-7, 9: NOT_STARTED
 - Modules 8, 10, 11: PARTIAL foundations only
 
 This means:
-- Implemented API endpoints right now are health endpoints only.
-- Auth, groups, chores, bills, and contracts endpoints are planned but not implemented yet.
+- Implemented API endpoints right now: health + auth (`register`, `login`, `me`).
+- Groups, chores, bills, and contracts endpoints are still planned.
 
 Source-of-truth files:
 - `/Users/admin/Documents/GitHub/RoomieManager/backend/src/main.ts`
@@ -184,6 +185,123 @@ Failure response `503` (`SERVICE_UNAVAILABLE`):
 }
 ```
 
+### POST `/api/v1/auth/register`
+Purpose:
+- Register a user in Supabase Auth via backend proxy.
+
+Requirements:
+- `SUPABASE_ANON_KEY` must be configured on backend.
+
+Request body:
+
+```json
+{
+  "email": "alex@example.com",
+  "password": "StrongPass123!",
+  "fullName": "Alex Smith"
+}
+```
+
+Success response `200`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "user-uuid",
+      "email": "alex@example.com"
+    },
+    "session": null
+  },
+  "meta": {
+    "requestId": "string",
+    "timestamp": "ISO-8601"
+  }
+}
+```
+
+Common failure `503` (if anon key missing):
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "SERVICE_UNAVAILABLE",
+    "message": "SUPABASE_ANON_KEY is not configured."
+  },
+  "meta": {
+    "requestId": "string",
+    "timestamp": "ISO-8601"
+  }
+}
+```
+
+### POST `/api/v1/auth/login`
+Purpose:
+- Login user against Supabase Auth via backend proxy.
+
+Request body:
+
+```json
+{
+  "email": "alex@example.com",
+  "password": "StrongPass123!"
+}
+```
+
+Success response `200`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "user-uuid",
+      "email": "alex@example.com"
+    },
+    "session": {
+      "accessToken": "jwt",
+      "refreshToken": "refresh-token",
+      "expiresIn": 3600,
+      "tokenType": "bearer"
+    }
+  },
+  "meta": {
+    "requestId": "string",
+    "timestamp": "ISO-8601"
+  }
+}
+```
+
+### GET `/api/v1/auth/me`
+Purpose:
+- Validate bearer token and return current user claims.
+
+Headers:
+- `Authorization: Bearer <supabase_access_token>`
+
+Success response `200`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "user-uuid",
+    "email": "alex@example.com",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  "meta": {
+    "requestId": "string",
+    "timestamp": "ISO-8601"
+  }
+}
+```
+
+Failure response `401`:
+- `error.code = UNAUTHORIZED` when token is missing, invalid, or expired.
+
 ## 6) Behavior for unknown/unimplemented routes
 
 Any unknown route currently returns wrapped `404`:
@@ -213,14 +331,31 @@ Important backend env vars:
 Frontend app should not use backend `DATABASE_URL`.
 Frontend should only use its own safe client config (public Supabase URL + anon key) where needed.
 
+## 8.1) Deterministic dev fixtures
+
+Backend seed now maintains deterministic frontend fixture definitions under system settings:
+- `fixtures:frontend_auth`
+- `fixtures:frontend_groups`
+
+Run:
+- `pnpm prisma:seed`
+
+Auth fixtures are auto-created/updated in Supabase Auth only when backend env has:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Fixture accounts (for frontend dev/testing):
+- `roomiemanager.confirmed@gmail.com` / `StrongPass123!`
+- `roomiemanager.unconfirmed@gmail.com` / `StrongPass123!`
+- `roomiemanager.admin@gmail.com` / `StrongPass123!`
+- `roomiemanager.member@gmail.com` / `StrongPass123!`
+
+Note:
+- Group fixtures are currently logical metadata only until Module 3 group tables are implemented.
+
 ## 9) Planned endpoints (not live yet)
 
 These are roadmap endpoints from backend planning and should be treated as planned contracts.
-
-Module 2 (Auth):
-- `POST /api/v1/auth/register`
-- `POST /api/v1/auth/login`
-- `GET /api/v1/auth/me`
 
 Module 3 (Groups):
 - `POST /api/v1/groups`
@@ -256,7 +391,7 @@ Module 7 (Contracts):
 Short-term recommended approach:
 1. Build one shared API client that always parses wrapped responses.
 2. Centralize error normalization based on `error.code`.
-3. Gate all non-health screens behind feature flags or mocks until auth/groups APIs ship.
+3. Integrate auth flows now; gate groups/chores/bills/contracts screens behind mocks until those APIs ship.
 4. Keep request/response DTOs in one contract file so swapping from mock to live is trivial.
 
 Example fetch wrapper:
@@ -294,6 +429,9 @@ export async function apiGet<T>(path: string): Promise<T> {
 
 - [ ] `/api/v1/health/live` returns `success: true` envelope.
 - [ ] `/api/v1/health/ready` returns `success: true` when backend is healthy.
+- [ ] `/api/v1/auth/register` returns wrapped response when `SUPABASE_ANON_KEY` is configured.
+- [ ] `/api/v1/auth/login` returns wrapped response with session tokens.
+- [ ] `/api/v1/auth/me` returns `UNAUTHORIZED` without bearer token.
 - [ ] Unknown endpoint returns wrapped `NOT_FOUND` error.
 - [ ] Sent `x-request-id` is echoed back in response header + `meta.requestId`.
 - [ ] UI error boundary can display backend `error.code` and `meta.requestId`.
@@ -302,6 +440,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 
 2026-02-23:
 - Backend Module 1 completed.
+- Module 2 auth endpoints implemented (`register`, `login`, `me`).
 - Supabase cloud-first setup adopted.
 - Global response/error envelope finalized and live.
 - Health endpoints fully implemented and tested.

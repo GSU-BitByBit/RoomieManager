@@ -89,6 +89,14 @@ Architecture decision:
   - `GET /api/v1/health/ready`
 - CI workflow exists and now expects Supabase secrets (instead of local Postgres service).
 
+### In Progress
+- Module 2 (Authentication and Identity) endpoint scaffolding is implemented:
+  - `POST /api/v1/auth/register`
+  - `POST /api/v1/auth/login`
+  - `GET /api/v1/auth/me`
+- JWT verification is integrated using Supabase JWKS.
+- Register/login endpoints require `SUPABASE_ANON_KEY` to be set.
+
 ### Verification Evidence
 - Code paths:
   - `src/main.ts`
@@ -172,7 +180,7 @@ Update rules (for AI agents):
 | Module | Name | Phase | Status | Progress | Evidence |
 |---|---|---|---|---:|---|
 | 1 | Platform Foundation | Phase 1 | COMPLETE | 100% | `src/main.ts`, `src/app.module.ts`, `src/modules/health/health.controller.ts`, `src/common/http/http-exception.filter.ts`, `prisma/migrations/0001_init_platform/migration.sql` |
-| 2 | Authentication and Identity | Phase 1 | NOT_STARTED | 0% | N/A |
+| 2 | Authentication and Identity | Phase 1 | PARTIAL | 70% | `src/modules/auth/auth.controller.ts`, `src/modules/auth/auth.service.ts`, `src/modules/auth/guards/supabase-jwt-auth.guard.ts`, `test/auth.e2e-spec.ts` |
 | 3 | Groups and Join Codes | Phase 1 | NOT_STARTED | 0% | N/A |
 | 4 | Member Management and RBAC | Phase 1 | NOT_STARTED | 0% | N/A |
 | 5 | Chore Management | Phase 2 | NOT_STARTED | 0% | N/A |
@@ -191,7 +199,7 @@ Update rules (for AI agents):
   "status_legend": ["NOT_STARTED", "PARTIAL", "COMPLETE", "BLOCKED"],
   "modules": [
     { "id": 1, "name": "Platform Foundation", "phase": "Phase 1", "status": "COMPLETE", "progress_pct": 100 },
-    { "id": 2, "name": "Authentication and Identity", "phase": "Phase 1", "status": "NOT_STARTED", "progress_pct": 0 },
+    { "id": 2, "name": "Authentication and Identity", "phase": "Phase 1", "status": "PARTIAL", "progress_pct": 70 },
     { "id": 3, "name": "Groups and Join Codes", "phase": "Phase 1", "status": "NOT_STARTED", "progress_pct": 0 },
     { "id": 4, "name": "Member Management and RBAC", "phase": "Phase 1", "status": "NOT_STARTED", "progress_pct": 0 },
     { "id": 5, "name": "Chore Management", "phase": "Phase 2", "status": "NOT_STARTED", "progress_pct": 0 },
