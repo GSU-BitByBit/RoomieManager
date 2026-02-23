@@ -79,6 +79,64 @@ Architecture decision:
 - Module 10 (Reliability/Operations): structured logs, metrics, tracing IDs, health/readiness checks.
 - Module 11 (Testing/Quality): `Jest`, `Supertest`, e2e workflows, CI pipeline gates.
 
+## AI Module Tracking
+Purpose:
+- Give human and AI contributors one canonical place to check backend module completion.
+- Reduce ambiguity before planning or implementing the next change.
+
+Last verified:
+- `2026-02-23`
+
+Status legend:
+- `NOT_STARTED`: no meaningful implementation for this module.
+- `PARTIAL`: some foundations exist, but exit criteria are not met.
+- `COMPLETE`: scope and exit criteria for the module are met.
+- `BLOCKED`: work is paused due to an external dependency or decision.
+
+Update rules (for AI agents):
+- Update this section first when module status changes.
+- Keep `Last verified` current with an absolute date (`YYYY-MM-DD`).
+- Only set `COMPLETE` when implementation + tests cover the module's core flows.
+- Add at least one concrete evidence path for every `PARTIAL` or `COMPLETE` module.
+
+### Human-Readable Snapshot
+
+| Module | Name | Phase | Status | Progress | Evidence |
+|---|---|---|---|---:|---|
+| 1 | Platform Foundation | Phase 1 | COMPLETE | 100% | `src/main.ts`, `src/app.module.ts`, `src/modules/health/health.controller.ts`, `src/common/http/http-exception.filter.ts`, `prisma/migrations/0001_init_platform/migration.sql` |
+| 2 | Authentication and Identity | Phase 1 | NOT_STARTED | 0% | N/A |
+| 3 | Groups and Join Codes | Phase 1 | NOT_STARTED | 0% | N/A |
+| 4 | Member Management and RBAC | Phase 1 | NOT_STARTED | 0% | N/A |
+| 5 | Chore Management | Phase 2 | NOT_STARTED | 0% | N/A |
+| 6 | Bills, Splits, Payments, and Balances | Phase 3 | NOT_STARTED | 0% | N/A |
+| 7 | Contract Management | Phase 2 | NOT_STARTED | 0% | N/A |
+| 8 | API UX Layer for Frontend Integration | Phase 2/3 | PARTIAL | 30% | `src/main.ts` (Swagger setup), `src/common/http/response.interceptor.ts`, `src/common/http/http-error-code.ts` |
+| 9 | Security and Compliance Hardening | Phase 4 | NOT_STARTED | 0% | N/A |
+| 10 | Reliability, Observability, and Operations | Phase 4 | PARTIAL | 35% | `src/app.module.ts` (structured logging), `src/modules/health/health.controller.ts`, `src/modules/health/health.service.ts` |
+| 11 | Testing and Quality Gates | Phase 4 | PARTIAL | 40% | `test/health.e2e-spec.ts`, `test/modules/health/health.service.spec.ts`, `.github/workflows/backend-ci.yml` |
+
+### Machine-Readable Snapshot (JSON)
+
+```json
+{
+  "last_verified": "2026-02-23",
+  "status_legend": ["NOT_STARTED", "PARTIAL", "COMPLETE", "BLOCKED"],
+  "modules": [
+    { "id": 1, "name": "Platform Foundation", "phase": "Phase 1", "status": "COMPLETE", "progress_pct": 100 },
+    { "id": 2, "name": "Authentication and Identity", "phase": "Phase 1", "status": "NOT_STARTED", "progress_pct": 0 },
+    { "id": 3, "name": "Groups and Join Codes", "phase": "Phase 1", "status": "NOT_STARTED", "progress_pct": 0 },
+    { "id": 4, "name": "Member Management and RBAC", "phase": "Phase 1", "status": "NOT_STARTED", "progress_pct": 0 },
+    { "id": 5, "name": "Chore Management", "phase": "Phase 2", "status": "NOT_STARTED", "progress_pct": 0 },
+    { "id": 6, "name": "Bills, Splits, Payments, and Balances", "phase": "Phase 3", "status": "NOT_STARTED", "progress_pct": 0 },
+    { "id": 7, "name": "Contract Management", "phase": "Phase 2", "status": "NOT_STARTED", "progress_pct": 0 },
+    { "id": 8, "name": "API UX Layer for Frontend Integration", "phase": "Phase 2/3", "status": "PARTIAL", "progress_pct": 30 },
+    { "id": 9, "name": "Security and Compliance Hardening", "phase": "Phase 4", "status": "NOT_STARTED", "progress_pct": 0 },
+    { "id": 10, "name": "Reliability, Observability, and Operations", "phase": "Phase 4", "status": "PARTIAL", "progress_pct": 35 },
+    { "id": 11, "name": "Testing and Quality Gates", "phase": "Phase 4", "status": "PARTIAL", "progress_pct": 40 }
+  ]
+}
+```
+
 ## Module Breakdown
 
 ### Module 1: Platform Foundation
