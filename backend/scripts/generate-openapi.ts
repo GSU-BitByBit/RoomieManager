@@ -74,5 +74,9 @@ async function main(): Promise<void> {
 }
 
 if (require.main === module) {
-  void main();
+  void main().catch((error) => {
+    // eslint-disable-next-line no-console
+    console.error('OpenAPI generation failed:', error);
+    process.exitCode = 1;
+  });
 }

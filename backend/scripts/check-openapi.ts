@@ -29,4 +29,8 @@ async function main(): Promise<void> {
   }
 }
 
-void main();
+void main().catch((error) => {
+  // eslint-disable-next-line no-console
+  console.error('OpenAPI contract check failed:', error);
+  process.exitCode = 1;
+});

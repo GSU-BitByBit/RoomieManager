@@ -14,3 +14,54 @@ model SystemSetting {
 
   @@map("system_settings")
 }
+
+model Group {
+  id        String        @id @default(cuid())
+  name      String        @db.VarChar(120)
+  createdBy String        @map("created_by")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  joinCode  JoinCode?
+  members   GroupMember[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id        String            @id @default(cuid())
+  groupId   String            @map("group_id")
+  userId    String            @map("user_id")
+  role      GroupMemberRole   @default(MEMBER)
+  status    GroupMemberStatus @default(ACTIVE)
+  joinedAt  DateTime          @default(now()) @map("joined_at")
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  group     Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId], map: "group_members_user_id_idx")
+  @@index([groupId], map: "group_members_group_id_idx")
+  @@map("group_members")
+}
+
+model JoinCode {
+  id        String   @id @default(cuid())
+  groupId   String   @unique @map("group_id")
+  code      String   @unique @db.VarChar(20)
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@map("join_codes")
+}
+
+enum GroupMemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum GroupMemberStatus {
+  ACTIVE
+  INACTIVE
+}

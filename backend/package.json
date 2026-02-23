@@ -22,8 +22,8 @@
     "prisma:migrate:status": "prisma migrate status",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
-    "openapi:generate": "ts-node --transpile-only scripts/generate-openapi.ts openapi/openapi.json",
-    "openapi:check": "ts-node --transpile-only scripts/check-openapi.ts",
+    "openapi:generate": "pnpm build && node dist/scripts/generate-openapi.js openapi/openapi.json",
+    "openapi:check": "node dist/scripts/check-openapi.js",
     "verify": "pnpm prisma:generate && pnpm prisma:migrate:status && pnpm lint && pnpm test && pnpm test:e2e && pnpm build && pnpm openapi:check"
   },
   "prisma": {

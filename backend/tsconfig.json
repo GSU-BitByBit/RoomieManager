@@ -19,6 +19,6 @@
     "skipLibCheck": true,
     "types": ["node", "jest"]
   },
-  "include": ["src", "test", "prisma/seed.ts"],
+  "include": ["src", "test", "prisma/seed.ts", "scripts/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
