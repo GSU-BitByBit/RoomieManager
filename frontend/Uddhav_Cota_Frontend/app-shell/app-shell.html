@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Roomie Manager App</title>
+  <link rel="stylesheet" href="app-shell.css">
+</head>
+
+<body>
+
+  <div class="app">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2>Roomie</h2>
+
+      <nav>
+        <a href="#" onclick="loadPage('dashboard'); return false;">Dashboard</a>
+        <a href="#" onclick="loadPage('members'); return false;">Members</a>
+        <a href="#" onclick="loadPage('chores'); return false;">Chores</a>
+        <a href="#" onclick="loadPage('bills'); return false;">Bills</a>
+        <a href="#" onclick="loadPage('contract'); return false;">Contract</a>
+        <a href="#" onclick="loadPage('settings'); return false;">Settings</a>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <div class="main">
+
+      <!-- Topbar -->
+      <header class="topbar">
+        <h3 class="group-name">Apartment 12A</h3>
+
+        <div class="join-code-badge">
+          Code: ABC123
+        </div>
+      </header>
+
+      <!-- Dynamic content area -->
+      <section class="content" id="content"></section>
+
+    </div>
+
+  </div>
+
+  <script src="app-shell.js"></script>
+
+</body>
+</html>
