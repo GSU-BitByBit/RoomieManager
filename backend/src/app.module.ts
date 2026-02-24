@@ -6,6 +6,8 @@ import { randomUUID } from 'node:crypto';
 import { PrismaModule } from './common/prisma/prisma.module';
 import type { EnvConfig } from './config/env.schema';
 import { validateEnv } from './config/env.schema';
+import { AuthModule } from './modules/auth/auth.module';
+import { GroupsModule } from './modules/groups/groups.module';
 import { HealthModule } from './modules/health/health.module';
 
 @Module({
@@ -20,6 +22,16 @@ import { HealthModule } from './modules/health/health.module';
       useFactory: (configService: ConfigService<EnvConfig, true>) => ({
         pinoHttp: {
           level: configService.get('LOG_LEVEL', { infer: true }) ?? 'info',
+          redact: {
+            paths: [
+              'req.headers.authorization',
+              'req.headers.apikey',
+              'req.body.password',
+              'req.body.refreshToken',
+              'res.headers["set-cookie"]'
+            ],
+            censor: '[REDACTED]'
+          },
           genReqId: (request, response): string => {
             const incomingRequestId = request.headers?.['x-request-id'];
             const requestId =
@@ -37,6 +49,8 @@ import { HealthModule } from './modules/health/health.module';
       })
     }),
     PrismaModule,
+    AuthModule,
+    GroupsModule,
     HealthModule
   ]
 })

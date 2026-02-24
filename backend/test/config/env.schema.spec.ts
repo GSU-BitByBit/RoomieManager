@@ -5,7 +5,8 @@ describe('env schema', () => {
     NODE_ENV: 'test',
     PORT: '3000',
     API_PREFIX: 'api/v1',
-    DATABASE_URL: 'postgresql://roomie:roomie@localhost:5432/roomiemanager?schema=public',
+    DATABASE_URL:
+      'postgresql://postgres:password@db.project-ref.supabase.co:5432/postgres?sslmode=require&schema=public',
     LOG_LEVEL: 'info',
     CORS_ORIGINS: 'http://localhost:3000'
   };

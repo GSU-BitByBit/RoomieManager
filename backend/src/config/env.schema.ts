@@ -10,6 +10,8 @@ export const envSchema = z.object({
   LOG_LEVEL: z.enum(logLevels).default('info'),
   CORS_ORIGINS: z.string().default('http://localhost:3000'),
   SUPABASE_URL: z.string().url().optional().or(z.literal('')),
+  SUPABASE_ANON_KEY: z.string().optional().or(z.literal('')),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional().or(z.literal('')),
   SUPABASE_JWT_AUDIENCE: z.string().optional().or(z.literal(''))
 });
 

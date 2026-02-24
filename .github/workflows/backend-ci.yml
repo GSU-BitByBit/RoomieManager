@@ -17,26 +17,14 @@ jobs:
       run:
         working-directory: backend
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: roomie
-          POSTGRES_PASSWORD: roomie
-          POSTGRES_DB: roomiemanager
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U roomie -d roomiemanager"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     env:
       NODE_ENV: test
       PORT: 3001
       API_PREFIX: api/v1
-      DATABASE_URL: postgresql://roomie:roomie@localhost:5432/roomiemanager?schema=public
+      DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_JWT_AUDIENCE: ${{ secrets.SUPABASE_JWT_AUDIENCE }}
       LOG_LEVEL: info
       CORS_ORIGINS: http://localhost:3000
 
@@ -62,17 +50,15 @@ jobs:
       - name: Generate Prisma client
         run: pnpm prisma:generate
 
+      - name: Validate Supabase database secret
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Missing SUPABASE_DATABASE_URL secret."
+            exit 1
+          fi
+
       - name: Run migrations
         run: pnpm prisma:migrate:deploy
 
-      - name: Lint
-        run: pnpm lint
-
-      - name: Unit tests
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
-
-      - name: E2E tests
-        run: pnpm test:e2e
+      - name: Verify (lint + tests + build + OpenAPI contract)
+        run: pnpm verify
