@@ -1,6 +1,6 @@
 # Frontend Integration Reference (RoomieManager Backend)
 
-Last updated: 2026-02-23
+Last updated: 2026-02-25
 Owner: Backend team
 Scope: Practical integration guide for frontend engineers and frontend AI agents.
 
@@ -10,12 +10,15 @@ Current backend implementation level:
 - Module 1 (Platform Foundation): COMPLETE
 - Module 2 (Authentication and Identity): COMPLETE (register/login require `SUPABASE_ANON_KEY`)
 - Module 3 (Groups and Join Codes): COMPLETE
-- Modules 4-7, 9: NOT_STARTED
+- Module 4 (Member Management and RBAC): COMPLETE
+- Modules 5-7, 9: NOT_STARTED
 - Modules 8, 10, 11: PARTIAL foundations only
 
 This means:
 - Implemented API endpoints right now: health + auth + groups.
-- Member-management/RBAC, chores, bills, and contracts endpoints are still planned.
+- Member-management endpoints are implemented, migrated, and validated in Supabase-backed smoke runs.
+- Latest full backend regression audit passed (`2026-02-24` EST / `2026-02-25` UTC), including production boot and DB sanity checks.
+- Chores, bills, and contracts endpoints are still planned.
 
 Source-of-truth files:
 - `/Users/admin/Documents/GitHub/RoomieManager/backend/src/main.ts`
@@ -30,6 +33,7 @@ Source-of-truth files:
 - `/Users/admin/Documents/GitHub/RoomieManager/backend/src/modules/groups/groups.controller.ts`
 - `/Users/admin/Documents/GitHub/RoomieManager/backend/src/modules/groups/groups.service.ts`
 - `/Users/admin/Documents/GitHub/RoomieManager/backend/src/modules/groups/dto/create-group.dto.ts`
+- `/Users/admin/Documents/GitHub/RoomieManager/backend/src/modules/groups/dto/update-member-role.dto.ts`
 - `/Users/admin/Documents/GitHub/RoomieManager/backend/src/app.module.ts`
 - `/Users/admin/Documents/GitHub/RoomieManager/backend/openapi/openapi.json`
 
@@ -429,6 +433,62 @@ Success response `200`:
 Common failure responses:
 - `403 FORBIDDEN` when caller is not an active member.
 
+### GET `/api/v1/groups/:groupId/members`
+Purpose:
+- List active members in a group.
+
+Headers:
+- `Authorization: Bearer <supabase_access_token>`
+
+Success response `200`:
+- Returns `{ groupId, members[] }` with each member containing:
+  - `userId`, `role`, `status`, `joinedAt`, `createdAt`, `updatedAt`
+
+Common failure responses:
+- `403 FORBIDDEN` when caller is not an active member.
+
+### PATCH `/api/v1/groups/:groupId/members/:userId/role`
+Purpose:
+- Update a member role (admin only).
+
+Headers:
+- `Authorization: Bearer <supabase_access_token>`
+
+Request body:
+
+```json
+{
+  "role": "ADMIN"
+}
+```
+
+Validation:
+- `role` must be one of `ADMIN` or `MEMBER`.
+
+Success response `200`:
+- Returns `{ groupId, userId, role, status, updatedAt }`.
+
+Common failure responses:
+- `403 FORBIDDEN` when caller is not admin.
+- `404 NOT_FOUND` when target active member does not exist.
+- `409 CONFLICT` when change would remove the last admin from the group.
+
+### DELETE `/api/v1/groups/:groupId/members/:userId`
+Purpose:
+- Remove a member from group (admin only; sets member status to `INACTIVE`).
+
+Headers:
+- `Authorization: Bearer <supabase_access_token>`
+
+Success response `200`:
+- Returns `{ groupId, userId, status, removed, updatedAt }`.
+
+Common failure responses:
+- `400 BAD_REQUEST` when admin tries to remove self via this endpoint.
+- `403 FORBIDDEN` when caller is not admin.
+- `404 NOT_FOUND` when target active member does not exist.
+- `409 CONFLICT` when removal would remove the last admin from the group.
+
 ## 6) Behavior for unknown/unimplemented routes
 
 Any unknown route currently returns wrapped `404`:
@@ -453,7 +513,7 @@ Backend is Supabase cloud-first.
 Important backend env vars:
 - `SUPABASE_URL`
 - `SUPABASE_JWT_AUDIENCE` (currently `authenticated`)
-- `DATABASE_URL` (direct URL preferred for migrations; `sslmode=require`)
+- `DATABASE_URL` (Supabase session pooler `:5432` recommended for runtime + Prisma migrate in IPv4-only environments)
 
 Frontend app should not use backend `DATABASE_URL`.
 Frontend should only use its own safe client config (public Supabase URL + anon key) where needed.
@@ -485,11 +545,6 @@ Note:
 
 These are roadmap endpoints from backend planning and should be treated as planned contracts.
 
-Module 4 (Members/RBAC):
-- `GET /api/v1/groups/:groupId/members`
-- `PATCH /api/v1/groups/:groupId/members/:userId/role`
-- `DELETE /api/v1/groups/:groupId/members/:userId`
-
 Module 5 (Chores):
 - `POST /api/v1/groups/:groupId/chores`
 - `GET /api/v1/groups/:groupId/chores`
@@ -514,7 +569,7 @@ Short-term recommended approach:
 1. Build one shared API client that always parses wrapped responses.
 2. Centralize error normalization based on `error.code`.
 3. Integrate auth + group onboarding flows now (create group, join by code, view group, reset code for admin).
-4. Gate Module 4+ screens (member management, chores, bills, contracts) behind mocks until those APIs ship.
+4. Enable member-management screens now (members list, role changes, removal); keep chores/bills/contracts mocked until those APIs ship.
 5. Keep request/response DTOs in one contract file so swapping from mock to live is trivial.
 6. Do not rely on group names preserving leading/trailing spaces; backend trims them.
 
@@ -565,11 +620,30 @@ export async function apiGet<T>(path: string): Promise<T> {
 - [ ] `/api/v1/groups/:groupId/join-code/reset` returns `FORBIDDEN` for non-admin/non-member caller.
 - [ ] `/api/v1/groups/:groupId` returns group summary for active members.
 - [ ] Member view of `/api/v1/groups/:groupId` does not include `joinCode`.
+- [ ] `/api/v1/groups/:groupId/members` returns member list for active member token.
+- [ ] `PATCH /api/v1/groups/:groupId/members/:userId/role` updates role for admin token.
+- [ ] `DELETE /api/v1/groups/:groupId/members/:userId` removes target member for admin token.
+- [ ] Last-admin demotion/removal paths return `CONFLICT`.
 - [ ] Unknown endpoint returns wrapped `NOT_FOUND` error.
 - [ ] Sent `x-request-id` is echoed back in response header + `meta.requestId`.
 - [ ] UI error boundary can display backend `error.code` and `meta.requestId`.
 
 ## 12) Changelog notes for frontend team
+
+2026-02-25:
+- Full backend regression audit re-passed end-to-end:
+  - `pnpm install --frozen-lockfile`
+  - `pnpm verify`
+  - `pnpm test:cov`
+  - production-mode startup + health/readiness checks
+  - live auth/groups/module4 RBAC simulation + DB sanity validation
+- No runtime regressions found in currently shipped endpoints.
+
+2026-02-24:
+- Module 4 migration deployed on Supabase (`0003_module4_member_management_rbac`).
+- Module 4 endpoints validated with live register/login/create/join/member-role/remove smoke flow.
+- Last-admin and self-removal edge cases verified (`CONFLICT`/`BAD_REQUEST` as expected).
+- Supabase connection guidance updated to session-pooler (`:5432`) for stable Prisma migrate/verify in IPv4-only environments.
 
 2026-02-23:
 - Backend Module 1 completed.
@@ -582,4 +656,5 @@ export async function apiGet<T>(path: string): Promise<T> {
 - Group-name whitespace validation bug fixed (whitespace-only now rejected).
 - Logging hardened: sensitive auth headers/fields are redacted.
 - Extended live edge-case audit passed against Supabase-backed runtime.
+- Module 4 member-management endpoints implemented in backend code with RBAC + last-admin protection + audit logging.
 - `pnpm start` now runs from compiled `dist/src/main.js`.

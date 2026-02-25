@@ -78,7 +78,7 @@ Architecture decision:
 - Module 10 (Reliability/Operations): structured logs, metrics, tracing IDs, health/readiness checks.
 - Module 11 (Testing/Quality): `Jest`, `Supertest`, e2e workflows, CI pipeline gates.
 
-## Current Progress (As of 2026-02-23)
+## Current Progress (As of 2026-02-25)
 
 ### Completed
 - Module 1 (Platform Foundation) is implemented and validated.
@@ -106,9 +106,24 @@ Architecture decision:
   - Group names are trimmed before validation so whitespace-only names are rejected.
   - Sensitive request data is redacted in logs (`authorization`, API keys, password fields, cookies).
 - Extended live Supabase-backed smoke audit passed for health, auth, and groups edge cases.
+- Module 4 (Member Management and RBAC) is implemented and validated:
+  - `GET /api/v1/groups/:groupId/members`
+  - `PATCH /api/v1/groups/:groupId/members/:userId/role`
+  - `DELETE /api/v1/groups/:groupId/members/:userId`
+- Module 4 migration `0003_module4_member_management_rbac` is deployed on Supabase.
+- Module 4 RBAC safeguards are live:
+  - admin-only role/update/remove actions
+  - last-admin demotion/removal protection
+  - audit-log writes for role updates/removals
+- Full backend regression audit passed on `2026-02-24` (EST) / `2026-02-25` (UTC):
+  - dependency integrity: `pnpm install --frozen-lockfile`
+  - quality gate: `pnpm verify`
+  - coverage: `pnpm test:cov`
+  - production boot/readiness: `pnpm start:prod` + health checks
+  - live Supabase flow + DB sanity validation for Module 4 paths
 
 ### In Progress
-- Module 4 (Member Management and RBAC) has not started implementation; this is the active next target.
+- Module 5 (Chore Management) is the next implementation target.
 
 ### Verification Evidence
 - Code paths:
@@ -126,28 +141,35 @@ Architecture decision:
   - `prisma/migrations/0002_module3_groups_join_codes/migration.sql`
   - `src/modules/groups/groups.controller.ts`
   - `src/modules/groups/groups.service.ts`
+  - `src/modules/groups/dto/update-member-role.dto.ts`
   - `src/modules/groups/dto/create-group.dto.ts`
+  - `prisma/migrations/0003_module4_member_management_rbac/migration.sql`
   - `test/auth.e2e-spec.ts`
   - `test/groups.e2e-spec.ts`
   - `test/modules/groups/groups.service.spec.ts`
   - `openapi/openapi.json`
   - `.github/workflows/backend-ci.yml`
-- Automated checks (last pass on `2026-02-23`):
+- Automated checks (last pass on `2026-02-25`):
+  - `pnpm install --frozen-lockfile`
+  - `pnpm prisma:migrate:status`
   - `pnpm verify`
   - `pnpm test:cov`
-  - `pnpm prisma:migrate:deploy`
-  - `pnpm prisma:seed`
+  - `pnpm openapi:generate`
 - Test scope note:
   - Jest `*.e2e-spec.ts` suites currently validate app wiring/contract shape with provider overrides.
   - Live smoke checks are the current Supabase-backed integration validation layer.
-- Live smoke checks (last pass on `2026-02-23`):
+- Live smoke checks (last pass on `2026-02-24`):
   - Register/login/token validation paths against Supabase Auth.
   - Group create/join/reset/get paths with admin/member/unauthorized/invalid-code edge cases.
+  - Module 4 member list/role update/remove flows, including last-admin and self-removal edge cases.
   - Request ID propagation and wrapped unknown-route behavior.
+  - Production-mode runtime boot and readiness check (`NODE_ENV=production` + `start:prod`) passed.
+  - DB sanity checks passed for migration health, membership state transitions, and audit-log writes.
 
 ### Environment and Infra Notes
-- Use direct Supabase DB URL for Prisma migrations (`:5432`, `sslmode=require`).
-- Pooler URL (`:6543`) can be introduced later for runtime workload if needed.
+- Use Supabase session pooler URL (`aws-1-<region>.pooler.supabase.com:5432`) for Prisma migrate and runtime in IPv4-only environments.
+- Use username format `postgres.<project_ref>` for Supabase pooler connections.
+- Avoid transaction pooler (`:6543`) for Prisma migrate commands.
 - Required CI secrets:
   - `SUPABASE_DATABASE_URL`
   - `SUPABASE_URL`
@@ -155,11 +177,11 @@ Architecture decision:
 
 ## Future Delivery Plan
 
-### Next Milestone (Phase 1 completion: Module 4)
-1. Module 4: Member Management and RBAC
-- Add role model and centralized authorization checks for group scope.
-- Implement member list/role change/remove endpoints.
-- Add audit trail records for admin actions.
+### Next Milestone (Phase 2 kickoff)
+1. Module 5 kickoff (Chore Management)
+- Define chore schema/migration and implement create/list/assign/complete flows.
+- Add RBAC checks for admin/member chore actions.
+- Add unit/e2e tests and OpenAPI contract updates.
 
 ### Near-Term Follow-up (Phase 2 preparation)
 1. Finalize API UX conventions (pagination/filter schema and error code catalog).
@@ -178,7 +200,7 @@ Purpose:
 - Reduce ambiguity before planning or implementing the next change.
 
 Last verified:
-- `2026-02-23`
+- `2026-02-25`
 
 Status legend:
 - `NOT_STARTED`: no meaningful implementation for this module.
@@ -199,7 +221,7 @@ Update rules (for AI agents):
 | 1 | Platform Foundation | Phase 1 | COMPLETE | 100% | `src/main.ts`, `src/app.module.ts`, `src/modules/health/health.controller.ts`, `src/common/http/http-exception.filter.ts`, `prisma/migrations/0001_init_platform/migration.sql` |
 | 2 | Authentication and Identity | Phase 1 | COMPLETE | 100% | `src/modules/auth/auth.controller.ts`, `src/modules/auth/auth.service.ts`, `src/modules/auth/guards/supabase-jwt-auth.guard.ts`, `src/modules/auth/supabase-jwt.service.ts`, `test/auth.e2e-spec.ts` |
 | 3 | Groups and Join Codes | Phase 1 | COMPLETE | 100% | `prisma/migrations/0002_module3_groups_join_codes/migration.sql`, `src/modules/groups/groups.controller.ts`, `src/modules/groups/groups.service.ts`, `test/groups.e2e-spec.ts` |
-| 4 | Member Management and RBAC | Phase 1 | NOT_STARTED | 0% | N/A |
+| 4 | Member Management and RBAC | Phase 1 | COMPLETE | 100% | `src/modules/groups/groups.controller.ts`, `src/modules/groups/groups.service.ts`, `src/modules/groups/dto/update-member-role.dto.ts`, `prisma/migrations/0003_module4_member_management_rbac/migration.sql`, `test/groups.e2e-spec.ts`, `test/modules/groups/groups.service.spec.ts` |
 | 5 | Chore Management | Phase 2 | NOT_STARTED | 0% | N/A |
 | 6 | Bills, Splits, Payments, and Balances | Phase 3 | NOT_STARTED | 0% | N/A |
 | 7 | Contract Management | Phase 2 | NOT_STARTED | 0% | N/A |
@@ -212,13 +234,13 @@ Update rules (for AI agents):
 
 ```json
 {
-  "last_verified": "2026-02-23",
+  "last_verified": "2026-02-25",
   "status_legend": ["NOT_STARTED", "PARTIAL", "COMPLETE", "BLOCKED"],
   "modules": [
     { "id": 1, "name": "Platform Foundation", "phase": "Phase 1", "status": "COMPLETE", "progress_pct": 100 },
     { "id": 2, "name": "Authentication and Identity", "phase": "Phase 1", "status": "COMPLETE", "progress_pct": 100 },
     { "id": 3, "name": "Groups and Join Codes", "phase": "Phase 1", "status": "COMPLETE", "progress_pct": 100 },
-    { "id": 4, "name": "Member Management and RBAC", "phase": "Phase 1", "status": "NOT_STARTED", "progress_pct": 0 },
+    { "id": 4, "name": "Member Management and RBAC", "phase": "Phase 1", "status": "COMPLETE", "progress_pct": 100 },
     { "id": 5, "name": "Chore Management", "phase": "Phase 2", "status": "NOT_STARTED", "progress_pct": 0 },
     { "id": 6, "name": "Bills, Splits, Payments, and Balances", "phase": "Phase 3", "status": "NOT_STARTED", "progress_pct": 0 },
     { "id": 7, "name": "Contract Management", "phase": "Phase 2", "status": "NOT_STARTED", "progress_pct": 0 },
@@ -513,8 +535,8 @@ Exit criteria:
 - Monitoring, logging, and health checks operational.
 - CI enforces quality gates with high-confidence regression coverage.
 
-## Phase Progress Snapshot (As of 2026-02-23)
-- Phase 1: `IN_PROGRESS` (Modules 1-3 complete; Module 4 pending)
+## Phase Progress Snapshot (As of 2026-02-25)
+- Phase 1: `COMPLETE` (Modules 1-4 complete and validated)
 - Phase 2: `NOT_STARTED`
 - Phase 3: `NOT_STARTED`
 - Phase 4: `PARTIAL_FOUNDATION` (early reliability/testing foundations exist via Module 1 work)

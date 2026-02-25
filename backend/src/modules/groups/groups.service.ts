@@ -18,11 +18,20 @@ import { ErrorCode } from '../../common/http/http-error-code';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import type { CreateGroupDto } from './dto/create-group.dto';
 import type { JoinGroupDto } from './dto/join-group.dto';
-import type { GroupSummary, JoinCodeResetResponse } from './interfaces/group-response.interface';
+import type { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import type {
+  GroupMemberRemoveResponse,
+  GroupMemberRoleUpdateResponse,
+  GroupMembersResponse,
+  GroupSummary,
+  JoinCodeResetResponse
+} from './interfaces/group-response.interface';
 
 const JOIN_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const JOIN_CODE_LENGTH = 8;
 const MAX_JOIN_CODE_ATTEMPTS = 12;
+const AUDIT_ACTION_MEMBER_ROLE_UPDATED = 'MEMBER_ROLE_UPDATED';
+const AUDIT_ACTION_MEMBER_REMOVED = 'MEMBER_REMOVED';
 
 @Injectable()
 export class GroupsService {
@@ -146,24 +155,9 @@ export class GroupsService {
 
   async getGroup(userId: string, groupId: string): Promise<GroupSummary> {
     return this.prisma.$transaction(async (tx) => {
-      const membership = await tx.groupMember.findUnique({
-        where: {
-          groupId_userId: {
-            groupId,
-            userId
-          }
-        },
-        include: {
-          group: true
-        }
+      const membership = await this.assertActiveMembership(tx, userId, groupId, {
+        includeGroup: true
       });
-
-      if (!membership || membership.status !== GroupMemberStatus.ACTIVE) {
-        throw new ForbiddenException({
-          code: ErrorCode.Forbidden,
-          message: 'You do not have access to this group.'
-        });
-      }
 
       const memberCount = await tx.groupMember.count({
         where: {
@@ -185,31 +179,208 @@ export class GroupsService {
     });
   }
 
-  private async assertAdminMembership(
+  async getGroupMembers(userId: string, groupId: string): Promise<GroupMembersResponse> {
+    return this.prisma.$transaction(async (tx) => {
+      await this.assertActiveMembership(tx, userId, groupId);
+
+      const members = await tx.groupMember.findMany({
+        where: {
+          groupId,
+          status: GroupMemberStatus.ACTIVE
+        },
+        orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }]
+      });
+
+      return {
+        groupId,
+        members: members.map((member) => this.mapGroupMemberSummary(member))
+      };
+    });
+  }
+
+  async updateMemberRole(
+    actorUserId: string,
+    groupId: string,
+    memberUserId: string,
+    payload: UpdateMemberRoleDto
+  ): Promise<GroupMemberRoleUpdateResponse> {
+    return this.prisma.$transaction(async (tx) => {
+      await this.assertAdminMembership(tx, actorUserId, groupId);
+
+      const membership = await tx.groupMember.findUnique({
+        where: {
+          groupId_userId: {
+            groupId,
+            userId: memberUserId
+          }
+        }
+      });
+
+      if (!membership || membership.status !== GroupMemberStatus.ACTIVE) {
+        throw new NotFoundException({
+          code: ErrorCode.NotFound,
+          message: 'Active member not found.'
+        });
+      }
+
+      if (membership.role === payload.role) {
+        return {
+          groupId,
+          userId: membership.userId,
+          role: membership.role,
+          status: membership.status,
+          updatedAt: membership.updatedAt.toISOString()
+        };
+      }
+
+      if (membership.role === GroupMemberRole.ADMIN && payload.role !== GroupMemberRole.ADMIN) {
+        await this.assertNotLastAdmin(tx, groupId);
+      }
+
+      const updatedMembership = await tx.groupMember.update({
+        where: { id: membership.id },
+        data: {
+          role: payload.role
+        }
+      });
+
+      await this.recordAuditLog(tx, {
+        groupId,
+        actorUserId,
+        targetUserId: memberUserId,
+        action: AUDIT_ACTION_MEMBER_ROLE_UPDATED,
+        details: {
+          previousRole: membership.role,
+          nextRole: updatedMembership.role
+        }
+      });
+
+      return {
+        groupId,
+        userId: updatedMembership.userId,
+        role: updatedMembership.role,
+        status: updatedMembership.status,
+        updatedAt: updatedMembership.updatedAt.toISOString()
+      };
+    });
+  }
+
+  async removeMember(
+    actorUserId: string,
+    groupId: string,
+    memberUserId: string
+  ): Promise<GroupMemberRemoveResponse> {
+    return this.prisma.$transaction(async (tx) => {
+      await this.assertAdminMembership(tx, actorUserId, groupId);
+
+      if (actorUserId === memberUserId) {
+        throw new BadRequestException({
+          code: ErrorCode.BadRequest,
+          message: 'Use leave-group flow to remove yourself.'
+        });
+      }
+
+      const membership = await tx.groupMember.findUnique({
+        where: {
+          groupId_userId: {
+            groupId,
+            userId: memberUserId
+          }
+        }
+      });
+
+      if (!membership || membership.status !== GroupMemberStatus.ACTIVE) {
+        throw new NotFoundException({
+          code: ErrorCode.NotFound,
+          message: 'Active member not found.'
+        });
+      }
+
+      if (membership.role === GroupMemberRole.ADMIN) {
+        await this.assertNotLastAdmin(tx, groupId);
+      }
+
+      const updatedMembership = await tx.groupMember.update({
+        where: { id: membership.id },
+        data: {
+          status: GroupMemberStatus.INACTIVE
+        }
+      });
+
+      await this.recordAuditLog(tx, {
+        groupId,
+        actorUserId,
+        targetUserId: memberUserId,
+        action: AUDIT_ACTION_MEMBER_REMOVED,
+        details: {
+          previousRole: membership.role
+        }
+      });
+
+      return {
+        groupId,
+        userId: updatedMembership.userId,
+        status: updatedMembership.status,
+        removed: true,
+        updatedAt: updatedMembership.updatedAt.toISOString()
+      };
+    });
+  }
+
+  private async assertActiveMembership(
     tx: Prisma.TransactionClient,
     userId: string,
     groupId: string
-  ): Promise<GroupMember> {
+  ): Promise<GroupMember>;
+  private async assertActiveMembership(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    groupId: string,
+    options: { includeGroup: true }
+  ): Promise<GroupMember & { group: Group }>;
+  private async assertActiveMembership(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    groupId: string,
+    options?: { includeGroup?: boolean }
+  ): Promise<GroupMember | (GroupMember & { group: Group })> {
     const membership = await tx.groupMember.findUnique({
       where: {
         groupId_userId: {
           groupId,
           userId
         }
-      }
+      },
+      ...(options?.includeGroup
+        ? {
+            include: {
+              group: true
+            }
+          }
+        : {})
     });
 
     if (!membership || membership.status !== GroupMemberStatus.ACTIVE) {
       throw new ForbiddenException({
         code: ErrorCode.Forbidden,
-        message: 'You must be an active member of this group.'
+        message: 'You do not have access to this group.'
       });
     }
+
+    return membership as GroupMember | (GroupMember & { group: Group });
+  }
+
+  private async assertAdminMembership(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    groupId: string
+  ): Promise<GroupMember> {
+    const membership = await this.assertActiveMembership(tx, userId, groupId);
 
     if (membership.role !== GroupMemberRole.ADMIN) {
       throw new ForbiddenException({
         code: ErrorCode.Forbidden,
-        message: 'Only group admins can reset join codes.'
+        message: 'Only group admins can perform this action.'
       });
     }
 
@@ -226,6 +397,44 @@ export class GroupsService {
     }
 
     return membership;
+  }
+
+  private async assertNotLastAdmin(tx: Prisma.TransactionClient, groupId: string): Promise<void> {
+    const activeAdminCount = await tx.groupMember.count({
+      where: {
+        groupId,
+        status: GroupMemberStatus.ACTIVE,
+        role: GroupMemberRole.ADMIN
+      }
+    });
+
+    if (activeAdminCount <= 1) {
+      throw new ConflictException({
+        code: ErrorCode.Conflict,
+        message: 'Group must have at least one admin.'
+      });
+    }
+  }
+
+  private async recordAuditLog(
+    tx: Prisma.TransactionClient,
+    params: {
+      groupId: string;
+      actorUserId: string;
+      targetUserId?: string;
+      action: string;
+      details?: Record<string, unknown>;
+    }
+  ): Promise<void> {
+    await tx.groupAuditLog.create({
+      data: {
+        groupId: params.groupId,
+        actorUserId: params.actorUserId,
+        targetUserId: params.targetUserId,
+        action: params.action,
+        ...(params.details ? { details: params.details as Prisma.InputJsonValue } : {})
+      }
+    });
   }
 
   private async rotateJoinCode(
@@ -294,6 +503,17 @@ export class GroupsService {
       memberStatus: membership.status,
       memberCount,
       ...(joinCode ? { joinCode } : {})
+    };
+  }
+
+  private mapGroupMemberSummary(member: GroupMember): GroupMembersResponse['members'][number] {
+    return {
+      userId: member.userId,
+      role: member.role,
+      status: member.status,
+      joinedAt: member.joinedAt.toISOString(),
+      createdAt: member.createdAt.toISOString(),
+      updatedAt: member.updatedAt.toISOString()
     };
   }
 }

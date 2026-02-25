@@ -1,5 +1,5 @@
 const defaultDatabaseUrl =
-  'postgresql://postgres:password@db.project-ref.supabase.co:5432/' +
+  'postgresql://postgres.project-ref:password@aws-1-us-east-1.pooler.supabase.com:5432/' +
   'postgres?sslmode=require&schema=public';
 
 process.env.NODE_ENV = 'test';

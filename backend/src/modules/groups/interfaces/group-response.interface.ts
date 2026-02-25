@@ -16,3 +16,33 @@ export interface JoinCodeResetResponse {
   groupId: string;
   joinCode: string;
 }
+
+export interface GroupMemberSummary {
+  userId: string;
+  role: GroupMemberRole;
+  status: GroupMemberStatus;
+  joinedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupMembersResponse {
+  groupId: string;
+  members: GroupMemberSummary[];
+}
+
+export interface GroupMemberRoleUpdateResponse {
+  groupId: string;
+  userId: string;
+  role: GroupMemberRole;
+  status: GroupMemberStatus;
+  updatedAt: string;
+}
+
+export interface GroupMemberRemoveResponse {
+  groupId: string;
+  userId: string;
+  status: GroupMemberStatus;
+  removed: boolean;
+  updatedAt: string;
+}

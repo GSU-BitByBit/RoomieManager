@@ -16,13 +16,14 @@ model SystemSetting {
 }
 
 model Group {
-  id        String        @id @default(cuid())
-  name      String        @db.VarChar(120)
-  createdBy String        @map("created_by")
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
+  id        String          @id @default(cuid())
+  name      String          @db.VarChar(120)
+  createdBy String          @map("created_by")
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
   joinCode  JoinCode?
   members   GroupMember[]
+  auditLogs GroupAuditLog[]
 
   @@map("groups")
 }
@@ -54,6 +55,21 @@ model JoinCode {
   group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@map("join_codes")
+}
+
+model GroupAuditLog {
+  id          String   @id @default(cuid())
+  groupId     String   @map("group_id")
+  actorUserId String   @map("actor_user_id")
+  targetUserId String? @map("target_user_id")
+  action      String   @db.VarChar(64)
+  details     Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId], map: "group_audit_logs_group_id_idx")
+  @@index([actorUserId], map: "group_audit_logs_actor_user_id_idx")
+  @@map("group_audit_logs")
 }
 
 enum GroupMemberRole {

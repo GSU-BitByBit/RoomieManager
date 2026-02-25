@@ -48,6 +48,41 @@ describe('Groups endpoints (e2e)', () => {
       memberStatus: 'ACTIVE',
       memberCount: 2,
       joinCode: 'ZXCV9876'
+    })),
+    getGroupMembers: jest.fn(async () => ({
+      groupId: 'group-1',
+      members: [
+        {
+          userId: 'user-1',
+          role: 'ADMIN',
+          status: 'ACTIVE',
+          joinedAt: '2026-02-23T00:00:00.000Z',
+          createdAt: '2026-02-23T00:00:00.000Z',
+          updatedAt: '2026-02-23T00:00:00.000Z'
+        },
+        {
+          userId: 'user-2',
+          role: 'MEMBER',
+          status: 'ACTIVE',
+          joinedAt: '2026-02-23T00:10:00.000Z',
+          createdAt: '2026-02-23T00:10:00.000Z',
+          updatedAt: '2026-02-23T00:10:00.000Z'
+        }
+      ]
+    })),
+    updateMemberRole: jest.fn(async () => ({
+      groupId: 'group-1',
+      userId: 'user-2',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      updatedAt: '2026-02-23T00:20:00.000Z'
+    })),
+    removeMember: jest.fn(async () => ({
+      groupId: 'group-1',
+      userId: 'user-2',
+      status: 'INACTIVE',
+      removed: true,
+      updatedAt: '2026-02-23T00:30:00.000Z'
     }))
   };
 
@@ -166,5 +201,47 @@ describe('Groups endpoints (e2e)', () => {
 
     expect(response.body.success).toBe(true);
     expect(response.body.data.id).toBe('group-1');
+  });
+
+  it('GET /api/v1/groups/:groupId/members returns members', async () => {
+    const response = await request(app!.getHttpServer())
+      .get('/api/v1/groups/group-1/members')
+      .set('Authorization', 'Bearer valid-token')
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.members).toHaveLength(2);
+  });
+
+  it('PATCH /api/v1/groups/:groupId/members/:userId/role updates role', async () => {
+    const response = await request(app!.getHttpServer())
+      .patch('/api/v1/groups/group-1/members/user-2/role')
+      .set('Authorization', 'Bearer valid-token')
+      .send({ role: 'ADMIN' })
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.role).toBe('ADMIN');
+  });
+
+  it('PATCH /api/v1/groups/:groupId/members/:userId/role validates role enum', async () => {
+    const response = await request(app!.getHttpServer())
+      .patch('/api/v1/groups/group-1/members/user-2/role')
+      .set('Authorization', 'Bearer valid-token')
+      .send({ role: 'OWNER' })
+      .expect(400);
+
+    expect(response.body.error.code).toBe('BAD_REQUEST');
+    expect(groupsServiceMock.updateMemberRole).not.toHaveBeenCalled();
+  });
+
+  it('DELETE /api/v1/groups/:groupId/members/:userId removes member', async () => {
+    const response = await request(app!.getHttpServer())
+      .delete('/api/v1/groups/group-1/members/user-2')
+      .set('Authorization', 'Bearer valid-token')
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.removed).toBe(true);
   });
 });

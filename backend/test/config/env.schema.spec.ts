@@ -6,7 +6,7 @@ describe('env schema', () => {
     PORT: '3000',
     API_PREFIX: 'api/v1',
     DATABASE_URL:
-      'postgresql://postgres:password@db.project-ref.supabase.co:5432/postgres?sslmode=require&schema=public',
+      'postgresql://postgres.project-ref:password@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&schema=public',
     LOG_LEVEL: 'info',
     CORS_ORIGINS: 'http://localhost:3000'
   };

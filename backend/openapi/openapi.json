@@ -16,6 +16,14 @@
         ],
         "type": "object"
       },
+      "GroupMemberRole": {
+        "description": "Target role for the member",
+        "enum": [
+          "ADMIN",
+          "MEMBER"
+        ],
+        "type": "string"
+      },
       "JoinGroupDto": {
         "properties": {
           "joinCode": {
@@ -68,6 +76,17 @@
         "required": [
           "email",
           "password"
+        ],
+        "type": "object"
+      },
+      "UpdateMemberRoleDto": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/GroupMemberRole"
+          }
+        },
+        "required": [
+          "role"
         ],
         "type": "object"
       }
@@ -254,6 +273,128 @@
           }
         ],
         "summary": "Reset group join code (admin only).",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/members": {
+      "get": {
+        "operationId": "GroupsController_getGroupMembers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns current group members with roles and statuses."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List active members in the group.",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/members/{userId}": {
+      "delete": {
+        "operationId": "GroupsController_removeMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Marks target member as inactive and returns result."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove member from group (admin only).",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/members/{userId}/role": {
+      "patch": {
+        "operationId": "GroupsController_updateMemberRole",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMemberRoleDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns updated member role state."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update group member role (admin only).",
         "tags": [
           "Groups"
         ]
