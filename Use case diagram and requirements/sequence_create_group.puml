@@ -1,0 +1,36 @@
+@startuml Sequence – Create Roommate Group
+skinparam shadowing false
+
+title Sequence Diagram: Create Roommate Group
+
+actor "User" as User
+participant "App" as App
+participant "Server" as Server
+database "Database" as DB
+
+User -> App : Enters group name\nand clicks "Create Group"
+activate App
+
+App -> Server : Send group name
+activate Server
+
+Server -> Server : Verify user is logged in
+
+Server -> DB : Save new group
+activate DB
+DB --> Server : Group created
+
+Server -> DB : Set user as group admin
+DB --> Server : Admin role assigned
+
+Server -> DB : Generate and save join code
+DB --> Server : Join code saved
+deactivate DB
+
+Server --> App : Return group info\nwith join code
+deactivate Server
+
+App --> User : Show group dashboard\nwith join code to share
+deactivate App
+
+@enduml

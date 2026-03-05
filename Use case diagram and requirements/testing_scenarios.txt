@@ -1,0 +1,38 @@
+Testing Scenarios for RoomieManager
+====================================
+
+1. User creates an account and creates a new roommate group.
+   User opens the app and sees the Login screen. User clicks "Sign Up" to go to
+   the Register screen. User enters their name, email, and password and clicks
+   "Create Account." User is taken to the Home screen. User clicks "Create Group,"
+   enters a group name, and clicks "Create Group." User is taken to the Group
+   Dashboard which displays the group name, their admin role, and a join code
+   to share with roommates. User quits.
+
+2. User logs in and joins an existing group using a join code.
+   User opens the app and sees the Login screen. User enters their email and
+   password and clicks "Log In." User is taken to the Home screen. User clicks
+   "Join Group," enters the join code they received from their roommate, and
+   clicks "Join Group." User is taken to the Group Dashboard where they can see
+   the group name, members, chores, and bills. User quits.
+
+3. User tries to join a group with an invalid join code.
+   User opens the app and logs in. User is taken to the Home screen. User clicks
+   "Join Group" and enters an incorrect join code. User clicks "Join Group."
+   The app displays an error message saying "Invalid join code." User corrects
+   the code and clicks "Join Group" again. User is taken to the Group Dashboard.
+   User quits.
+
+4. User logs in, views the group dashboard, and adds a chore.
+   User opens the app and logs in. User is taken to the Group Dashboard. User
+   scrolls to the Chores section and clicks "Add Chore." User enters a chore
+   name (e.g., "Clean kitchen"), assigns it to a roommate, and saves it. The
+   chore appears in the chores list with a "Pending" status. User quits.
+
+5. User logs in, creates a bill, and views balances.
+   User opens the app and logs in. User is taken to the Group Dashboard. User
+   scrolls to the Bills section and clicks "Add Bill." User enters the bill
+   name (e.g., "Electric - March"), the total amount ($120), and splits it
+   equally among all roommates. The bill appears in the bills list. User scrolls
+   to the Balances section and sees the updated amounts showing who owes whom.
+   User quits.

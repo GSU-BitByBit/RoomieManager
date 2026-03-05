@@ -1,0 +1,51 @@
+@startuml Sequence – Join Roommate Group
+skinparam shadowing false
+
+title Sequence Diagram: Join Roommate Group
+
+actor "User" as User
+participant "App" as App
+participant "Server" as Server
+database "Database" as DB
+
+User -> App : Enters join code\nand clicks "Join Group"
+activate App
+
+App -> Server : Send join code
+activate Server
+
+Server -> Server : Verify user is logged in
+
+Server -> DB : Look up join code
+activate DB
+
+alt Valid join code
+  DB --> Server : Group found
+
+  Server -> DB : Check if user is already a member
+  DB --> Server : Membership status
+
+  alt Not a member yet
+    Server -> DB : Add user as group member
+    DB --> Server : Member added
+    deactivate DB
+
+    Server --> App : Return group info
+    deactivate Server
+
+    App --> User : Show group dashboard\n(joined successfully)
+    deactivate App
+
+  else Already a member
+    DB --> Server
+    Server --> App : Error: already in this group
+    App --> User : Show "Already a member" message
+  end
+
+else Invalid join code
+  DB --> Server : Code not found
+  Server --> App : Error: invalid code
+  App --> User : Show "Invalid code" message
+end
+
+@enduml
