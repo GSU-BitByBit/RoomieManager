@@ -57,13 +57,13 @@ Architecture decision:
 - Implement RBAC middleware for group/member/admin roles.
 - Publish baseline `OpenAPI` spec for auth/group/member endpoints.
 
-### Phase 2 Technology Rollout (Modules 5, 7, and Module 8 partial)
+### Phase 2 Technology Rollout (Modules 5, 7, and 8)
 
 - Reuse Phase 1 stack to add chores and contract domain modules.
 - Add pagination/filtering standards and consistent validation/error objects.
 - Add optional `Supabase Realtime` events for chore status and contract publish updates.
 
-### Phase 3 Technology Rollout (Module 6 and Module 8 remaining)
+### Phase 3 Technology Rollout (Module 6)
 
 - Implement financial engine on `Supabase Postgres` with transactional `Prisma` operations.
 - Use ledger-style tables for auditable balance computation.
@@ -164,29 +164,23 @@ Architecture decision:
   - **REST conventions** -- `POST /auth/register` and `POST /groups` now return `201 Created` instead of `200`.
   - **Schema** -- Added indexes on `Group.createdBy`, `GroupAuditLog.targetUserId`, `GroupAuditLog.createdAt`. Added `expiresAt` column to `JoinCode` model. Migration `20260305192502_0004_hardening_indexes_join_code_expiry` deployed on Supabase.
   - **CORS** -- Default `CORS_ORIGINS` changed from `http://localhost:3000` (port collision with API) to `http://localhost:5173`.
-  - **Tests** -- All e2e tests now verify mock call arguments. Stronger assertions for join code format, health readiness body, and env schema validation. New test cases for guard verification failure, ID-format rejection, pagination/sort validation, and negative env validation paths. Total: 54 unit tests + 48 e2e tests passing (plus 2 optional live Supabase e2e suites skipped by default).
+  - **Tests** -- All e2e tests now verify mock call arguments. Stronger assertions for join code format, health readiness body, env schema validation, and response-envelope contract shape across key modules. New test cases for guard verification failure, ID-format rejection, pagination/sort validation, and negative env validation paths. Total: 54 unit tests + 57 e2e tests passing (plus 2 optional live Supabase e2e suites skipped by default).
   - `pnpm verify` passes end-to-end (prisma:generate, prisma:migrate:status, lint, test, test:e2e, build, openapi:check).
-- Module 8 core API UX conventions are now implemented for list endpoints:
-  - Standard query params on list routes: `page`, `pageSize`, `sortBy`, `sortOrder`
-  - Standard response pagination block: `{ page, pageSize, totalItems, totalPages, hasNextPage, hasPreviousPage }`
-  - OpenAPI now includes concrete success examples and `400`/`403` response documentation for paginated list routes.
-  - `openapi:check` now enforces semantic contract assertions for both core and list routes (required auth/public posture, required status codes, required path/query params, required request-body presence where applicable, and pagination example shape for list endpoints), not just JSON drift.
-  - Applied endpoints:
-    - `GET /api/v1/groups`
-    - `GET /api/v1/groups/:groupId/members`
-    - `GET /api/v1/groups/:groupId/chores`
-    - `GET /api/v1/groups/:groupId/contract/versions`
-    - `GET /api/v1/groups/:groupId/bills`
-  - Aggregation endpoint baseline for frontend dashboards:
-    - `GET /api/v1/groups/:groupId/dashboard`
-  - Added validation-focused e2e checks for invalid pagination/sort input.
+- Module 8 (API UX Layer) is now complete:
+  - Standard list query params are enforced on all list routes: `page`, `pageSize`, `sortBy`, `sortOrder`.
+  - Standard pagination response block is enforced: `{ page, pageSize, totalItems, totalPages, hasNextPage, hasPreviousPage }`.
+  - Dashboard aggregation endpoint is available for frontend landing views: `GET /api/v1/groups/:groupId/dashboard`.
+  - OpenAPI now includes concrete success envelope examples across auth/group/member/chores/contracts/bills/payments/balances and readiness flows.
+  - `openapi:check` enforces semantic contract assertions for core, list, and aggregate routes, including required success-envelope examples and required data keys for core endpoints.
+  - Frontend-typed API contracts are generated and drift-checked (`frontend/generated/backend-api.types.ts`, `openapi:types:generate`, `openapi:types:check`).
+  - Added/maintained e2e contract coverage for response envelopes and invalid pagination/sort input paths.
 - Optional live Supabase deep journey suite added (`test/live-user-journey.e2e-spec.ts`) to exercise a production-like multi-module flow when live fixtures are available.
 
 ### In Progress
 
-- Module 8 (API UX Layer) is partially complete; richer OpenAPI examples and stricter contract-schema assertions remain, and additional aggregation endpoints can be added beyond the current dashboard baseline.
-- Rate limiting remains intentionally deferred until Module 9 so current delivery stays focused on frontend integration and core flow reliability.
+- Module 9 hardening remains in progress; rate limiting is still intentionally deferred to keep delivery focused on frontend support and workflow stability.
 - Join-code expiration enforcement is pending at application layer (`JoinCode.expiresAt` exists in schema but is not enforced yet).
+- Frontend-ready finance seed fixtures (multi-member split/payment scenarios) are still pending.
 
 ### Verification Evidence
 
@@ -257,7 +251,7 @@ Architecture decision:
   - `pnpm prisma:migrate:status` (7 migrations, schema up to date)
   - `pnpm lint` (0 warnings)
   - `pnpm test` (54 unit tests)
-  - `pnpm test:e2e` (48 e2e tests passed, 2 optional live suites skipped by default)
+  - `pnpm test:e2e` (57 e2e tests passed, 2 optional live suites skipped by default)
   - `pnpm build`
   - `pnpm openapi:check`
   - Full `pnpm verify` pipeline passed end-to-end.
@@ -286,19 +280,19 @@ Architecture decision:
 
 ## Future Delivery Plan
 
-### Next Milestone (Phase 3 continuation)
+### Next Milestone (Phase 4 kickoff)
 
-1. Module 8 completion (API UX Layer)
+1. Module 9 baseline hardening (rate limiting still deferred)
 
-- Expand richer request/response examples in OpenAPI for frontend and QA workflows.
-- Add contract-focused regression checks for more endpoint shape details (beyond list defaults).
-- Define optional aggregation endpoints for dashboard-friendly views.
+- Enforce `JoinCode.expiresAt` during join flow and cover with unit/e2e tests.
+- Add secure HTTP headers baseline (`helmet`) with environment-aware configuration.
+- Add abuse-focused regression tests for auth/RBAC edge paths.
 
-### Near-Term Follow-up (Phase 3 preparation)
+### Near-Term Follow-up (Frontend + QA support)
 
-1. Expand Swagger docs with richer examples for auth/group/member/chores/contracts/bills/payments/balances.
-2. Add frontend-ready seed fixtures for finance scenarios (multi-member splits, partial payments, reversals).
-3. Evaluate a CI-safe contract test that validates list pagination metadata for critical list endpoints.
+1. Add frontend-ready seed fixtures for finance scenarios (multi-member splits, partial payments, reversals).
+2. Add optional dashboard aggregation endpoints that reduce frontend roundtrips for high-traffic views.
+3. Add a CI-safe contract test that compares selected live responses against OpenAPI envelope expectations.
 
 ### Risks to Track in Upcoming Work
 
@@ -344,10 +338,10 @@ Update rules (for AI agents):
 | 5      | Chore Management                           | Phase 2   | COMPLETE |     100% | `prisma/migrations/20260305193953_0005_module5_chores/migration.sql`, `src/modules/chores/chores.module.ts`, `src/modules/chores/chores.service.ts`, `src/modules/chores/chores.controller.ts`, `src/modules/chores/dto/create-chore.dto.ts`, `src/modules/chores/dto/list-chores.query.ts`, `src/modules/chores/dto/update-chore-assignee.dto.ts`, `src/modules/chores/interfaces/chore-response.interface.ts`, `test/modules/chores/chores.service.spec.ts`, `test/chores.e2e-spec.ts`                                                                                                                                                                                                                                                                                      |
 | 6      | Bills, Splits, Payments, and Balances      | Phase 3   | COMPLETE |     100% | `prisma/migrations/20260305213000_0007_module6_finance/migration.sql`, `src/modules/finance/finance.module.ts`, `src/modules/finance/finance.controller.ts`, `src/modules/finance/finance.service.ts`, `src/modules/finance/dto/create-bill.dto.ts`, `src/modules/finance/dto/create-payment.dto.ts`, `src/modules/finance/interfaces/finance-response.interface.ts`, `test/modules/finance/finance.service.spec.ts`, `test/finance.e2e-spec.ts`                                                                                                                                                                                                                                                                                                                              |
 | 7      | Contract Management                        | Phase 2   | COMPLETE |     100% | `prisma/migrations/20260305195941_0006_module7_contracts/migration.sql`, `src/modules/contracts/contracts.module.ts`, `src/modules/contracts/contracts.service.ts`, `src/modules/contracts/contracts.controller.ts`, `src/modules/contracts/dto/update-contract-draft.dto.ts`, `src/modules/contracts/interfaces/contract-response.interface.ts`, `test/modules/contracts/contracts.service.spec.ts`, `test/contracts.e2e-spec.ts`                                                                                                                                                                                                                                                                                                                                            |
-| 8      | API UX Layer for Frontend Integration      | Phase 2/3 | PARTIAL  |      85% | `src/common/http/dto/pagination-query.dto.ts`, `src/common/http/pagination.ts`, `src/modules/groups/dto/list-user-groups.query.ts`, `src/modules/groups/dto/list-group-members.query.ts`, `src/modules/groups/groups.controller.ts`, `src/modules/groups/groups.service.ts`, `src/modules/groups/interfaces/group-response.interface.ts`, `src/modules/chores/dto/list-chores.query.ts`, `src/modules/contracts/dto/list-contract-versions.query.ts`, `src/modules/finance/dto/list-bills.query.ts`, `openapi/openapi.json`, pagination/sort validation + dashboard aggregation e2e coverage                                                                                                                                                                                                                                 |
+| 8      | API UX Layer for Frontend Integration      | Phase 2/3 | COMPLETE |     100% | `src/common/http/dto/pagination-query.dto.ts`, `src/common/http/pagination.ts`, `src/modules/groups/groups.controller.ts`, `src/modules/groups/groups.service.ts`, `src/modules/chores/chores.controller.ts`, `src/modules/contracts/contracts.controller.ts`, `src/modules/finance/finance.controller.ts`, `src/modules/auth/auth.controller.ts`, `src/modules/health/health.controller.ts`, `openapi/openapi.json`, `scripts/check-openapi.ts`, `scripts/generate-openapi-types.ts`, `scripts/check-openapi-types.ts`, `frontend/generated/backend-api.types.ts`, pagination/sort validation + dashboard aggregation + enriched envelope examples + response-envelope contract e2e coverage |
 | 9      | Security and Compliance Hardening          | Phase 4   | PARTIAL  |      30% | `src/common/http/http-exception.filter.ts` (info leakage prevention + server-side logging), `src/modules/auth/dto/register.dto.ts` + `login.dto.ts` (password max-length), `src/common/http/parse-app-id.pipe.ts` (strict app ID validation), `src/modules/groups/groups.controller.ts` (ParseAppIdPipe/ParseUUIDPipe), `src/modules/groups/groups.service.ts` (Serializable isolation + rejoin role reset + self-demotion guard)                                                                                                                                                                                                                                                                                                                                             |
 | 10     | Reliability, Observability, and Operations | Phase 4   | PARTIAL  |      65% | `src/app.module.ts` (structured logging + request IDs + redaction), `src/modules/health/health.controller.ts` + `health.service.ts` (hardened error reporting + server-side logging), `src/common/http/http-exception.filter.ts` (500-class error logging)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| 11     | Testing and Quality Gates                  | Phase 4   | PARTIAL  |      94% | `test/health.e2e-spec.ts`, `test/auth.e2e-spec.ts`, `test/groups.e2e-spec.ts`, `test/chores.e2e-spec.ts`, `test/contracts.e2e-spec.ts`, `test/finance.e2e-spec.ts`, `test/live-supabase-smoke.e2e-spec.ts`, `test/live-user-journey.e2e-spec.ts`, `test/modules/groups/groups.service.spec.ts`, `test/modules/chores/chores.service.spec.ts`, `test/modules/contracts/contracts.service.spec.ts`, `test/modules/finance/finance.service.spec.ts`, `test/modules/auth/supabase-jwt-auth.guard.spec.ts`, `test/modules/health/health.service.spec.ts`, `test/common/http/parse-app-id.pipe.spec.ts`, `test/config/env.schema.spec.ts`, `.github/workflows/backend-ci.yml`, `package.json` (`verify`); 54 unit + 48 e2e tests passing, 2 optional live suites skipped by default |
+| 11     | Testing and Quality Gates                  | Phase 4   | PARTIAL  |      94% | `test/health.e2e-spec.ts`, `test/auth.e2e-spec.ts`, `test/groups.e2e-spec.ts`, `test/chores.e2e-spec.ts`, `test/contracts.e2e-spec.ts`, `test/finance.e2e-spec.ts`, `test/response-envelope-contract.e2e-spec.ts`, `test/live-supabase-smoke.e2e-spec.ts`, `test/live-user-journey.e2e-spec.ts`, `test/modules/groups/groups.service.spec.ts`, `test/modules/chores/chores.service.spec.ts`, `test/modules/contracts/contracts.service.spec.ts`, `test/modules/finance/finance.service.spec.ts`, `test/modules/auth/supabase-jwt-auth.guard.spec.ts`, `test/modules/health/health.service.spec.ts`, `test/common/http/parse-app-id.pipe.spec.ts`, `test/config/env.schema.spec.ts`, `.github/workflows/backend-ci.yml`, `package.json` (`verify`); 54 unit + 57 e2e tests passing, 2 optional live suites skipped by default |
 
 ### Machine-Readable Snapshot (JSON)
 
@@ -409,8 +403,8 @@ Update rules (for AI agents):
       "id": 8,
       "name": "API UX Layer for Frontend Integration",
       "phase": "Phase 2/3",
-      "status": "PARTIAL",
-      "progress_pct": 85
+      "status": "COMPLETE",
+      "progress_pct": 100
     },
     {
       "id": 9,
@@ -739,7 +733,7 @@ Modules:
 
 - Module 5: Chore Management
 - Module 7: Contract Management
-- Module 8 (partial): API UX standards (validation/error contract + baseline docs)
+- Module 8: API UX standards (validation/error contract + enriched docs)
 
 Phase objective:
 
@@ -756,7 +750,6 @@ Exit criteria:
 Modules:
 
 - Module 6: Bills, Splits, Payments, and Balances
-- Module 8 (remaining): advanced docs + aggregation endpoints
 
 Phase objective:
 
@@ -789,8 +782,8 @@ Exit criteria:
 ## Phase Progress Snapshot (As of 2026-03-05)
 
 - Phase 1: `COMPLETE` (Modules 1-4 complete and validated)
-- Phase 2: `IN_PROGRESS` (Modules 5 and 7 complete; Module 8 at 85%)
-- Phase 3: `IN_PROGRESS` (Module 6 complete; Module 8 remaining items in progress)
+- Phase 2: `COMPLETE` (Modules 5, 7, and 8 complete)
+- Phase 3: `COMPLETE` (Module 6 complete; cross-phase Module 8 deliverables complete)
 - Phase 4: `PARTIAL_FOUNDATION` (security hardening at 30%, reliability/observability at 65%, testing at 94% via hardening audit)
 
 ## Frontend-Readiness Checklist

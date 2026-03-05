@@ -48,7 +48,55 @@ export class FinanceController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a bill and split amounts across group members.' })
   @ApiBody({ type: CreateBillDto })
-  @ApiCreatedResponse({ description: 'Bill created successfully.' })
+  @ApiCreatedResponse({
+    description: 'Bill created successfully.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          id: 'cm8wc5rr7000hmk6zx4qedcib',
+          groupId: 'cm8z9ab120001mk8z4og1j0e9',
+          title: 'Internet bill - March',
+          description: 'Monthly ISP payment',
+          totalAmount: 76.5,
+          currency: 'USD',
+          paidByUserId: '550e8400-e29b-41d4-a716-446655440001',
+          splitMethod: 'CUSTOM',
+          createdBy: '550e8400-e29b-41d4-a716-446655440001',
+          incurredAt: '2026-03-05T16:50:00.000Z',
+          dueDate: null,
+          createdAt: '2026-03-05T16:50:00.000Z',
+          updatedAt: '2026-03-05T16:50:00.000Z',
+          splits: [
+            {
+              id: 'cm8wc5rr9000imk6z2jmlf4x4',
+              userId: '550e8400-e29b-41d4-a716-446655440001',
+              amount: 25.5,
+              createdAt: '2026-03-05T16:50:00.000Z'
+            },
+            {
+              id: 'cm8wc5rr9000jmk6z2jmlf4x5',
+              userId: '550e8400-e29b-41d4-a716-446655440002',
+              amount: 25.5,
+              createdAt: '2026-03-05T16:50:00.000Z'
+            },
+            {
+              id: 'cm8wc5rr9000kmk6z2jmlf4x6',
+              userId: '550e8400-e29b-41d4-a716-446655440003',
+              amount: 25.5,
+              createdAt: '2026-03-05T16:50:00.000Z'
+            }
+          ]
+        },
+        meta: {
+          requestId: '1954b16e-f29d-4d35-b5c9-8d1ec542944e',
+          timestamp: '2026-03-05T16:50:00.000Z'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Invalid group ID or bill payload.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   createBill(
     @CurrentUser() user: AuthenticatedUser,
@@ -130,7 +178,35 @@ export class FinanceController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Record a payment between group members.' })
   @ApiBody({ type: CreatePaymentDto })
-  @ApiCreatedResponse({ description: 'Payment recorded successfully.' })
+  @ApiCreatedResponse({
+    description: 'Payment recorded successfully.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          id: 'cm8wd2v9w000lmk6zq2q4s7ty',
+          groupId: 'cm8z9ab120001mk8z4og1j0e9',
+          billId: 'cm8wc5rr7000hmk6zx4qedcib',
+          payerUserId: '550e8400-e29b-41d4-a716-446655440002',
+          payeeUserId: '550e8400-e29b-41d4-a716-446655440001',
+          amount: 25.5,
+          currency: 'USD',
+          note: 'Paid via Venmo',
+          idempotencyKey: 'pay-2026-03-05-001',
+          paidAt: '2026-03-05T16:52:00.000Z',
+          createdBy: '550e8400-e29b-41d4-a716-446655440002',
+          createdAt: '2026-03-05T16:52:00.000Z',
+          updatedAt: '2026-03-05T16:52:00.000Z'
+        },
+        meta: {
+          requestId: 'a4189eb8-47f7-41cb-af57-df7f93f468d0',
+          timestamp: '2026-03-05T16:52:00.000Z'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Invalid group ID or payment payload.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   createPayment(
     @CurrentUser() user: AuthenticatedUser,
@@ -143,7 +219,45 @@ export class FinanceController {
   @Get('groups/:groupId/balances')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Compute and return net balances (who owes whom) for the group.' })
-  @ApiOkResponse({ description: 'Returns current balances for the group.' })
+  @ApiOkResponse({
+    description: 'Returns current balances for the group.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          groupId: 'cm8z9ab120001mk8z4og1j0e9',
+          balances: [
+            {
+              currency: 'USD',
+              settlements: [
+                {
+                  fromUserId: '550e8400-e29b-41d4-a716-446655440002',
+                  toUserId: '550e8400-e29b-41d4-a716-446655440001',
+                  amount: 12.75
+                }
+              ],
+              memberBalances: [
+                {
+                  userId: '550e8400-e29b-41d4-a716-446655440001',
+                  netAmount: 12.75
+                },
+                {
+                  userId: '550e8400-e29b-41d4-a716-446655440002',
+                  netAmount: -12.75
+                }
+              ]
+            }
+          ]
+        },
+        meta: {
+          requestId: '3c922b0b-76f6-4f3b-81e6-40ca9286e4d8',
+          timestamp: '2026-03-05T16:53:00.000Z'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Invalid group ID format.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   getBalances(
     @CurrentUser() user: AuthenticatedUser,

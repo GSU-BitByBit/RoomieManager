@@ -317,6 +317,34 @@
         },
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "session": {
+                        "accessToken": "<jwt-access-token>",
+                        "expiresIn": 3600,
+                        "refreshToken": "<refresh-token>",
+                        "tokenType": "bearer"
+                      },
+                      "user": {
+                        "createdAt": "2026-03-05T16:10:00.000Z",
+                        "email": "alex@example.com",
+                        "emailConfirmedAt": "2026-03-05T16:11:00.000Z",
+                        "id": "550e8400-e29b-41d4-a716-446655440001",
+                        "phone": null
+                      }
+                    },
+                    "meta": {
+                      "requestId": "b45f50f1-3442-4db5-b7f3-ed25d4f66f1b",
+                      "timestamp": "2026-03-05T16:11:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Returns Supabase user and session."
           }
         },
@@ -332,6 +360,29 @@
         "parameters": [],
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "appMetadata": {
+                        "provider": "email"
+                      },
+                      "aud": "authenticated",
+                      "email": "alex@example.com",
+                      "id": "550e8400-e29b-41d4-a716-446655440001",
+                      "role": "authenticated",
+                      "userMetadata": {}
+                    },
+                    "meta": {
+                      "requestId": "d0545267-fbe2-4f3c-9154-5ef5ef3837a8",
+                      "timestamp": "2026-03-05T16:12:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Authenticated user identity and claims."
           },
           "401": {
@@ -365,6 +416,29 @@
         },
         "responses": {
           "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "session": null,
+                      "user": {
+                        "createdAt": "2026-03-05T16:10:00.000Z",
+                        "email": "alex@example.com",
+                        "emailConfirmedAt": null,
+                        "id": "550e8400-e29b-41d4-a716-446655440001",
+                        "phone": null
+                      }
+                    },
+                    "meta": {
+                      "requestId": "2c8d9d89-7ee3-4abb-82af-32de3da6e5b8",
+                      "timestamp": "2026-03-05T16:10:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Returns Supabase user and optional session."
           }
         },
@@ -399,10 +473,42 @@
         },
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "assignedToUserId": "550e8400-e29b-41d4-a716-446655440002",
+                      "completedAt": null,
+                      "createdAt": "2026-03-05T16:31:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "description": null,
+                      "dueDate": "2026-03-06T10:00:00.000Z",
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "id": "cm8wa8qgk0004mk6z9s29u0ro",
+                      "status": "PENDING",
+                      "title": "Take out trash",
+                      "updatedAt": "2026-03-05T16:33:00.000Z"
+                    },
+                    "meta": {
+                      "requestId": "813c795b-8503-4e7d-a05d-c7f5595a00e4",
+                      "timestamp": "2026-03-05T16:33:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Returns updated chore state."
+          },
+          "400": {
+            "description": "Invalid chore ID or payload."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this chore group."
           }
         },
         "security": [
@@ -431,10 +537,42 @@
         ],
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "assignedToUserId": "550e8400-e29b-41d4-a716-446655440002",
+                      "completedAt": "2026-03-05T16:34:00.000Z",
+                      "createdAt": "2026-03-05T16:31:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "description": null,
+                      "dueDate": "2026-03-06T10:00:00.000Z",
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "id": "cm8wa8qgk0004mk6z9s29u0ro",
+                      "status": "COMPLETED",
+                      "title": "Take out trash",
+                      "updatedAt": "2026-03-05T16:34:00.000Z"
+                    },
+                    "meta": {
+                      "requestId": "f8f6506f-74fe-4ca3-80de-d58b2965de4c",
+                      "timestamp": "2026-03-05T16:34:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Returns updated chore state."
+          },
+          "400": {
+            "description": "Invalid chore ID."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this chore group."
           }
         },
         "security": [
@@ -576,6 +714,30 @@
         },
         "responses": {
           "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "createdAt": "2026-03-05T16:20:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "id": "cm8z9ab120001mk8z4og1j0e9",
+                      "joinCode": "ABCD1234",
+                      "memberCount": 1,
+                      "memberRole": "ADMIN",
+                      "memberStatus": "ACTIVE",
+                      "name": "Apartment 12A",
+                      "updatedAt": "2026-03-05T16:20:00.000Z"
+                    },
+                    "meta": {
+                      "requestId": "db30ad98-b6c2-412e-95ed-14ccf65711d6",
+                      "timestamp": "2026-03-05T16:20:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Group created with admin membership and join code."
           },
           "401": {
@@ -608,10 +770,40 @@
         ],
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "createdAt": "2026-03-05T16:20:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "id": "cm8z9ab120001mk8z4og1j0e9",
+                      "joinCode": "QWER5678",
+                      "memberCount": 3,
+                      "memberRole": "ADMIN",
+                      "memberStatus": "ACTIVE",
+                      "name": "Apartment 12A",
+                      "updatedAt": "2026-03-05T16:25:00.000Z"
+                    },
+                    "meta": {
+                      "requestId": "d06c632e-6fd4-4f4d-b500-18e7ef0f0548",
+                      "timestamp": "2026-03-05T16:25:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Returns group metadata and caller membership context."
+          },
+          "400": {
+            "description": "Invalid group ID format."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
           }
         },
         "security": [
@@ -640,10 +832,54 @@
         ],
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "balances": [
+                        {
+                          "currency": "USD",
+                          "memberBalances": [
+                            {
+                              "netAmount": 12.75,
+                              "userId": "550e8400-e29b-41d4-a716-446655440001"
+                            },
+                            {
+                              "netAmount": -12.75,
+                              "userId": "550e8400-e29b-41d4-a716-446655440002"
+                            }
+                          ],
+                          "settlements": [
+                            {
+                              "amount": 12.75,
+                              "fromUserId": "550e8400-e29b-41d4-a716-446655440002",
+                              "toUserId": "550e8400-e29b-41d4-a716-446655440001"
+                            }
+                          ]
+                        }
+                      ],
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9"
+                    },
+                    "meta": {
+                      "requestId": "3c922b0b-76f6-4f3b-81e6-40ca9286e4d8",
+                      "timestamp": "2026-03-05T16:53:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Returns current balances for the group."
+          },
+          "400": {
+            "description": "Invalid group ID format."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
           }
         },
         "security": [
@@ -817,10 +1053,64 @@
         },
         "responses": {
           "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "createdAt": "2026-03-05T16:50:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "currency": "USD",
+                      "description": "Monthly ISP payment",
+                      "dueDate": null,
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "id": "cm8wc5rr7000hmk6zx4qedcib",
+                      "incurredAt": "2026-03-05T16:50:00.000Z",
+                      "paidByUserId": "550e8400-e29b-41d4-a716-446655440001",
+                      "splitMethod": "CUSTOM",
+                      "splits": [
+                        {
+                          "amount": 25.5,
+                          "createdAt": "2026-03-05T16:50:00.000Z",
+                          "id": "cm8wc5rr9000imk6z2jmlf4x4",
+                          "userId": "550e8400-e29b-41d4-a716-446655440001"
+                        },
+                        {
+                          "amount": 25.5,
+                          "createdAt": "2026-03-05T16:50:00.000Z",
+                          "id": "cm8wc5rr9000jmk6z2jmlf4x5",
+                          "userId": "550e8400-e29b-41d4-a716-446655440002"
+                        },
+                        {
+                          "amount": 25.5,
+                          "createdAt": "2026-03-05T16:50:00.000Z",
+                          "id": "cm8wc5rr9000kmk6z2jmlf4x6",
+                          "userId": "550e8400-e29b-41d4-a716-446655440003"
+                        }
+                      ],
+                      "title": "Internet bill - March",
+                      "totalAmount": 76.5,
+                      "updatedAt": "2026-03-05T16:50:00.000Z"
+                    },
+                    "meta": {
+                      "requestId": "1954b16e-f29d-4d35-b5c9-8d1ec542944e",
+                      "timestamp": "2026-03-05T16:50:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Bill created successfully."
+          },
+          "400": {
+            "description": "Invalid group ID or bill payload."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
           }
         },
         "security": [
@@ -1024,10 +1314,42 @@
         },
         "responses": {
           "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "assignedToUserId": "550e8400-e29b-41d4-a716-446655440001",
+                      "completedAt": null,
+                      "createdAt": "2026-03-05T16:31:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "description": null,
+                      "dueDate": "2026-03-06T10:00:00.000Z",
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "id": "cm8wa8qgk0004mk6z9s29u0ro",
+                      "status": "PENDING",
+                      "title": "Take out trash",
+                      "updatedAt": "2026-03-05T16:31:00.000Z"
+                    },
+                    "meta": {
+                      "requestId": "769f7398-182f-4408-a972-c6de9159d7a2",
+                      "timestamp": "2026-03-05T16:31:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Chore created successfully."
+          },
+          "400": {
+            "description": "Invalid group ID or chore payload."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
           }
         },
         "security": [
@@ -1056,10 +1378,41 @@
         ],
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "contract": {
+                        "createdAt": "2026-03-05T16:40:00.000Z",
+                        "draftContent": "Draft roommate contract content.",
+                        "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                        "id": "cm8wb6r8u000emk6zubf6s23n",
+                        "publishedVersion": 2,
+                        "updatedAt": "2026-03-05T16:43:00.000Z",
+                        "updatedBy": "550e8400-e29b-41d4-a716-446655440001"
+                      },
+                      "latestPublishedContent": "Published roommate contract v2."
+                    },
+                    "meta": {
+                      "requestId": "ee28f5cd-268a-4701-b70d-f52304989bd8",
+                      "timestamp": "2026-03-05T16:43:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Returns the contract detail."
+          },
+          "400": {
+            "description": "Invalid group ID format."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
           }
         },
         "security": [
@@ -1096,10 +1449,38 @@
         },
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "createdAt": "2026-03-05T16:40:00.000Z",
+                      "draftContent": "Updated draft contract text.",
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "id": "cm8wb6r8u000emk6zubf6s23n",
+                      "publishedVersion": 2,
+                      "updatedAt": "2026-03-05T16:44:00.000Z",
+                      "updatedBy": "550e8400-e29b-41d4-a716-446655440001"
+                    },
+                    "meta": {
+                      "requestId": "be530f89-77bb-40e0-afd7-059b68ca3833",
+                      "timestamp": "2026-03-05T16:44:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Returns updated contract summary."
+          },
+          "400": {
+            "description": "Invalid group ID or contract draft payload."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active admin of this group."
           }
         },
         "security": [
@@ -1128,10 +1509,36 @@
         ],
         "responses": {
           "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "content": "Published roommate contract v3.",
+                      "createdAt": "2026-03-05T16:45:00.000Z",
+                      "id": "cm8wb8l66000fmk6z5nwnk1j5",
+                      "publishedBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "version": 3
+                    },
+                    "meta": {
+                      "requestId": "dbbc2891-4de3-4b65-ad4d-26a4952309e8",
+                      "timestamp": "2026-03-05T16:45:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Returns the newly published version."
+          },
+          "400": {
+            "description": "Invalid group ID or empty draft content."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active admin of this group."
           }
         },
         "security": [
@@ -1366,10 +1773,33 @@
         ],
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "joinCode": "QWER5678"
+                    },
+                    "meta": {
+                      "requestId": "5b442e66-a7eb-4d07-9f75-a8016c5ffaf8",
+                      "timestamp": "2026-03-05T16:24:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Returns newly generated join code."
+          },
+          "400": {
+            "description": "Invalid group ID format."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active admin of this group."
           }
         },
         "security": [
@@ -1528,10 +1958,36 @@
         ],
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "removed": true,
+                      "status": "INACTIVE",
+                      "updatedAt": "2026-03-05T16:28:00.000Z",
+                      "userId": "550e8400-e29b-41d4-a716-446655440002"
+                    },
+                    "meta": {
+                      "requestId": "7443f4d5-fdfd-4dd5-a6f8-f846ec0ca6a3",
+                      "timestamp": "2026-03-05T16:28:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Marks target member as inactive and returns result."
+          },
+          "400": {
+            "description": "Invalid IDs for group or member."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active admin of this group."
           }
         },
         "security": [
@@ -1578,10 +2034,36 @@
         },
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "role": "MEMBER",
+                      "status": "ACTIVE",
+                      "updatedAt": "2026-03-05T16:27:00.000Z",
+                      "userId": "550e8400-e29b-41d4-a716-446655440002"
+                    },
+                    "meta": {
+                      "requestId": "4e454951-7f8e-4f36-bc65-066a5882f966",
+                      "timestamp": "2026-03-05T16:27:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Returns updated member role state."
+          },
+          "400": {
+            "description": "Invalid IDs or invalid role payload."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active admin of this group."
           }
         },
         "security": [
@@ -1620,10 +2102,44 @@
         },
         "responses": {
           "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "amount": 25.5,
+                      "billId": "cm8wc5rr7000hmk6zx4qedcib",
+                      "createdAt": "2026-03-05T16:52:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440002",
+                      "currency": "USD",
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "id": "cm8wd2v9w000lmk6zq2q4s7ty",
+                      "idempotencyKey": "pay-2026-03-05-001",
+                      "note": "Paid via Venmo",
+                      "paidAt": "2026-03-05T16:52:00.000Z",
+                      "payeeUserId": "550e8400-e29b-41d4-a716-446655440001",
+                      "payerUserId": "550e8400-e29b-41d4-a716-446655440002",
+                      "updatedAt": "2026-03-05T16:52:00.000Z"
+                    },
+                    "meta": {
+                      "requestId": "a4189eb8-47f7-41cb-af57-df7f93f468d0",
+                      "timestamp": "2026-03-05T16:52:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Payment recorded successfully."
+          },
+          "400": {
+            "description": "Invalid group ID or payment payload."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
           }
         },
         "security": [
@@ -1653,7 +2169,33 @@
         },
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "createdAt": "2026-03-05T16:20:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "id": "cm8z9ab120001mk8z4og1j0e9",
+                      "memberCount": 3,
+                      "memberRole": "MEMBER",
+                      "memberStatus": "ACTIVE",
+                      "name": "Apartment 12A",
+                      "updatedAt": "2026-03-05T16:23:00.000Z"
+                    },
+                    "meta": {
+                      "requestId": "1a2f802f-226f-4997-a0cd-6a8b2ec5e7fa",
+                      "timestamp": "2026-03-05T16:23:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Joins group as member and returns group context."
+          },
+          "400": {
+            "description": "Invalid join code format or code does not exist."
           },
           "401": {
             "description": "Missing or invalid bearer token."
@@ -1676,6 +2218,24 @@
         "parameters": [],
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "service": "roomiemanager-backend",
+                      "timestamp": "2026-03-05T16:00:00.000Z",
+                      "version": "0.1.0"
+                    },
+                    "meta": {
+                      "requestId": "205e20fe-b28d-4b95-bdd3-39e98bc2c7ef",
+                      "timestamp": "2026-03-05T16:00:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Service process is alive."
           }
         },
@@ -1691,9 +2251,51 @@
         "parameters": [],
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "checks": {
+                        "database": "ok",
+                        "migrations": "ok"
+                      }
+                    },
+                    "meta": {
+                      "requestId": "4ea71158-1763-4f0f-8f8d-f6bbdc8c4d6c",
+                      "timestamp": "2026-03-05T16:01:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
             "description": "Service is ready to accept traffic."
           },
           "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "error": {
+                      "code": "SERVICE_UNAVAILABLE",
+                      "details": {
+                        "checks": {
+                          "database": "fail",
+                          "migrations": "fail"
+                        }
+                      },
+                      "message": "Service is not ready."
+                    },
+                    "meta": {
+                      "requestId": "f43624b8-8c3d-49e5-bd7c-c7b2f36f8a0c",
+                      "timestamp": "2026-03-05T16:01:00.000Z"
+                    },
+                    "success": false
+                  }
+                }
+              }
+            },
             "description": "Service is not ready."
           }
         },

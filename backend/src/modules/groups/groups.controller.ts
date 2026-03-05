@@ -111,7 +111,29 @@ export class GroupsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a roommate group. Creator becomes admin.' })
   @ApiBody({ type: CreateGroupDto })
-  @ApiCreatedResponse({ description: 'Group created with admin membership and join code.' })
+  @ApiCreatedResponse({
+    description: 'Group created with admin membership and join code.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          id: 'cm8z9ab120001mk8z4og1j0e9',
+          name: 'Apartment 12A',
+          createdBy: '550e8400-e29b-41d4-a716-446655440001',
+          createdAt: '2026-03-05T16:20:00.000Z',
+          updatedAt: '2026-03-05T16:20:00.000Z',
+          memberRole: 'ADMIN',
+          memberStatus: 'ACTIVE',
+          memberCount: 1,
+          joinCode: 'ABCD1234'
+        },
+        meta: {
+          requestId: 'db30ad98-b6c2-412e-95ed-14ccf65711d6',
+          timestamp: '2026-03-05T16:20:00.000Z'
+        }
+      }
+    }
+  })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   createGroup(
     @CurrentUser() user: AuthenticatedUser,
@@ -124,7 +146,29 @@ export class GroupsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Join a group using join code.' })
   @ApiBody({ type: JoinGroupDto })
-  @ApiOkResponse({ description: 'Joins group as member and returns group context.' })
+  @ApiOkResponse({
+    description: 'Joins group as member and returns group context.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          id: 'cm8z9ab120001mk8z4og1j0e9',
+          name: 'Apartment 12A',
+          createdBy: '550e8400-e29b-41d4-a716-446655440001',
+          createdAt: '2026-03-05T16:20:00.000Z',
+          updatedAt: '2026-03-05T16:23:00.000Z',
+          memberRole: 'MEMBER',
+          memberStatus: 'ACTIVE',
+          memberCount: 3
+        },
+        meta: {
+          requestId: '1a2f802f-226f-4997-a0cd-6a8b2ec5e7fa',
+          timestamp: '2026-03-05T16:23:00.000Z'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Invalid join code format or code does not exist.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   joinGroup(
     @CurrentUser() user: AuthenticatedUser,
@@ -136,7 +180,24 @@ export class GroupsController {
   @Post(':groupId/join-code/reset')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset group join code (admin only).' })
-  @ApiOkResponse({ description: 'Returns newly generated join code.' })
+  @ApiOkResponse({
+    description: 'Returns newly generated join code.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          groupId: 'cm8z9ab120001mk8z4og1j0e9',
+          joinCode: 'QWER5678'
+        },
+        meta: {
+          requestId: '5b442e66-a7eb-4d07-9f75-a8016c5ffaf8',
+          timestamp: '2026-03-05T16:24:00.000Z'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Invalid group ID format.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active admin of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   resetJoinCode(
     @CurrentUser() user: AuthenticatedUser,
@@ -148,7 +209,31 @@ export class GroupsController {
   @Get(':groupId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get group summary for current member.' })
-  @ApiOkResponse({ description: 'Returns group metadata and caller membership context.' })
+  @ApiOkResponse({
+    description: 'Returns group metadata and caller membership context.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          id: 'cm8z9ab120001mk8z4og1j0e9',
+          name: 'Apartment 12A',
+          createdBy: '550e8400-e29b-41d4-a716-446655440001',
+          createdAt: '2026-03-05T16:20:00.000Z',
+          updatedAt: '2026-03-05T16:25:00.000Z',
+          memberRole: 'ADMIN',
+          memberStatus: 'ACTIVE',
+          memberCount: 3,
+          joinCode: 'QWER5678'
+        },
+        meta: {
+          requestId: 'd06c632e-6fd4-4f4d-b500-18e7ef0f0548',
+          timestamp: '2026-03-05T16:25:00.000Z'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Invalid group ID format.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   getGroup(
     @CurrentUser() user: AuthenticatedUser,
@@ -277,7 +362,27 @@ export class GroupsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update group member role (admin only).' })
   @ApiBody({ type: UpdateMemberRoleDto })
-  @ApiOkResponse({ description: 'Returns updated member role state.' })
+  @ApiOkResponse({
+    description: 'Returns updated member role state.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          groupId: 'cm8z9ab120001mk8z4og1j0e9',
+          userId: '550e8400-e29b-41d4-a716-446655440002',
+          role: 'MEMBER',
+          status: 'ACTIVE',
+          updatedAt: '2026-03-05T16:27:00.000Z'
+        },
+        meta: {
+          requestId: '4e454951-7f8e-4f36-bc65-066a5882f966',
+          timestamp: '2026-03-05T16:27:00.000Z'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Invalid IDs or invalid role payload.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active admin of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   updateMemberRole(
     @CurrentUser() user: AuthenticatedUser,
@@ -291,7 +396,27 @@ export class GroupsController {
   @Delete(':groupId/members/:userId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remove member from group (admin only).' })
-  @ApiOkResponse({ description: 'Marks target member as inactive and returns result.' })
+  @ApiOkResponse({
+    description: 'Marks target member as inactive and returns result.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          groupId: 'cm8z9ab120001mk8z4og1j0e9',
+          userId: '550e8400-e29b-41d4-a716-446655440002',
+          status: 'INACTIVE',
+          removed: true,
+          updatedAt: '2026-03-05T16:28:00.000Z'
+        },
+        meta: {
+          requestId: '7443f4d5-fdfd-4dd5-a6f8-f846ec0ca6a3',
+          timestamp: '2026-03-05T16:28:00.000Z'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Invalid IDs for group or member.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active admin of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   removeMember(
     @CurrentUser() user: AuthenticatedUser,

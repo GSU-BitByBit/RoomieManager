@@ -15,17 +15,17 @@ Current backend implementation level:
 - Module 5 (Chore Management): COMPLETE
 - Module 6 (Bills, Splits, Payments, and Balances): COMPLETE
 - Module 7 (Contract Management): COMPLETE
-- Module 8 (API UX): PARTIAL (85%) -- standardized list pagination/sorting conventions are live, with baseline dashboard aggregation endpoint
+- Module 8 (API UX): COMPLETE (100%) -- standardized list pagination/sorting conventions, dashboard aggregation endpoint, enriched OpenAPI examples, and strict contract checks are live
 - Module 9 (Security Hardening): PARTIAL (30%) -- info leakage prevention, input validation, Serializable transactions, strict ID validation
 - Module 10 (Reliability): PARTIAL (65%) -- server-side error logging, hardened health probes
-- Module 11 (Testing): PARTIAL (94%) -- 54 unit + 48 e2e tests passing, plus 2 optional live Supabase e2e suites skipped by default
+- Module 11 (Testing): PARTIAL (94%) -- 54 unit + 57 e2e tests passing, plus 2 optional live Supabase e2e suites skipped by default
 
 This means:
 
 - Implemented API endpoints right now: health + auth + groups + member management + chores + finance + contracts.
 - Member-management endpoints are implemented, migrated, and validated in Supabase-backed smoke runs.
 - Backend-wide security and quality hardening audit completed on `2026-03-05` (see changelog).
-- Latest `pnpm verify` pipeline passed end-to-end on `2026-03-05` (48 e2e tests passing; live suites are opt-in).
+- Latest `pnpm verify` pipeline passed end-to-end on `2026-03-05` (57 e2e tests passing; live suites are opt-in).
 
 Source-of-truth files:
 
@@ -1111,16 +1111,18 @@ export async function apiGet<T>(path: string): Promise<T> {
   - `GET /api/v1/groups/:groupId/bills` — list group bills
   - `POST /api/v1/groups/:groupId/payments` — record payment (supports optional `idempotencyKey`)
   - `GET /api/v1/groups/:groupId/balances` — return net balances and who-owes-whom settlements
-- **New endpoint (Module 8 partial)**: `GET /api/v1/groups` for current-user active group listing (pagination + sorting + role-aware join code visibility).
-- **New endpoint (Module 8 partial)**: `GET /api/v1/groups/:groupId/dashboard` for group dashboard aggregation payload (`group`, `members`, `chores`, `finance`, `contract`).
-- **API UX update (Module 8 partial)**: list endpoints now use consistent pagination/sort query conventions and include `pagination` metadata in response data (`groups`, `members`, `chores`, `contract/versions`, `bills`).
-- **API UX update (Module 8 partial)**: Swagger/OpenAPI now includes concrete success examples and explicit `400`/`403` docs for paginated list endpoints.
-- **Quality gate update**: `openapi:check` now enforces semantic core + list endpoint contract assertions (auth/public posture, required response codes, required path/query params, request-body presence where expected, and pagination example shape for list routes), in addition to file drift checks.
+- **New endpoint (Module 8)**: `GET /api/v1/groups` for current-user active group listing (pagination + sorting + role-aware join code visibility).
+- **New endpoint (Module 8)**: `GET /api/v1/groups/:groupId/dashboard` for group dashboard aggregation payload (`group`, `members`, `chores`, `finance`, `contract`).
+- **API UX update (Module 8)**: list endpoints now use consistent pagination/sort query conventions and include `pagination` metadata in response data (`groups`, `members`, `chores`, `contract/versions`, `bills`).
+- **API UX update (Module 8)**: Swagger/OpenAPI now includes concrete success examples for core + list + aggregate flows (auth/group/member/chores/contracts/bills/payments/balances/health) plus explicit validation/authorization response docs.
+- **Quality gate update**: `openapi:check` now enforces semantic core + list + aggregate endpoint contract assertions (auth/public posture, required response codes, required path/query params, request-body presence where expected, required operation summary/tags, list query constraints, success-envelope example shape checks, and core endpoint required data keys), in addition to file drift checks.
+- **Frontend contract update**: generated backend API TypeScript types are published at `/Users/admin/Documents/GitHub/RoomieManager/frontend/generated/backend-api.types.ts` and checked in CI via `openapi:types:check`.
 - **Testing update**: new invalid-query e2e coverage added for list endpoints (`page/pageSize/sortBy/sortOrder` validation paths).
 - **Testing update**: dashboard endpoint coverage added in unit + e2e tests.
+- **Testing update**: response-envelope contract e2e suite added for key routes (`test/response-envelope-contract.e2e-spec.ts`).
 - **Testing update**: optional live deep-journey suite added (`test/live-user-journey.e2e-spec.ts`) for production-like multi-module flow validation.
 - Migrations `20260305192502_0004_hardening_indexes_join_code_expiry`, `20260305193953_0005_module5_chores`, `20260305195941_0006_module7_contracts`, and `20260305213000_0007_module6_finance` deployed on Supabase.
-- `pnpm verify` pipeline passes end-to-end (54 unit + 48 e2e tests; 2 optional live suites).
+- `pnpm verify` pipeline passes end-to-end (54 unit + 57 e2e tests; 2 optional live suites).
 
 2026-02-25:
 

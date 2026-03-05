@@ -6,7 +6,7 @@ RoomieManager is a roommate management platform. Users register, form household 
 
 The repository is a monorepo with two top-level directories:
 
-- `backend/` — NestJS REST API (the primary codebase; Modules 1-7 implemented, Module 8 in progress)
+- `backend/` — NestJS REST API (the primary codebase; Modules 1-8 implemented)
 - `frontend/` — Frontend app (not yet implemented; contains only `frontend_reference.md`)
 
 There is no root `package.json` or monorepo tooling. Each directory is independent.
@@ -39,7 +39,7 @@ All business logic lives in the backend. The frontend authenticates via Supabase
 | DTO validation    | class-validator + ValidationPipe                                                                          |
 | API docs          | OpenAPI / Swagger (@nestjs/swagger)                                                                       |
 | Logging           | Pino (nestjs-pino) with request IDs and redaction                                                         |
-| Testing           | Jest + Supertest (54 unit + 48 e2e tests passing; 2 optional live Supabase e2e suites skipped by default) |
+| Testing           | Jest + Supertest (54 unit + 57 e2e tests passing; 2 optional live Supabase e2e suites skipped by default) |
 | Package manager   | pnpm 9                                                                                                    |
 | Linting           | ESLint 9 (flat config)                                                                                    |
 | Formatting        | Prettier (single quotes, no trailing commas, 100 print width)                                             |
@@ -107,10 +107,10 @@ RoomieManager/
 | 5. Chore Management           | COMPLETE      | `chores.controller.ts`, `chores.service.ts`, DTOs, activity logging                              |
 | 6. Bills/Payments/Balances    | COMPLETE      | `finance.controller.ts`, `finance.service.ts`, finance DTOs/interfaces                           |
 | 7. Contract Management        | COMPLETE      | `contracts.controller.ts`, `contracts.service.ts`, DTOs, version history                         |
-| 8. API UX Layer               | PARTIAL (85%) | `openapi.json`, `response.interceptor.ts`, `http-error-code.ts`, pagination/sort DTO + helpers   |
+| 8. API UX Layer               | COMPLETE      | `openapi.json`, `check-openapi.ts`, `generate-openapi-types.ts`, `check-openapi-types.ts`, pagination/sort DTO + helpers |
 | 9. Security Hardening         | PARTIAL (30%) | Exception filter, input validation, Serializable transactions                                    |
 | 10. Reliability/Observability | PARTIAL (65%) | Pino logging, health probes, error logging                                                       |
-| 11. Testing/Quality           | PARTIAL (94%) | 54 unit + 48 e2e passing (+2 optional live suites), CI pipeline, `pnpm verify`                   |
+| 11. Testing/Quality           | PARTIAL (94%) | 54 unit + 57 e2e passing (+2 optional live suites), CI pipeline, `pnpm verify`                   |
 
 ## API Endpoints (Live)
 
@@ -198,7 +198,7 @@ pnpm prisma migrate dev --name <migration_name>
 
 ```bash
 pnpm openapi:generate   # builds then generates openapi/openapi.json
-pnpm openapi:check      # verifies spec matches current code and enforces semantic core/list endpoint contract assertions
+pnpm openapi:check      # verifies spec matches code and enforces semantic core/list/aggregate endpoint assertions
 ```
 
 ## Environment Variables
@@ -252,4 +252,4 @@ Required GitHub secrets: `SUPABASE_DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON
 
 ## Next Milestone
 
-Module 8 (API UX layer completion and contract ergonomics) is in progress (pagination/sorting conventions are live, plus a baseline group dashboard aggregation endpoint; richer OpenAPI examples and additional aggregation ergonomics are next). Rate limiting is intentionally deferred to Module 9 to keep current work focused on frontend integration and core reliability. See `backend/backend_planning.md` for the full roadmap.
+Module 9 baseline hardening is next (join-code expiration enforcement, secure headers baseline, abuse-focused auth/RBAC regression coverage). Rate limiting remains intentionally deferred for now to keep delivery focused on frontend support and core workflow reliability. See `backend/backend_planning.md` for the full roadmap.
