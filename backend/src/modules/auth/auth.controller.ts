@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@n
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -22,10 +23,10 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register account with email/password via Supabase Auth' })
   @ApiBody({ type: RegisterDto })
-  @ApiOkResponse({ description: 'Returns Supabase user and optional session.' })
+  @ApiCreatedResponse({ description: 'Returns Supabase user and optional session.' })
   async register(@Body() payload: RegisterDto): Promise<AuthResult> {
     return this.authService.register(payload);
   }

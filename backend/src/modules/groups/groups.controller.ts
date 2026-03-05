@@ -5,16 +5,22 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Patch,
   Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
+  Query,
   UseGuards
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse
 } from '@nestjs/swagger';
@@ -22,16 +28,21 @@ import {
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SupabaseJwtAuthGuard } from '../auth/guards/supabase-jwt-auth.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/auth-user.interface';
+import { ParseAppIdPipe } from '../../common/http/parse-app-id.pipe';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { JoinGroupDto } from './dto/join-group.dto';
+import { ListGroupMembersQueryDto } from './dto/list-group-members.query';
+import { ListUserGroupsQueryDto } from './dto/list-user-groups.query';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { GroupsService } from './groups.service';
 import type {
+  GroupDashboardResponse,
   GroupMemberRemoveResponse,
   GroupMemberRoleUpdateResponse,
   GroupMembersResponse,
   GroupSummary,
-  JoinCodeResetResponse
+  JoinCodeResetResponse,
+  UserGroupsResponse
 } from './interfaces/group-response.interface';
 
 @ApiTags('Groups')
@@ -41,11 +52,66 @@ import type {
 export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
 
-  @Post()
+  @Get()
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List groups for current active memberships.' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['updatedAt', 'createdAt', 'name', 'joinedAt']
+  })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
+  @ApiOkResponse({
+    description: 'Returns active groups for the current user with pagination metadata.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          groups: [
+            {
+              id: 'cm8z9ab120001mk8z4og1j0e9',
+              name: 'Apartment 12A',
+              createdBy: '550e8400-e29b-41d4-a716-446655440001',
+              createdAt: '2026-03-05T16:00:00.000Z',
+              updatedAt: '2026-03-05T16:05:00.000Z',
+              memberRole: 'ADMIN',
+              memberStatus: 'ACTIVE',
+              memberCount: 3,
+              joinCode: 'ABCD1234'
+            }
+          ],
+          pagination: {
+            page: 1,
+            pageSize: 20,
+            totalItems: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPreviousPage: false
+          }
+        },
+        meta: {
+          requestId: 'ad86d8f4-8f30-4383-9534-dbc56f5aa1af',
+          timestamp: '2026-03-05T16:06:00.000Z'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Invalid pagination/sort query values.' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
+  listUserGroups(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: ListUserGroupsQueryDto
+  ): Promise<UserGroupsResponse> {
+    return this.groupsService.listUserGroups(user.id, query);
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a roommate group. Creator becomes admin.' })
   @ApiBody({ type: CreateGroupDto })
-  @ApiOkResponse({ description: 'Group created with admin membership and join code.' })
+  @ApiCreatedResponse({ description: 'Group created with admin membership and join code.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   createGroup(
     @CurrentUser() user: AuthenticatedUser,
@@ -74,7 +140,7 @@ export class GroupsController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   resetJoinCode(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('groupId') groupId: string
+    @Param('groupId', ParseAppIdPipe) groupId: string
   ): Promise<JoinCodeResetResponse> {
     return this.groupsService.resetJoinCode(user.id, groupId);
   }
@@ -86,21 +152,125 @@ export class GroupsController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   getGroup(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('groupId') groupId: string
+    @Param('groupId', ParseAppIdPipe) groupId: string
   ): Promise<GroupSummary> {
     return this.groupsService.getGroup(user.id, groupId);
+  }
+
+  @Get(':groupId/dashboard')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Get frontend dashboard aggregates for a group (member/admin counts, chore counters, finance counters, contract status).'
+  })
+  @ApiOkResponse({
+    description: 'Returns aggregated group dashboard data for active members.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          group: {
+            id: 'cm8z9ab120001mk8z4og1j0e9',
+            name: 'Apartment 12A',
+            createdBy: '550e8400-e29b-41d4-a716-446655440001',
+            createdAt: '2026-03-05T16:00:00.000Z',
+            updatedAt: '2026-03-05T16:05:00.000Z',
+            memberRole: 'ADMIN',
+            memberStatus: 'ACTIVE',
+            memberCount: 3,
+            joinCode: 'ABCD1234'
+          },
+          members: {
+            totalActive: 3,
+            adminCount: 1,
+            memberCount: 2
+          },
+          chores: {
+            pendingCount: 4,
+            completedCount: 8,
+            overdueCount: 1,
+            assignedToMePendingCount: 2
+          },
+          finance: {
+            billCount: 5,
+            paymentCount: 7,
+            latestBillIncurredAt: '2026-03-05T12:00:00.000Z',
+            latestPaymentPaidAt: '2026-03-05T13:00:00.000Z'
+          },
+          contract: {
+            hasDraft: true,
+            publishedVersion: 2,
+            updatedAt: '2026-03-05T11:00:00.000Z'
+          }
+        },
+        meta: {
+          requestId: 'ad86d8f4-8f30-4383-9534-dbc56f5aa1af',
+          timestamp: '2026-03-05T16:06:00.000Z'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Invalid group ID format.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
+  getGroupDashboard(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('groupId', ParseAppIdPipe) groupId: string
+  ): Promise<GroupDashboardResponse> {
+    return this.groupsService.getGroupDashboard(user.id, groupId);
   }
 
   @Get(':groupId/members')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List active members in the group.' })
-  @ApiOkResponse({ description: 'Returns current group members with roles and statuses.' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  @ApiQuery({ name: 'sortBy', required: false, enum: ['role', 'joinedAt', 'createdAt'] })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
+  @ApiOkResponse({
+    description: 'Returns current group members with roles, statuses, and pagination metadata.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          groupId: 'cm8w9z0abc123def456ghi789',
+          members: [
+            {
+              userId: '550e8400-e29b-41d4-a716-446655440001',
+              role: 'ADMIN',
+              status: 'ACTIVE',
+              joinedAt: '2026-03-05T14:40:00.000Z',
+              createdAt: '2026-03-05T14:40:00.000Z',
+              updatedAt: '2026-03-05T14:40:00.000Z'
+            }
+          ],
+          pagination: {
+            page: 1,
+            pageSize: 20,
+            totalItems: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPreviousPage: false
+          }
+        },
+        meta: {
+          requestId: 'f073d9ed-7d9f-4902-a8ee-bfca8de3e4ff',
+          timestamp: '2026-03-05T14:41:00.000Z'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid group ID or invalid pagination/sort query values.'
+  })
+  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   getGroupMembers(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('groupId') groupId: string
+    @Param('groupId', ParseAppIdPipe) groupId: string,
+    @Query() query: ListGroupMembersQueryDto
   ): Promise<GroupMembersResponse> {
-    return this.groupsService.getGroupMembers(user.id, groupId);
+    return this.groupsService.getGroupMembers(user.id, groupId, query);
   }
 
   @Patch(':groupId/members/:userId/role')
@@ -111,8 +281,8 @@ export class GroupsController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   updateMemberRole(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('groupId') groupId: string,
-    @Param('userId') memberUserId: string,
+    @Param('groupId', ParseAppIdPipe) groupId: string,
+    @Param('userId', ParseUUIDPipe) memberUserId: string,
     @Body() payload: UpdateMemberRoleDto
   ): Promise<GroupMemberRoleUpdateResponse> {
     return this.groupsService.updateMemberRole(user.id, groupId, memberUserId, payload);
@@ -125,8 +295,8 @@ export class GroupsController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   removeMember(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('groupId') groupId: string,
-    @Param('userId') memberUserId: string
+    @Param('groupId', ParseAppIdPipe) groupId: string,
+    @Param('userId', ParseUUIDPipe) memberUserId: string
   ): Promise<GroupMemberRemoveResponse> {
     return this.groupsService.removeMember(user.id, groupId, memberUserId);
   }

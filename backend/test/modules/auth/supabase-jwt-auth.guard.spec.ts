@@ -73,4 +73,29 @@ describe('SupabaseJwtAuthGuard', () => {
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(UnauthorizedException);
     expect(jwtServiceMock.verifyAccessToken).not.toHaveBeenCalled();
   });
+
+  it('propagates error when token verification fails', async () => {
+    const jwtServiceMock = {
+      verifyAccessToken: jest
+        .fn()
+        .mockRejectedValue(new UnauthorizedException('Invalid or expired access token.'))
+    };
+
+    const guard = new SupabaseJwtAuthGuard(jwtServiceMock as any);
+    const request = {
+      headers: {
+        authorization: 'Bearer expired-token'
+      }
+    };
+
+    const context = {
+      switchToHttp: () => ({
+        getRequest: () => request
+      })
+    } as any;
+
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(jwtServiceMock.verifyAccessToken).toHaveBeenCalledWith('expired-token');
+    expect((request as any).user).toBeUndefined();
+  });
 });

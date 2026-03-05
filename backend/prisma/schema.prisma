@@ -24,7 +24,16 @@ model Group {
   joinCode  JoinCode?
   members   GroupMember[]
   auditLogs GroupAuditLog[]
+  chores    Chore[]
+  choreActivities ChoreActivity[]
+  contract  Contract?
+  contractVersions ContractVersion[]
+  bills     Bill[]
+  billSplits BillSplit[]
+  payments  Payment[]
+  ledgerEntries LedgerEntry[]
 
+  @@index([createdBy], map: "groups_created_by_idx")
   @@map("groups")
 }
 
@@ -46,13 +55,14 @@ model GroupMember {
 }
 
 model JoinCode {
-  id        String   @id @default(cuid())
-  groupId   String   @unique @map("group_id")
-  code      String   @unique @db.VarChar(20)
-  createdBy String   @map("created_by")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  id        String    @id @default(cuid())
+  groupId   String    @unique @map("group_id")
+  code      String    @unique @db.VarChar(20)
+  createdBy String    @map("created_by")
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  group     Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@map("join_codes")
 }
@@ -69,7 +79,177 @@ model GroupAuditLog {
 
   @@index([groupId], map: "group_audit_logs_group_id_idx")
   @@index([actorUserId], map: "group_audit_logs_actor_user_id_idx")
+  @@index([targetUserId], map: "group_audit_logs_target_user_id_idx")
+  @@index([createdAt], map: "group_audit_logs_created_at_idx")
   @@map("group_audit_logs")
+}
+
+model Chore {
+  id                String       @id @default(cuid())
+  groupId           String       @map("group_id")
+  title             String       @db.VarChar(120)
+  description       String?      @db.Text
+  status            ChoreStatus  @default(PENDING)
+  dueDate           DateTime?    @map("due_date")
+  assignedToUserId  String?      @map("assigned_to_user_id")
+  createdBy         String       @map("created_by")
+  completedAt       DateTime?    @map("completed_at")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+  group             Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  activities        ChoreActivity[]
+
+  @@index([groupId], map: "chores_group_id_idx")
+  @@index([assignedToUserId], map: "chores_assigned_to_user_id_idx")
+  @@index([status], map: "chores_status_idx")
+  @@index([dueDate], map: "chores_due_date_idx")
+  @@map("chores")
+}
+
+model ChoreActivity {
+  id          String             @id @default(cuid())
+  choreId     String             @map("chore_id")
+  groupId     String             @map("group_id")
+  actorUserId String             @map("actor_user_id")
+  type        ChoreActivityType
+  details     Json?
+  createdAt   DateTime           @default(now()) @map("created_at")
+  chore       Chore              @relation(fields: [choreId], references: [id], onDelete: Cascade)
+  group       Group              @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([choreId], map: "chore_activity_chore_id_idx")
+  @@index([groupId], map: "chore_activity_group_id_idx")
+  @@index([actorUserId], map: "chore_activity_actor_user_id_idx")
+  @@index([createdAt], map: "chore_activity_created_at_idx")
+  @@map("chore_activity")
+}
+
+model Contract {
+  id               String            @id @default(cuid())
+  groupId          String            @unique @map("group_id")
+  draftContent     String            @default("") @map("draft_content") @db.Text
+  publishedVersion Int?              @map("published_version")
+  updatedBy        String?           @map("updated_by")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  group            Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  versions         ContractVersion[]
+
+  @@map("contracts")
+}
+
+model ContractVersion {
+  id          String   @id @default(cuid())
+  groupId     String   @map("group_id")
+  contractId  String   @map("contract_id")
+  version     Int
+  content     String   @db.Text
+  publishedBy String   @map("published_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, version])
+  @@index([groupId], map: "contract_versions_group_id_idx")
+  @@index([contractId], map: "contract_versions_contract_id_idx")
+  @@map("contract_versions")
+}
+
+model Bill {
+  id          String          @id @default(cuid())
+  groupId     String          @map("group_id")
+  title       String          @db.VarChar(160)
+  description String?         @db.Text
+  totalAmount Decimal         @map("total_amount") @db.Decimal(12, 2)
+  currency    String          @db.VarChar(3)
+  paidByUserId String         @map("paid_by_user_id")
+  splitMethod BillSplitMethod @default(CUSTOM) @map("split_method")
+  createdBy   String          @map("created_by")
+  incurredAt  DateTime        @map("incurred_at")
+  dueDate     DateTime?       @map("due_date")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  group       Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  splits      BillSplit[]
+  payments    Payment[]
+  ledgerEntries LedgerEntry[]
+
+  @@index([groupId], map: "bills_group_id_idx")
+  @@index([paidByUserId], map: "bills_paid_by_user_id_idx")
+  @@index([createdAt], map: "bills_created_at_idx")
+  @@map("bills")
+}
+
+model BillSplit {
+  id        String   @id @default(cuid())
+  billId    String   @map("bill_id")
+  groupId   String   @map("group_id")
+  userId    String   @map("user_id")
+  amount    Decimal  @db.Decimal(12, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  bill      Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  ledgerEntries LedgerEntry[]
+
+  @@unique([billId, userId], map: "bill_splits_bill_id_user_id_key")
+  @@index([groupId], map: "bill_splits_group_id_idx")
+  @@index([userId], map: "bill_splits_user_id_idx")
+  @@map("bill_splits")
+}
+
+model Payment {
+  id             String    @id @default(cuid())
+  groupId        String    @map("group_id")
+  billId         String?   @map("bill_id")
+  payerUserId    String    @map("payer_user_id")
+  payeeUserId    String    @map("payee_user_id")
+  amount         Decimal   @db.Decimal(12, 2)
+  currency       String    @db.VarChar(3)
+  note           String?   @db.Text
+  idempotencyKey String?   @map("idempotency_key") @db.VarChar(64)
+  paidAt         DateTime  @map("paid_at")
+  createdBy      String    @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  group          Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  bill           Bill?     @relation(fields: [billId], references: [id], onDelete: SetNull)
+  ledgerEntries  LedgerEntry[]
+
+  @@unique([groupId, idempotencyKey], map: "payments_group_id_idempotency_key_key")
+  @@index([groupId], map: "payments_group_id_idx")
+  @@index([billId], map: "payments_bill_id_idx")
+  @@index([payerUserId], map: "payments_payer_user_id_idx")
+  @@index([payeeUserId], map: "payments_payee_user_id_idx")
+  @@index([paidAt], map: "payments_paid_at_idx")
+  @@map("payments")
+}
+
+model LedgerEntry {
+  id          String          @id @default(cuid())
+  groupId     String          @map("group_id")
+  billId      String?         @map("bill_id")
+  billSplitId String?         @map("bill_split_id")
+  paymentId   String?         @map("payment_id")
+  entryType   LedgerEntryType @map("entry_type")
+  fromUserId  String          @map("from_user_id")
+  toUserId    String          @map("to_user_id")
+  amount      Decimal         @db.Decimal(12, 2)
+  currency    String          @db.VarChar(3)
+  occurredAt  DateTime        @map("occurred_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  group       Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  bill        Bill?           @relation(fields: [billId], references: [id], onDelete: SetNull)
+  billSplit   BillSplit?      @relation(fields: [billSplitId], references: [id], onDelete: SetNull)
+  payment     Payment?        @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([groupId], map: "ledger_entries_group_id_idx")
+  @@index([billId], map: "ledger_entries_bill_id_idx")
+  @@index([paymentId], map: "ledger_entries_payment_id_idx")
+  @@index([fromUserId], map: "ledger_entries_from_user_id_idx")
+  @@index([toUserId], map: "ledger_entries_to_user_id_idx")
+  @@index([currency], map: "ledger_entries_currency_idx")
+  @@index([occurredAt], map: "ledger_entries_occurred_at_idx")
+  @@map("ledger_entries")
 }
 
 enum GroupMemberRole {
@@ -80,4 +260,27 @@ enum GroupMemberRole {
 enum GroupMemberStatus {
   ACTIVE
   INACTIVE
+}
+
+enum ChoreStatus {
+  PENDING
+  COMPLETED
+}
+
+enum ChoreActivityType {
+  CREATED
+  ASSIGNED
+  UNASSIGNED
+  COMPLETED
+  REOPENED
+}
+
+enum BillSplitMethod {
+  EQUAL
+  CUSTOM
+}
+
+enum LedgerEntryType {
+  BILL_SPLIT
+  PAYMENT
 }

@@ -37,7 +37,7 @@ export class HealthController {
       throw new ServiceUnavailableException({
         code: ErrorCode.ServiceUnavailable,
         message: 'Service is not ready.',
-        details: readiness
+        details: { checks: readiness.checks }
       });
     }
 

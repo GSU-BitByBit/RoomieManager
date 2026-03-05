@@ -44,6 +44,11 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiSuccess<T>>
     }
 
     const value = data as Record<string, unknown>;
-    return value.success === true && value.meta !== undefined;
+    return (
+      value.success === true &&
+      typeof value.meta === 'object' &&
+      value.meta !== null &&
+      'requestId' in (value.meta as object)
+    );
   }
 }

@@ -12,7 +12,7 @@ export default [
       parser: tsParser,
       parserOptions: {
         project: './tsconfig.json',
-        tsconfigRootDir: '/Users/admin/Documents/GitHub/RoomieManager/backend',
+        tsconfigRootDir: import.meta.dirname,
         sourceType: 'module'
       }
     },

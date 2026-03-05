@@ -1,5 +1,7 @@
 import type { GroupMemberRole, GroupMemberStatus } from '@prisma/client';
 
+import type { PaginationMeta } from '../../../common/http/pagination';
+
 export interface GroupSummary {
   id: string;
   name: string;
@@ -10,6 +12,45 @@ export interface GroupSummary {
   memberStatus: GroupMemberStatus;
   memberCount: number;
   joinCode?: string;
+}
+
+export interface UserGroupsResponse {
+  groups: GroupSummary[];
+  pagination: PaginationMeta;
+}
+
+export interface GroupDashboardMembersSummary {
+  totalActive: number;
+  adminCount: number;
+  memberCount: number;
+}
+
+export interface GroupDashboardChoresSummary {
+  pendingCount: number;
+  completedCount: number;
+  overdueCount: number;
+  assignedToMePendingCount: number;
+}
+
+export interface GroupDashboardFinanceSummary {
+  billCount: number;
+  paymentCount: number;
+  latestBillIncurredAt: string | null;
+  latestPaymentPaidAt: string | null;
+}
+
+export interface GroupDashboardContractSummary {
+  hasDraft: boolean;
+  publishedVersion: number | null;
+  updatedAt: string | null;
+}
+
+export interface GroupDashboardResponse {
+  group: GroupSummary;
+  members: GroupDashboardMembersSummary;
+  chores: GroupDashboardChoresSummary;
+  finance: GroupDashboardFinanceSummary;
+  contract: GroupDashboardContractSummary;
 }
 
 export interface JoinCodeResetResponse {
@@ -29,6 +70,7 @@ export interface GroupMemberSummary {
 export interface GroupMembersResponse {
   groupId: string;
   members: GroupMemberSummary[];
+  pagination: PaginationMeta;
 }
 
 export interface GroupMemberRoleUpdateResponse {

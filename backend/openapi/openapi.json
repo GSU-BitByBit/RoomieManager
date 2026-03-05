@@ -1,6 +1,121 @@
 {
   "components": {
     "schemas": {
+      "ChoreStatus": {
+        "enum": [
+          "PENDING",
+          "COMPLETED"
+        ],
+        "type": "string"
+      },
+      "CreateBillDto": {
+        "properties": {
+          "currency": {
+            "description": "Three-letter ISO currency code. Defaults to USD.",
+            "example": "USD",
+            "type": "string"
+          },
+          "description": {
+            "description": "Optional bill description.",
+            "example": "Monthly ISP payment",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "dueDate": {
+            "description": "Optional due date for this bill.",
+            "example": "2026-03-15T18:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "incurredAt": {
+            "description": "When the bill was incurred. Defaults to now.",
+            "example": "2026-03-05T18:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "paidByUserId": {
+            "description": "User id of the member who paid this bill.",
+            "example": "f5c6304d-7f58-4f67-bf80-4de6f388b310",
+            "type": "string"
+          },
+          "splits": {
+            "description": "Split rows. Amounts must sum exactly to totalAmount.",
+            "items": {
+              "$ref": "#/components/schemas/CreateBillSplitDto"
+            },
+            "type": "array"
+          },
+          "title": {
+            "description": "Short bill title.",
+            "example": "Internet bill - March",
+            "maxLength": 160,
+            "minLength": 1,
+            "type": "string"
+          },
+          "totalAmount": {
+            "description": "Total bill amount. Supports up to 2 decimal places.",
+            "example": 76.5,
+            "type": "number"
+          }
+        },
+        "required": [
+          "title",
+          "totalAmount",
+          "paidByUserId",
+          "splits"
+        ],
+        "type": "object"
+      },
+      "CreateBillSplitDto": {
+        "properties": {
+          "amount": {
+            "description": "Amount this user owes for the bill. Supports up to 2 decimal places.",
+            "example": 25.5,
+            "type": "number"
+          },
+          "userId": {
+            "description": "User id for this split row.",
+            "example": "f5c6304d-7f58-4f67-bf80-4de6f388b310",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "CreateChoreDto": {
+        "properties": {
+          "assigneeUserId": {
+            "description": "Optional user ID to assign the chore to at creation time",
+            "example": "user-uuid",
+            "type": "string"
+          },
+          "description": {
+            "example": "Take out kitchen and bathroom trash before 9pm.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "dueDate": {
+            "description": "Optional ISO-8601 due date for the chore",
+            "example": "2026-03-10T21:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "title": {
+            "description": "Short, human-readable chore title",
+            "example": "Take out trash",
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "type": "object"
+      },
       "CreateGroupDto": {
         "properties": {
           "name": {
@@ -13,6 +128,59 @@
         },
         "required": [
           "name"
+        ],
+        "type": "object"
+      },
+      "CreatePaymentDto": {
+        "properties": {
+          "amount": {
+            "description": "Payment amount. Supports up to 2 decimal places.",
+            "example": 20,
+            "type": "number"
+          },
+          "billId": {
+            "description": "Optional bill id this payment is linked to.",
+            "example": "3e4f66fd-7eeb-4c2f-a98e-f94376ea22f5",
+            "type": "string"
+          },
+          "currency": {
+            "description": "Three-letter ISO currency code. Defaults to USD.",
+            "example": "USD",
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "description": "Optional idempotency key for safely retried payment requests.",
+            "example": "pay-2026-03-05-group1-user1-user2-20",
+            "maxLength": 64,
+            "type": "string"
+          },
+          "note": {
+            "description": "Optional payment note.",
+            "example": "Paid via Zelle",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "paidAt": {
+            "description": "When payment was made. Defaults to now.",
+            "example": "2026-03-05T18:15:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "payeeUserId": {
+            "description": "User id of the member receiving payment.",
+            "example": "8e9f7f6e-e3b4-468f-a8f4-c35159b844ab",
+            "type": "string"
+          },
+          "payerUserId": {
+            "description": "User id of the member sending payment.",
+            "example": "f5c6304d-7f58-4f67-bf80-4de6f388b310",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payerUserId",
+          "payeeUserId",
+          "amount"
         ],
         "type": "object"
       },
@@ -47,6 +215,7 @@
           },
           "password": {
             "example": "StrongPass123!",
+            "maxLength": 128,
             "minLength": 8,
             "type": "string"
           }
@@ -69,6 +238,7 @@
           },
           "password": {
             "example": "StrongPass123!",
+            "maxLength": 128,
             "minLength": 8,
             "type": "string"
           }
@@ -76,6 +246,29 @@
         "required": [
           "email",
           "password"
+        ],
+        "type": "object"
+      },
+      "UpdateChoreAssigneeDto": {
+        "properties": {
+          "assigneeUserId": {
+            "description": "User ID of the new assignee. Omit or set to null/undefined to unassign the chore completely.",
+            "example": "user-uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateContractDraftDto": {
+        "properties": {
+          "content": {
+            "description": "New draft content for the group contract.",
+            "maxLength": 50000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "content"
         ],
         "type": "object"
       },
@@ -171,7 +364,7 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Returns Supabase user and optional session."
           }
         },
@@ -181,7 +374,193 @@
         ]
       }
     },
+    "/api/v1/chores/{choreId}/assign": {
+      "patch": {
+        "operationId": "ChoresController_updateChoreAssignee",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "choreId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChoreAssigneeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns updated chore state."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Assign or unassign a chore.",
+        "tags": [
+          "Chores"
+        ]
+      }
+    },
+    "/api/v1/chores/{choreId}/complete": {
+      "patch": {
+        "operationId": "ChoresController_completeChore",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "choreId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns updated chore state."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a chore as completed.",
+        "tags": [
+          "Chores"
+        ]
+      }
+    },
     "/api/v1/groups": {
+      "get": {
+        "operationId": "GroupsController_listUserGroups",
+        "parameters": [
+          {
+            "description": "1-based page number.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "example": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Maximum number of items per page.",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "example": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Optional sort field for current-user group listing.",
+            "in": "query",
+            "name": "sortBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "updatedAt",
+                "createdAt",
+                "name",
+                "joinedAt"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort order applied to the selected field.",
+            "in": "query",
+            "name": "sortOrder",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "groups": [
+                        {
+                          "createdAt": "2026-03-05T16:00:00.000Z",
+                          "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                          "id": "cm8z9ab120001mk8z4og1j0e9",
+                          "joinCode": "ABCD1234",
+                          "memberCount": 3,
+                          "memberRole": "ADMIN",
+                          "memberStatus": "ACTIVE",
+                          "name": "Apartment 12A",
+                          "updatedAt": "2026-03-05T16:05:00.000Z"
+                        }
+                      ],
+                      "pagination": {
+                        "hasNextPage": false,
+                        "hasPreviousPage": false,
+                        "page": 1,
+                        "pageSize": 20,
+                        "totalItems": 1,
+                        "totalPages": 1
+                      }
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Returns active groups for the current user with pagination metadata."
+          },
+          "400": {
+            "description": "Invalid pagination/sort query values."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List groups for current active memberships.",
+        "tags": [
+          "Groups"
+        ]
+      },
       "post": {
         "operationId": "GroupsController_createGroup",
         "parameters": [],
@@ -196,7 +575,7 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Group created with admin membership and join code."
           },
           "401": {
@@ -246,6 +625,732 @@
         ]
       }
     },
+    "/api/v1/groups/{groupId}/balances": {
+      "get": {
+        "operationId": "FinanceController_getBalances",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns current balances for the group."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Compute and return net balances (who owes whom) for the group.",
+        "tags": [
+          "Finance"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/bills": {
+      "get": {
+        "operationId": "FinanceController_listBills",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "example": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Maximum number of items per page.",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "example": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Optional sort field for group bills.",
+            "in": "query",
+            "name": "sortBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "incurredAt",
+                "createdAt",
+                "totalAmount"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort order applied to the selected field.",
+            "in": "query",
+            "name": "sortOrder",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "bills": [
+                        {
+                          "createdAt": "2026-03-05T14:45:00.000Z",
+                          "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                          "currency": "USD",
+                          "description": "Monthly ISP payment",
+                          "dueDate": null,
+                          "groupId": "cm8w9z0abc123def456ghi789",
+                          "id": "cm8wc5rr7000hmk6zx4qedcib",
+                          "incurredAt": "2026-03-05T14:45:00.000Z",
+                          "paidByUserId": "550e8400-e29b-41d4-a716-446655440001",
+                          "splitMethod": "CUSTOM",
+                          "splits": [
+                            {
+                              "amount": 25.5,
+                              "createdAt": "2026-03-05T14:45:00.000Z",
+                              "id": "cm8wc5rr9000imk6z2jmlf4x4",
+                              "userId": "550e8400-e29b-41d4-a716-446655440001"
+                            }
+                          ],
+                          "title": "Internet bill - March",
+                          "totalAmount": 76.5,
+                          "updatedAt": "2026-03-05T14:45:00.000Z"
+                        }
+                      ],
+                      "groupId": "cm8w9z0abc123def456ghi789",
+                      "pagination": {
+                        "hasNextPage": false,
+                        "hasPreviousPage": false,
+                        "page": 1,
+                        "pageSize": 20,
+                        "totalItems": 1,
+                        "totalPages": 1
+                      }
+                    },
+                    "meta": {
+                      "requestId": "25d65b90-2cb4-451d-a2ce-65f27a223944",
+                      "timestamp": "2026-03-05T14:46:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Returns bill list for the group with pagination metadata."
+          },
+          "400": {
+            "description": "Invalid group ID or invalid pagination/sort query values."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List bills for a group.",
+        "tags": [
+          "Finance"
+        ]
+      },
+      "post": {
+        "operationId": "FinanceController_createBill",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBillDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Bill created successfully."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a bill and split amounts across group members.",
+        "tags": [
+          "Finance"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/chores": {
+      "get": {
+        "operationId": "ChoresController_listGroupChores",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "example": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Maximum number of items per page.",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "example": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Optional filter by status (PENDING or COMPLETED)",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ChoreStatus"
+            }
+          },
+          {
+            "description": "Optional filter by assignee user ID",
+            "in": "query",
+            "name": "assigneeUserId",
+            "required": false,
+            "schema": {
+              "example": "user-uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional lower bound for due date (inclusive)",
+            "in": "query",
+            "name": "dueAfter",
+            "required": false,
+            "schema": {
+              "example": "2026-03-10T00:00:00.000Z",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional upper bound for due date (inclusive)",
+            "in": "query",
+            "name": "dueBefore",
+            "required": false,
+            "schema": {
+              "example": "2026-03-20T00:00:00.000Z",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional sort field for chore listing.",
+            "in": "query",
+            "name": "sortBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "dueDate",
+                "createdAt",
+                "updatedAt",
+                "status"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort order applied to the selected field.",
+            "in": "query",
+            "name": "sortOrder",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "chores": [
+                        {
+                          "assignedToUserId": "550e8400-e29b-41d4-a716-446655440001",
+                          "completedAt": null,
+                          "createdAt": "2026-03-05T14:42:00.000Z",
+                          "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                          "description": null,
+                          "dueDate": "2026-03-06T10:00:00.000Z",
+                          "groupId": "cm8w9z0abc123def456ghi789",
+                          "id": "cm8wa8qgk0004mk6z9s29u0ro",
+                          "status": "PENDING",
+                          "title": "Take out trash",
+                          "updatedAt": "2026-03-05T14:42:00.000Z"
+                        }
+                      ],
+                      "groupId": "cm8w9z0abc123def456ghi789",
+                      "pagination": {
+                        "hasNextPage": false,
+                        "hasPreviousPage": false,
+                        "page": 1,
+                        "pageSize": 20,
+                        "totalItems": 1,
+                        "totalPages": 1
+                      }
+                    },
+                    "meta": {
+                      "requestId": "ac63a2cd-2f6f-4be8-86fc-0d8c91e2e1b7",
+                      "timestamp": "2026-03-05T14:43:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Returns chores for the specified group with pagination metadata."
+          },
+          "400": {
+            "description": "Invalid group ID or invalid filter/pagination/sort query values."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List chores for a group with optional filters.",
+        "tags": [
+          "Chores"
+        ]
+      },
+      "post": {
+        "operationId": "ChoresController_createChore",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChoreDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Chore created successfully."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new chore within a group.",
+        "tags": [
+          "Chores"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/contract": {
+      "get": {
+        "operationId": "ContractsController_getContract",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the contract detail."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the current contract for a group (draft + latest published).",
+        "tags": [
+          "Contracts"
+        ]
+      },
+      "put": {
+        "operationId": "ContractsController_updateDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateContractDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns updated contract summary."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update the contract draft (admin only).",
+        "tags": [
+          "Contracts"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/contract/publish": {
+      "post": {
+        "operationId": "ContractsController_publishVersion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Returns the newly published version."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish the current draft as a new version (admin only).",
+        "tags": [
+          "Contracts"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/contract/versions": {
+      "get": {
+        "operationId": "ContractsController_listVersions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "example": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Maximum number of items per page.",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "example": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Optional sort field for contract versions.",
+            "in": "query",
+            "name": "sortBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "version",
+                "createdAt"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort order applied to the selected field.",
+            "in": "query",
+            "name": "sortOrder",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "groupId": "cm8w9z0abc123def456ghi789",
+                      "pagination": {
+                        "hasNextPage": false,
+                        "hasPreviousPage": false,
+                        "page": 1,
+                        "pageSize": 20,
+                        "totalItems": 3,
+                        "totalPages": 1
+                      },
+                      "versions": [
+                        {
+                          "content": "Rent due by 5th. Quiet hours after 10PM.",
+                          "createdAt": "2026-03-05T14:44:00.000Z",
+                          "id": "cm8wb8l66000fmk6z5nwnk1j5",
+                          "publishedBy": "550e8400-e29b-41d4-a716-446655440001",
+                          "version": 3
+                        }
+                      ]
+                    },
+                    "meta": {
+                      "requestId": "8f9c8a41-26b8-4e53-a35e-64f4db76d79e",
+                      "timestamp": "2026-03-05T14:45:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Returns version history with pagination metadata."
+          },
+          "400": {
+            "description": "Invalid group ID or invalid pagination/sort query values."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all published contract versions for a group.",
+        "tags": [
+          "Contracts"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/dashboard": {
+      "get": {
+        "operationId": "GroupsController_getGroupDashboard",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "chores": {
+                        "assignedToMePendingCount": 2,
+                        "completedCount": 8,
+                        "overdueCount": 1,
+                        "pendingCount": 4
+                      },
+                      "contract": {
+                        "hasDraft": true,
+                        "publishedVersion": 2,
+                        "updatedAt": "2026-03-05T11:00:00.000Z"
+                      },
+                      "finance": {
+                        "billCount": 5,
+                        "latestBillIncurredAt": "2026-03-05T12:00:00.000Z",
+                        "latestPaymentPaidAt": "2026-03-05T13:00:00.000Z",
+                        "paymentCount": 7
+                      },
+                      "group": {
+                        "createdAt": "2026-03-05T16:00:00.000Z",
+                        "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                        "id": "cm8z9ab120001mk8z4og1j0e9",
+                        "joinCode": "ABCD1234",
+                        "memberCount": 3,
+                        "memberRole": "ADMIN",
+                        "memberStatus": "ACTIVE",
+                        "name": "Apartment 12A",
+                        "updatedAt": "2026-03-05T16:05:00.000Z"
+                      },
+                      "members": {
+                        "adminCount": 1,
+                        "memberCount": 2,
+                        "totalActive": 3
+                      }
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Returns aggregated group dashboard data for active members."
+          },
+          "400": {
+            "description": "Invalid group ID format."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get frontend dashboard aggregates for a group (member/admin counts, chore counters, finance counters, contract status).",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
     "/api/v1/groups/{groupId}/join-code/reset": {
       "post": {
         "operationId": "GroupsController_resetJoinCode",
@@ -289,14 +1394,104 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "1-based page number.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "example": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Maximum number of items per page.",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "example": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Optional sort field for group members.",
+            "in": "query",
+            "name": "sortBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "role",
+                "joinedAt",
+                "createdAt"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort order applied to the selected field.",
+            "in": "query",
+            "name": "sortOrder",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Returns current group members with roles and statuses."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "data": {
+                      "groupId": "cm8w9z0abc123def456ghi789",
+                      "members": [
+                        {
+                          "createdAt": "2026-03-05T14:40:00.000Z",
+                          "joinedAt": "2026-03-05T14:40:00.000Z",
+                          "role": "ADMIN",
+                          "status": "ACTIVE",
+                          "updatedAt": "2026-03-05T14:40:00.000Z",
+                          "userId": "550e8400-e29b-41d4-a716-446655440001"
+                        }
+                      ],
+                      "pagination": {
+                        "hasNextPage": false,
+                        "hasPreviousPage": false,
+                        "page": 1,
+                        "pageSize": 20,
+                        "totalItems": 1,
+                        "totalPages": 1
+                      }
+                    },
+                    "meta": {
+                      "requestId": "f073d9ed-7d9f-4902-a8ee-bfca8de3e4ff",
+                      "timestamp": "2026-03-05T14:41:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Returns current group members with roles, statuses, and pagination metadata."
+          },
+          "400": {
+            "description": "Invalid group ID or invalid pagination/sort query values."
           },
           "401": {
             "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
           }
         },
         "security": [
@@ -397,6 +1592,48 @@
         "summary": "Update group member role (admin only).",
         "tags": [
           "Groups"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/payments": {
+      "post": {
+        "operationId": "FinanceController_createPayment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Payment recorded successfully."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record a payment between group members.",
+        "tags": [
+          "Finance"
         ]
       }
     },

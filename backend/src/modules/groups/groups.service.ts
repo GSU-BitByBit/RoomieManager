@@ -6,6 +6,7 @@ import {
   NotFoundException
 } from '@nestjs/common';
 import {
+  ChoreStatus,
   GroupMemberRole,
   GroupMemberStatus,
   Prisma,
@@ -15,16 +16,21 @@ import {
 import { randomInt } from 'node:crypto';
 
 import { ErrorCode } from '../../common/http/http-error-code';
+import { buildPaginationMeta, resolvePagination } from '../../common/http/pagination';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import type { CreateGroupDto } from './dto/create-group.dto';
 import type { JoinGroupDto } from './dto/join-group.dto';
+import { ListGroupMembersQueryDto } from './dto/list-group-members.query';
+import { ListUserGroupsQueryDto } from './dto/list-user-groups.query';
 import type { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import type {
+  GroupDashboardResponse,
   GroupMemberRemoveResponse,
   GroupMemberRoleUpdateResponse,
   GroupMembersResponse,
   GroupSummary,
-  JoinCodeResetResponse
+  JoinCodeResetResponse,
+  UserGroupsResponse
 } from './interfaces/group-response.interface';
 
 const JOIN_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -69,6 +75,70 @@ export class GroupsService {
     });
   }
 
+  async listUserGroups(
+    userId: string,
+    query: ListUserGroupsQueryDto = new ListUserGroupsQueryDto()
+  ): Promise<UserGroupsResponse> {
+    return this.prisma.$transaction(async (tx) => {
+      const pagination = resolvePagination(query);
+
+      const totalGroups = await tx.groupMember.count({
+        where: {
+          userId,
+          status: GroupMemberStatus.ACTIVE
+        }
+      });
+
+      const memberships = await tx.groupMember.findMany({
+        where: {
+          userId,
+          status: GroupMemberStatus.ACTIVE
+        },
+        include: {
+          group: {
+            include: {
+              joinCode: {
+                select: { code: true }
+              }
+            }
+          }
+        },
+        orderBy: this.buildUserGroupsOrderBy(query),
+        skip: pagination.skip,
+        take: pagination.take
+      });
+
+      const groupIds = memberships.map((membership) => membership.groupId);
+      const activeMemberCounts =
+        groupIds.length === 0
+          ? []
+          : await tx.groupMember.groupBy({
+              by: ['groupId'],
+              where: {
+                groupId: { in: groupIds },
+                status: GroupMemberStatus.ACTIVE
+              },
+              _count: { _all: true }
+            });
+
+      const activeMemberCountByGroupId = new Map(
+        activeMemberCounts.map((entry) => [entry.groupId, entry._count._all])
+      );
+
+      return {
+        groups: memberships.map((membership) =>
+          this.mapGroupSummary(
+            membership.group,
+            membership,
+            activeMemberCountByGroupId.get(membership.groupId) ?? 0,
+            membership.role === GroupMemberRole.ADMIN ? membership.group.joinCode?.code : undefined
+          )
+        ),
+        pagination: buildPaginationMeta(pagination.page, pagination.pageSize, totalGroups)
+      };
+    });
+  }
+
   async joinGroup(userId: string, payload: JoinGroupDto): Promise<GroupSummary> {
     const normalizedCode = this.normalizeJoinCode(payload.joinCode);
 
@@ -107,6 +177,7 @@ export class GroupsService {
         membership = await tx.groupMember.update({
           where: { id: existingMembership.id },
           data: {
+            role: GroupMemberRole.MEMBER,
             status: GroupMemberStatus.ACTIVE,
             joinedAt: new Date()
           }
@@ -179,21 +250,165 @@ export class GroupsService {
     });
   }
 
-  async getGroupMembers(userId: string, groupId: string): Promise<GroupMembersResponse> {
+  async getGroupDashboard(userId: string, groupId: string): Promise<GroupDashboardResponse> {
+    return this.prisma.$transaction(async (tx) => {
+      const membership = await this.assertActiveMembership(tx, userId, groupId, {
+        includeGroup: true
+      });
+
+      const shouldIncludeJoinCode = membership.role === GroupMemberRole.ADMIN;
+      const now = new Date();
+
+      const [
+        activeMemberCount,
+        activeAdminCount,
+        joinCodeRecord,
+        pendingChoreCount,
+        completedChoreCount,
+        overdueChoreCount,
+        assignedToMePendingCount,
+        billCount,
+        paymentCount,
+        latestBill,
+        latestPayment,
+        contract
+      ] = await Promise.all([
+        tx.groupMember.count({
+          where: {
+            groupId,
+            status: GroupMemberStatus.ACTIVE
+          }
+        }),
+        tx.groupMember.count({
+          where: {
+            groupId,
+            status: GroupMemberStatus.ACTIVE,
+            role: GroupMemberRole.ADMIN
+          }
+        }),
+        shouldIncludeJoinCode
+          ? tx.joinCode.findUnique({
+              where: { groupId },
+              select: { code: true }
+            })
+          : Promise.resolve<{ code: string } | null>(null),
+        tx.chore.count({
+          where: {
+            groupId,
+            status: ChoreStatus.PENDING
+          }
+        }),
+        tx.chore.count({
+          where: {
+            groupId,
+            status: ChoreStatus.COMPLETED
+          }
+        }),
+        tx.chore.count({
+          where: {
+            groupId,
+            status: ChoreStatus.PENDING,
+            dueDate: {
+              lt: now
+            }
+          }
+        }),
+        tx.chore.count({
+          where: {
+            groupId,
+            status: ChoreStatus.PENDING,
+            assignedToUserId: userId
+          }
+        }),
+        tx.bill.count({
+          where: { groupId }
+        }),
+        tx.payment.count({
+          where: { groupId }
+        }),
+        tx.bill.findFirst({
+          where: { groupId },
+          select: { incurredAt: true },
+          orderBy: { incurredAt: 'desc' }
+        }),
+        tx.payment.findFirst({
+          where: { groupId },
+          select: { paidAt: true },
+          orderBy: { paidAt: 'desc' }
+        }),
+        tx.contract.findUnique({
+          where: { groupId },
+          select: {
+            draftContent: true,
+            publishedVersion: true,
+            updatedAt: true
+          }
+        })
+      ]);
+
+      return {
+        group: this.mapGroupSummary(
+          membership.group,
+          membership,
+          activeMemberCount,
+          shouldIncludeJoinCode ? joinCodeRecord?.code : undefined
+        ),
+        members: {
+          totalActive: activeMemberCount,
+          adminCount: activeAdminCount,
+          memberCount: Math.max(activeMemberCount - activeAdminCount, 0)
+        },
+        chores: {
+          pendingCount: pendingChoreCount,
+          completedCount: completedChoreCount,
+          overdueCount: overdueChoreCount,
+          assignedToMePendingCount
+        },
+        finance: {
+          billCount,
+          paymentCount,
+          latestBillIncurredAt: latestBill?.incurredAt.toISOString() ?? null,
+          latestPaymentPaidAt: latestPayment?.paidAt.toISOString() ?? null
+        },
+        contract: {
+          hasDraft: (contract?.draftContent.trim().length ?? 0) > 0,
+          publishedVersion: contract?.publishedVersion ?? null,
+          updatedAt: contract?.updatedAt.toISOString() ?? null
+        }
+      };
+    });
+  }
+
+  async getGroupMembers(
+    userId: string,
+    groupId: string,
+    query: ListGroupMembersQueryDto = new ListGroupMembersQueryDto()
+  ): Promise<GroupMembersResponse> {
     return this.prisma.$transaction(async (tx) => {
       await this.assertActiveMembership(tx, userId, groupId);
+
+      const pagination = resolvePagination(query);
+      const totalMembers = await tx.groupMember.count({
+        where: {
+          groupId,
+          status: GroupMemberStatus.ACTIVE
+        }
+      });
 
       const members = await tx.groupMember.findMany({
         where: {
           groupId,
           status: GroupMemberStatus.ACTIVE
         },
-        orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }]
+        orderBy: this.buildMemberOrderBy(query),
+        skip: pagination.skip,
+        take: pagination.take
       });
 
       return {
         groupId,
-        members: members.map((member) => this.mapGroupMemberSummary(member))
+        members: members.map((member) => this.mapGroupMemberSummary(member)),
+        pagination: buildPaginationMeta(pagination.page, pagination.pageSize, totalMembers)
       };
     });
   }
@@ -204,65 +419,75 @@ export class GroupsService {
     memberUserId: string,
     payload: UpdateMemberRoleDto
   ): Promise<GroupMemberRoleUpdateResponse> {
-    return this.prisma.$transaction(async (tx) => {
-      await this.assertAdminMembership(tx, actorUserId, groupId);
+    return this.prisma.$transaction(
+      async (tx) => {
+        await this.assertAdminMembership(tx, actorUserId, groupId);
 
-      const membership = await tx.groupMember.findUnique({
-        where: {
-          groupId_userId: {
-            groupId,
-            userId: memberUserId
-          }
+        if (actorUserId === memberUserId) {
+          throw new BadRequestException({
+            code: ErrorCode.BadRequest,
+            message: 'Use leave-group flow to change your own role.'
+          });
         }
-      });
 
-      if (!membership || membership.status !== GroupMemberStatus.ACTIVE) {
-        throw new NotFoundException({
-          code: ErrorCode.NotFound,
-          message: 'Active member not found.'
+        const membership = await tx.groupMember.findUnique({
+          where: {
+            groupId_userId: {
+              groupId,
+              userId: memberUserId
+            }
+          }
         });
-      }
 
-      if (membership.role === payload.role) {
+        if (!membership || membership.status !== GroupMemberStatus.ACTIVE) {
+          throw new NotFoundException({
+            code: ErrorCode.NotFound,
+            message: 'Active member not found.'
+          });
+        }
+
+        if (membership.role === payload.role) {
+          return {
+            groupId,
+            userId: membership.userId,
+            role: membership.role,
+            status: membership.status,
+            updatedAt: membership.updatedAt.toISOString()
+          };
+        }
+
+        if (membership.role === GroupMemberRole.ADMIN && payload.role !== GroupMemberRole.ADMIN) {
+          await this.assertNotLastAdmin(tx, groupId);
+        }
+
+        const updatedMembership = await tx.groupMember.update({
+          where: { id: membership.id },
+          data: {
+            role: payload.role
+          }
+        });
+
+        await this.recordAuditLog(tx, {
+          groupId,
+          actorUserId,
+          targetUserId: memberUserId,
+          action: AUDIT_ACTION_MEMBER_ROLE_UPDATED,
+          details: {
+            previousRole: membership.role,
+            nextRole: updatedMembership.role
+          }
+        });
+
         return {
           groupId,
-          userId: membership.userId,
-          role: membership.role,
-          status: membership.status,
-          updatedAt: membership.updatedAt.toISOString()
+          userId: updatedMembership.userId,
+          role: updatedMembership.role,
+          status: updatedMembership.status,
+          updatedAt: updatedMembership.updatedAt.toISOString()
         };
-      }
-
-      if (membership.role === GroupMemberRole.ADMIN && payload.role !== GroupMemberRole.ADMIN) {
-        await this.assertNotLastAdmin(tx, groupId);
-      }
-
-      const updatedMembership = await tx.groupMember.update({
-        where: { id: membership.id },
-        data: {
-          role: payload.role
-        }
-      });
-
-      await this.recordAuditLog(tx, {
-        groupId,
-        actorUserId,
-        targetUserId: memberUserId,
-        action: AUDIT_ACTION_MEMBER_ROLE_UPDATED,
-        details: {
-          previousRole: membership.role,
-          nextRole: updatedMembership.role
-        }
-      });
-
-      return {
-        groupId,
-        userId: updatedMembership.userId,
-        role: updatedMembership.role,
-        status: updatedMembership.status,
-        updatedAt: updatedMembership.updatedAt.toISOString()
-      };
-    });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    );
   }
 
   async removeMember(
@@ -270,61 +495,64 @@ export class GroupsService {
     groupId: string,
     memberUserId: string
   ): Promise<GroupMemberRemoveResponse> {
-    return this.prisma.$transaction(async (tx) => {
-      await this.assertAdminMembership(tx, actorUserId, groupId);
+    return this.prisma.$transaction(
+      async (tx) => {
+        await this.assertAdminMembership(tx, actorUserId, groupId);
 
-      if (actorUserId === memberUserId) {
-        throw new BadRequestException({
-          code: ErrorCode.BadRequest,
-          message: 'Use leave-group flow to remove yourself.'
-        });
-      }
+        if (actorUserId === memberUserId) {
+          throw new BadRequestException({
+            code: ErrorCode.BadRequest,
+            message: 'Use leave-group flow to remove yourself.'
+          });
+        }
 
-      const membership = await tx.groupMember.findUnique({
-        where: {
-          groupId_userId: {
-            groupId,
-            userId: memberUserId
+        const membership = await tx.groupMember.findUnique({
+          where: {
+            groupId_userId: {
+              groupId,
+              userId: memberUserId
+            }
           }
-        }
-      });
-
-      if (!membership || membership.status !== GroupMemberStatus.ACTIVE) {
-        throw new NotFoundException({
-          code: ErrorCode.NotFound,
-          message: 'Active member not found.'
         });
-      }
 
-      if (membership.role === GroupMemberRole.ADMIN) {
-        await this.assertNotLastAdmin(tx, groupId);
-      }
-
-      const updatedMembership = await tx.groupMember.update({
-        where: { id: membership.id },
-        data: {
-          status: GroupMemberStatus.INACTIVE
+        if (!membership || membership.status !== GroupMemberStatus.ACTIVE) {
+          throw new NotFoundException({
+            code: ErrorCode.NotFound,
+            message: 'Active member not found.'
+          });
         }
-      });
 
-      await this.recordAuditLog(tx, {
-        groupId,
-        actorUserId,
-        targetUserId: memberUserId,
-        action: AUDIT_ACTION_MEMBER_REMOVED,
-        details: {
-          previousRole: membership.role
+        if (membership.role === GroupMemberRole.ADMIN) {
+          await this.assertNotLastAdmin(tx, groupId);
         }
-      });
 
-      return {
-        groupId,
-        userId: updatedMembership.userId,
-        status: updatedMembership.status,
-        removed: true,
-        updatedAt: updatedMembership.updatedAt.toISOString()
-      };
-    });
+        const updatedMembership = await tx.groupMember.update({
+          where: { id: membership.id },
+          data: {
+            status: GroupMemberStatus.INACTIVE
+          }
+        });
+
+        await this.recordAuditLog(tx, {
+          groupId,
+          actorUserId,
+          targetUserId: memberUserId,
+          action: AUDIT_ACTION_MEMBER_REMOVED,
+          details: {
+            previousRole: membership.role
+          }
+        });
+
+        return {
+          groupId,
+          userId: updatedMembership.userId,
+          status: updatedMembership.status,
+          removed: true,
+          updatedAt: updatedMembership.updatedAt.toISOString()
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    );
   }
 
   private async assertActiveMembership(
@@ -381,18 +609,6 @@ export class GroupsService {
       throw new ForbiddenException({
         code: ErrorCode.Forbidden,
         message: 'Only group admins can perform this action.'
-      });
-    }
-
-    const groupExists = await tx.group.findUnique({
-      where: { id: groupId },
-      select: { id: true }
-    });
-
-    if (!groupExists) {
-      throw new NotFoundException({
-        code: ErrorCode.NotFound,
-        message: 'Group not found.'
       });
     }
 
@@ -515,5 +731,35 @@ export class GroupsService {
       createdAt: member.createdAt.toISOString(),
       updatedAt: member.updatedAt.toISOString()
     };
+  }
+
+  private buildMemberOrderBy(
+    query: ListGroupMembersQueryDto
+  ): Prisma.GroupMemberOrderByWithRelationInput[] {
+    switch (query.sortBy) {
+      case 'joinedAt':
+        return [{ joinedAt: query.sortOrder }, { createdAt: query.sortOrder }];
+      case 'createdAt':
+        return [{ createdAt: query.sortOrder }, { joinedAt: query.sortOrder }];
+      case 'role':
+      default:
+        return [{ role: query.sortOrder }, { joinedAt: 'asc' }];
+    }
+  }
+
+  private buildUserGroupsOrderBy(
+    query: ListUserGroupsQueryDto
+  ): Prisma.GroupMemberOrderByWithRelationInput[] {
+    switch (query.sortBy) {
+      case 'name':
+        return [{ group: { name: query.sortOrder } }, { joinedAt: 'desc' }];
+      case 'createdAt':
+        return [{ group: { createdAt: query.sortOrder } }, { joinedAt: 'desc' }];
+      case 'joinedAt':
+        return [{ joinedAt: query.sortOrder }, { createdAt: query.sortOrder }];
+      case 'updatedAt':
+      default:
+        return [{ group: { updatedAt: query.sortOrder } }, { joinedAt: 'desc' }];
+    }
   }
 }

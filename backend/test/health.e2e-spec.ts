@@ -81,7 +81,13 @@ describe('Health endpoints (e2e)', () => {
   });
 
   it('GET /api/v1/health/ready returns 200 when checks are ok', async () => {
-    await request(app!.getHttpServer()).get('/api/v1/health/ready').expect(200);
+    const response = await request(app!.getHttpServer()).get('/api/v1/health/ready').expect(200);
+
+    expect(response.body.data).toEqual(
+      expect.objectContaining({
+        checks: { database: 'ok', migrations: 'ok' }
+      })
+    );
   });
 
   it('GET /api/v1/health/ready returns 503 when checks fail', async () => {
