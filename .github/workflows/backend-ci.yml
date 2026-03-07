@@ -57,6 +57,17 @@ jobs:
             exit 1
           fi
 
+          DB_USER="$(echo "$DATABASE_URL" | sed -E 's|^[a-z]+://([^:/]+):.*|\1|')"
+          if [ "$DB_USER" = "postgres" ]; then
+            echo "::error::SUPABASE_DATABASE_URL is using username 'postgres'."
+            echo "::error::For Supabase pooler connections, use username format 'postgres.<project-ref>'."
+            exit 1
+          fi
+
+          if ! echo "$DB_USER" | grep -q '^postgres\\.'; then
+            echo "::warning::Database username does not match expected Supabase pooler format 'postgres.<project-ref>'."
+          fi
+
           if echo "$DATABASE_URL" | grep -Eq '@db\\.[^.]+\\.supabase\\.co:5432'; then
             echo "::error::SUPABASE_DATABASE_URL is using direct host (db.<project-ref>.supabase.co:5432)."
             echo "::error::Use Supabase session pooler host on :5432 instead (aws-1-<region>.pooler.supabase.com:5432) with user postgres.<project-ref>."
