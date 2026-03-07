@@ -57,6 +57,20 @@ jobs:
             exit 1
           fi
 
+          if echo "$DATABASE_URL" | grep -Eq '@db\\.[^.]+\\.supabase\\.co:5432'; then
+            echo "::error::SUPABASE_DATABASE_URL is using direct host (db.<project-ref>.supabase.co:5432)."
+            echo "::error::Use Supabase session pooler host on :5432 instead (aws-1-<region>.pooler.supabase.com:5432) with user postgres.<project-ref>."
+            exit 1
+          fi
+
+          if ! echo "$DATABASE_URL" | grep -q 'pooler\\.supabase\\.com:5432'; then
+            echo "::warning::SUPABASE_DATABASE_URL does not look like a Supabase session pooler URL on :5432."
+          fi
+
+          if ! echo "$DATABASE_URL" | grep -q 'sslmode=require'; then
+            echo "::warning::SUPABASE_DATABASE_URL is missing sslmode=require."
+          fi
+
       - name: Run migrations
         run: pnpm prisma:migrate:deploy
 
