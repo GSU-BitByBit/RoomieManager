@@ -38,15 +38,16 @@ model Group {
 }
 
 model GroupMember {
-  id        String            @id @default(cuid())
-  groupId   String            @map("group_id")
-  userId    String            @map("user_id")
-  role      GroupMemberRole   @default(MEMBER)
-  status    GroupMemberStatus @default(ACTIVE)
-  joinedAt  DateTime          @default(now()) @map("joined_at")
-  createdAt DateTime          @default(now()) @map("created_at")
-  updatedAt DateTime          @updatedAt @map("updated_at")
-  group     Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  id          String            @id @default(cuid())
+  groupId     String            @map("group_id")
+  userId      String            @map("user_id")
+  displayName String?           @map("display_name") @db.VarChar(120)
+  role        GroupMemberRole   @default(MEMBER)
+  status      GroupMemberStatus @default(ACTIVE)
+  joinedAt    DateTime          @default(now()) @map("joined_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  group       Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, userId])
   @@index([userId], map: "group_members_user_id_idx")

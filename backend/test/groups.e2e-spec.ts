@@ -232,7 +232,8 @@ describe('Groups endpoints (e2e)', () => {
         pageSize: 20,
         sortBy: 'updatedAt',
         sortOrder: 'desc'
-      })
+      }),
+      'alex@example.com'
     );
   });
 
@@ -259,7 +260,8 @@ describe('Groups endpoints (e2e)', () => {
     expect(response.body.data.joinCode).toBe('ABCD1234');
     expect(groupsServiceMock.createGroup).toHaveBeenCalledWith(
       'user-1',
-      expect.objectContaining({ name: 'Apartment 12A' })
+      expect.objectContaining({ name: 'Apartment 12A' }),
+      'alex@example.com'
     );
   });
 
@@ -285,7 +287,8 @@ describe('Groups endpoints (e2e)', () => {
     expect(response.body.data.memberRole).toBe('MEMBER');
     expect(groupsServiceMock.joinGroup).toHaveBeenCalledWith(
       'user-1',
-      expect.objectContaining({ joinCode: 'ABCD1234' })
+      expect.objectContaining({ joinCode: 'ABCD1234' }),
+      'alex@example.com'
     );
   });
 
@@ -327,7 +330,7 @@ describe('Groups endpoints (e2e)', () => {
 
     expect(response.body.success).toBe(true);
     expect(response.body.data.id).toBe(groupId);
-    expect(groupsServiceMock.getGroup).toHaveBeenCalledWith('user-1', groupId);
+    expect(groupsServiceMock.getGroup).toHaveBeenCalledWith('user-1', groupId, 'alex@example.com');
   });
 
   it('GET /api/v1/groups/:groupId/members returns members', async () => {
@@ -349,7 +352,8 @@ describe('Groups endpoints (e2e)', () => {
         pageSize: 20,
         sortBy: 'role',
         sortOrder: 'asc'
-      })
+      }),
+      'alex@example.com'
     );
   });
 
@@ -367,7 +371,7 @@ describe('Groups endpoints (e2e)', () => {
     expect(response.body.data.chores.pendingCount).toBe(3);
     expect(response.body.data.finance.billCount).toBe(4);
     expect(response.body.data.contract.publishedVersion).toBe(2);
-    expect(groupsServiceMock.getGroupDashboard).toHaveBeenCalledWith('user-1', groupId);
+    expect(groupsServiceMock.getGroupDashboard).toHaveBeenCalledWith('user-1', groupId, 'alex@example.com');
   });
 
   it('GET /api/v1/groups/:groupId/dashboard rejects non-app-id groupId', async () => {

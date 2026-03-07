@@ -60,6 +60,7 @@ export interface JoinCodeResetResponse {
 
 export interface GroupMemberSummary {
   userId: string;
+  displayName: string | null;
   role: GroupMemberRole;
   status: GroupMemberStatus;
   joinedAt: string;

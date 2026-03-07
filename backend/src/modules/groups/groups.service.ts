@@ -43,7 +43,11 @@ const AUDIT_ACTION_MEMBER_REMOVED = 'MEMBER_REMOVED';
 export class GroupsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createGroup(userId: string, payload: CreateGroupDto): Promise<GroupSummary> {
+  async createGroup(
+    userId: string,
+    payload: CreateGroupDto,
+    displayName?: string | null
+  ): Promise<GroupSummary> {
     return this.prisma.$transaction(async (tx) => {
       const group = await tx.group.create({
         data: {
@@ -56,6 +60,7 @@ export class GroupsService {
         data: {
           groupId: group.id,
           userId,
+          displayName: displayName ?? null,
           role: GroupMemberRole.ADMIN,
           status: GroupMemberStatus.ACTIVE
         }
@@ -77,9 +82,12 @@ export class GroupsService {
 
   async listUserGroups(
     userId: string,
-    query: ListUserGroupsQueryDto = new ListUserGroupsQueryDto()
+    query: ListUserGroupsQueryDto = new ListUserGroupsQueryDto(),
+    displayName?: string | null
   ): Promise<UserGroupsResponse> {
     return this.prisma.$transaction(async (tx) => {
+      await this.backfillDisplayName(tx, userId, displayName);
+
       const pagination = resolvePagination(query);
 
       const totalGroups = await tx.groupMember.count({
@@ -139,7 +147,11 @@ export class GroupsService {
     });
   }
 
-  async joinGroup(userId: string, payload: JoinGroupDto): Promise<GroupSummary> {
+  async joinGroup(
+    userId: string,
+    payload: JoinGroupDto,
+    displayName?: string | null
+  ): Promise<GroupSummary> {
     const normalizedCode = this.normalizeJoinCode(payload.joinCode);
 
     return this.prisma.$transaction(async (tx) => {
@@ -179,6 +191,7 @@ export class GroupsService {
           data: {
             role: GroupMemberRole.MEMBER,
             status: GroupMemberStatus.ACTIVE,
+            displayName: displayName ?? existingMembership.displayName,
             joinedAt: new Date()
           }
         });
@@ -187,6 +200,7 @@ export class GroupsService {
           data: {
             groupId: joinCodeRecord.groupId,
             userId,
+            displayName: displayName ?? null,
             role: GroupMemberRole.MEMBER,
             status: GroupMemberStatus.ACTIVE
           }
@@ -224,8 +238,13 @@ export class GroupsService {
     });
   }
 
-  async getGroup(userId: string, groupId: string): Promise<GroupSummary> {
+  async getGroup(
+    userId: string,
+    groupId: string,
+    displayName?: string | null
+  ): Promise<GroupSummary> {
     return this.prisma.$transaction(async (tx) => {
+      await this.backfillDisplayName(tx, userId, displayName);
       const membership = await this.assertActiveMembership(tx, userId, groupId, {
         includeGroup: true
       });
@@ -250,8 +269,13 @@ export class GroupsService {
     });
   }
 
-  async getGroupDashboard(userId: string, groupId: string): Promise<GroupDashboardResponse> {
+  async getGroupDashboard(
+    userId: string,
+    groupId: string,
+    displayName?: string | null
+  ): Promise<GroupDashboardResponse> {
     return this.prisma.$transaction(async (tx) => {
+      await this.backfillDisplayName(tx, userId, displayName);
       const membership = await this.assertActiveMembership(tx, userId, groupId, {
         includeGroup: true
       });
@@ -382,9 +406,11 @@ export class GroupsService {
   async getGroupMembers(
     userId: string,
     groupId: string,
-    query: ListGroupMembersQueryDto = new ListGroupMembersQueryDto()
+    query: ListGroupMembersQueryDto = new ListGroupMembersQueryDto(),
+    displayName?: string | null
   ): Promise<GroupMembersResponse> {
     return this.prisma.$transaction(async (tx) => {
+      await this.backfillDisplayName(tx, userId, displayName);
       await this.assertActiveMembership(tx, userId, groupId);
 
       const pagination = resolvePagination(query);
@@ -703,6 +729,22 @@ export class GroupsService {
     return code.trim().toUpperCase();
   }
 
+  private async backfillDisplayName(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    displayName?: string | null
+  ): Promise<void> {
+    if (!displayName) return;
+    await tx.groupMember.updateMany({
+      where: {
+        userId,
+        status: GroupMemberStatus.ACTIVE,
+        displayName: null
+      },
+      data: { displayName }
+    });
+  }
+
   private mapGroupSummary(
     group: Group,
     membership: Pick<GroupMember, 'role' | 'status'>,
@@ -725,6 +767,7 @@ export class GroupsService {
   private mapGroupMemberSummary(member: GroupMember): GroupMembersResponse['members'][number] {
     return {
       userId: member.userId,
+      displayName: member.displayName,
       role: member.role,
       status: member.status,
       joinedAt: member.joinedAt.toISOString(),

@@ -104,7 +104,7 @@ export class GroupsController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: ListUserGroupsQueryDto
   ): Promise<UserGroupsResponse> {
-    return this.groupsService.listUserGroups(user.id, query);
+    return this.groupsService.listUserGroups(user.id, query, this.resolveDisplayName(user));
   }
 
   @Post()
@@ -139,7 +139,11 @@ export class GroupsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() payload: CreateGroupDto
   ): Promise<GroupSummary> {
-    return this.groupsService.createGroup(user.id, payload);
+    return this.groupsService.createGroup(
+      user.id,
+      payload,
+      this.resolveDisplayName(user)
+    );
   }
 
   @Post('join')
@@ -174,7 +178,11 @@ export class GroupsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() payload: JoinGroupDto
   ): Promise<GroupSummary> {
-    return this.groupsService.joinGroup(user.id, payload);
+    return this.groupsService.joinGroup(
+      user.id,
+      payload,
+      this.resolveDisplayName(user)
+    );
   }
 
   @Post(':groupId/join-code/reset')
@@ -239,7 +247,7 @@ export class GroupsController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('groupId', ParseAppIdPipe) groupId: string
   ): Promise<GroupSummary> {
-    return this.groupsService.getGroup(user.id, groupId);
+    return this.groupsService.getGroup(user.id, groupId, this.resolveDisplayName(user));
   }
 
   @Get(':groupId/dashboard')
@@ -302,7 +310,7 @@ export class GroupsController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('groupId', ParseAppIdPipe) groupId: string
   ): Promise<GroupDashboardResponse> {
-    return this.groupsService.getGroupDashboard(user.id, groupId);
+    return this.groupsService.getGroupDashboard(user.id, groupId, this.resolveDisplayName(user));
   }
 
   @Get(':groupId/members')
@@ -355,7 +363,7 @@ export class GroupsController {
     @Param('groupId', ParseAppIdPipe) groupId: string,
     @Query() query: ListGroupMembersQueryDto
   ): Promise<GroupMembersResponse> {
-    return this.groupsService.getGroupMembers(user.id, groupId, query);
+    return this.groupsService.getGroupMembers(user.id, groupId, query, this.resolveDisplayName(user));
   }
 
   @Patch(':groupId/members/:userId/role')
@@ -424,5 +432,13 @@ export class GroupsController {
     @Param('userId', ParseUUIDPipe) memberUserId: string
   ): Promise<GroupMemberRemoveResponse> {
     return this.groupsService.removeMember(user.id, groupId, memberUserId);
+  }
+
+  private resolveDisplayName(user: AuthenticatedUser): string | null {
+    const fullName = user.userMetadata?.full_name;
+    if (typeof fullName === 'string' && fullName.trim()) {
+      return fullName.trim();
+    }
+    return user.email ?? null;
   }
 }
