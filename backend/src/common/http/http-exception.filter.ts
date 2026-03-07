@@ -4,7 +4,8 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
-  Injectable
+  Injectable,
+  Logger
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { Prisma } from '@prisma/client';
@@ -23,12 +24,21 @@ interface ExceptionResponseBody {
 @Injectable()
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<RequestWithId>();
 
     const { status, message, code, details } = this.normalizeException(exception);
+
+    if (status >= 500) {
+      this.logger.error(
+        { err: exception, requestId: resolveRequestId(request) },
+        `Unhandled ${status} error: ${exception instanceof Error ? exception.message : 'Unknown'}`
+      );
+    }
 
     const payload: ApiError = {
       success: false,
@@ -72,7 +82,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (exception instanceof Error) {
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: exception.message || 'Internal server error',
+        message: 'Internal server error',
         code: ErrorCode.InternalError
       };
     }
@@ -123,10 +133,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         return {
           status: HttpStatus.CONFLICT,
           message: 'Resource already exists.',
-          code: ErrorCode.Conflict,
-          details: {
-            target: exception.meta?.target
-          }
+          code: ErrorCode.Conflict
         };
       case 'P2025':
         return {
@@ -138,10 +145,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         return {
           status: HttpStatus.BAD_REQUEST,
           message: 'Database request error.',
-          code: ErrorCode.BadRequest,
-          details: {
-            prismaCode: exception.code
-          }
+          code: ErrorCode.BadRequest
         };
     }
   }
