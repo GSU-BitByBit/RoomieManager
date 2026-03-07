@@ -18,7 +18,7 @@ export function resolveRequestId(request: RequestWithId): string {
     return headerValue;
   }
 
-  if (Array.isArray(headerValue) && headerValue.length > 0) {
+  if (Array.isArray(headerValue) && headerValue.length > 0 && headerValue[0].length > 0) {
     return headerValue[0];
   }
 

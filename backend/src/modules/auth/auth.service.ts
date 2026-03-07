@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   ServiceUnavailableException,
   UnauthorizedException
@@ -8,6 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 
 import { ErrorCode } from '../../common/http/http-error-code';
+import { resolveSupabaseUrl } from '../../common/supabase/supabase-url.util';
 import type { EnvConfig } from '../../config/env.schema';
 import type { LoginDto } from './dto/login.dto';
 import type { RegisterDto } from './dto/register.dto';
@@ -56,7 +58,7 @@ export class AuthService {
   }
 
   private async callSupabaseAuth<T>(path: string, body: Record<string, unknown>): Promise<T> {
-    const supabaseUrl = this.getSupabaseUrl();
+    const supabaseUrl = resolveSupabaseUrl(this.configService);
     const anonKey = this.getSupabaseAnonKey();
 
     let response: Response;
@@ -88,19 +90,6 @@ export class AuthService {
     return data as T;
   }
 
-  private getSupabaseUrl(): string {
-    const rawUrl = this.configService.get('SUPABASE_URL', { infer: true })?.trim();
-
-    if (!rawUrl) {
-      throw new ServiceUnavailableException({
-        code: ErrorCode.ServiceUnavailable,
-        message: 'SUPABASE_URL is not configured.'
-      });
-    }
-
-    return rawUrl.replace(/\/+$/, '');
-  }
-
   private getSupabaseAnonKey(): string {
     const anonKey = this.configService.get('SUPABASE_ANON_KEY', { infer: true })?.trim();
 
@@ -118,6 +107,12 @@ export class AuthService {
     try {
       return await response.json();
     } catch {
+      if (response.ok) {
+        throw new ServiceUnavailableException({
+          code: ErrorCode.ServiceUnavailable,
+          message: 'Supabase returned a non-JSON response.'
+        });
+      }
       return {};
     }
   }
@@ -131,41 +126,37 @@ export class AuthService {
       errorPayload.error ??
       'Supabase Auth request failed.';
 
-    const details = {
-      status,
-      error: errorPayload.error,
-      errorCode: errorPayload.error_code,
-      rawCode: errorPayload.code
-    };
-
-    if (status === 401 || status === 403) {
+    if (status === 401) {
       return new UnauthorizedException({
         code: ErrorCode.Unauthorized,
-        message,
-        details
+        message
+      });
+    }
+
+    if (status === 403) {
+      return new ForbiddenException({
+        code: ErrorCode.Forbidden,
+        message
       });
     }
 
     if (status === 409) {
       return new ConflictException({
         code: ErrorCode.Conflict,
-        message,
-        details
+        message
       });
     }
 
     if (status >= 400 && status < 500) {
       return new BadRequestException({
         code: ErrorCode.BadRequest,
-        message,
-        details
+        message
       });
     }
 
     return new ServiceUnavailableException({
       code: ErrorCode.ServiceUnavailable,
-      message,
-      details
+      message
     });
   }
 

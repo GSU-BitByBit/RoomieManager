@@ -13,6 +13,29 @@ describe('Groups endpoints (e2e)', () => {
   let app: INestApplication | undefined;
 
   const groupsServiceMock = {
+    listUserGroups: jest.fn(async () => ({
+      groups: [
+        {
+          id: 'group-1',
+          name: 'Apartment 12A',
+          createdBy: 'user-1',
+          createdAt: '2026-02-23T00:00:00.000Z',
+          updatedAt: '2026-02-23T00:00:00.000Z',
+          memberRole: 'ADMIN',
+          memberStatus: 'ACTIVE',
+          memberCount: 2,
+          joinCode: 'ABCD1234'
+        }
+      ],
+      pagination: {
+        page: 1,
+        pageSize: 20,
+        totalItems: 1,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPreviousPage: false
+      }
+    })),
     createGroup: jest.fn(async () => ({
       id: 'group-1',
       name: 'Apartment 12A',
@@ -48,6 +71,84 @@ describe('Groups endpoints (e2e)', () => {
       memberStatus: 'ACTIVE',
       memberCount: 2,
       joinCode: 'ZXCV9876'
+    })),
+    getGroupMembers: jest.fn(async () => ({
+      groupId: 'group-1',
+      members: [
+        {
+          userId: 'user-1',
+          role: 'ADMIN',
+          status: 'ACTIVE',
+          joinedAt: '2026-02-23T00:00:00.000Z',
+          createdAt: '2026-02-23T00:00:00.000Z',
+          updatedAt: '2026-02-23T00:00:00.000Z'
+        },
+        {
+          userId: 'user-2',
+          role: 'MEMBER',
+          status: 'ACTIVE',
+          joinedAt: '2026-02-23T00:10:00.000Z',
+          createdAt: '2026-02-23T00:10:00.000Z',
+          updatedAt: '2026-02-23T00:10:00.000Z'
+        }
+      ],
+      pagination: {
+        page: 1,
+        pageSize: 20,
+        totalItems: 2,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPreviousPage: false
+      }
+    })),
+    getGroupDashboard: jest.fn(async () => ({
+      group: {
+        id: 'group-1',
+        name: 'Apartment 12A',
+        createdBy: 'user-1',
+        createdAt: '2026-02-23T00:00:00.000Z',
+        updatedAt: '2026-02-23T00:00:00.000Z',
+        memberRole: 'ADMIN',
+        memberStatus: 'ACTIVE',
+        memberCount: 2,
+        joinCode: 'ABCD1234'
+      },
+      members: {
+        totalActive: 2,
+        adminCount: 1,
+        memberCount: 1
+      },
+      chores: {
+        pendingCount: 3,
+        completedCount: 5,
+        overdueCount: 1,
+        assignedToMePendingCount: 2
+      },
+      finance: {
+        billCount: 4,
+        paymentCount: 6,
+        latestBillIncurredAt: '2026-02-23T00:00:00.000Z',
+        latestPaymentPaidAt: '2026-02-23T00:00:00.000Z'
+      },
+      contract: {
+        hasDraft: true,
+        publishedVersion: 2,
+        updatedAt: '2026-02-23T00:00:00.000Z'
+      }
+    })),
+    updateMemberRole: jest.fn(async () => ({
+      groupId: 'group-1',
+      userId: 'user-2',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      updatedAt: '2026-02-23T00:20:00.000Z'
+    })),
+    removeMember: jest.fn(async () => ({
+      groupId: 'group-1',
+      userId: 'user-2',
+      status: 'INACTIVE',
+      removed: true,
+      updatedAt: '2026-02-23T00:30:00.000Z'
     }))
   };
 
@@ -115,15 +216,51 @@ describe('Groups endpoints (e2e)', () => {
     expect(response.body.error.code).toBe('UNAUTHORIZED');
   });
 
+  it('GET /api/v1/groups lists current user groups', async () => {
+    const response = await request(app!.getHttpServer())
+      .get('/api/v1/groups')
+      .set('Authorization', 'Bearer valid-token')
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.groups).toHaveLength(1);
+    expect(response.body.data.pagination.page).toBe(1);
+    expect(groupsServiceMock.listUserGroups).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({
+        page: 1,
+        pageSize: 20,
+        sortBy: 'updatedAt',
+        sortOrder: 'desc'
+      })
+    );
+  });
+
+  it('GET /api/v1/groups rejects invalid pagination query', async () => {
+    const response = await request(app!.getHttpServer())
+      .get('/api/v1/groups')
+      .set('Authorization', 'Bearer valid-token')
+      .query({ pageSize: 999 })
+      .expect(400);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.error.code).toBe('BAD_REQUEST');
+    expect(groupsServiceMock.listUserGroups).not.toHaveBeenCalled();
+  });
+
   it('POST /api/v1/groups creates group', async () => {
     const response = await request(app!.getHttpServer())
       .post('/api/v1/groups')
       .set('Authorization', 'Bearer valid-token')
       .send({ name: 'Apartment 12A' })
-      .expect(200);
+      .expect(201);
 
     expect(response.body.success).toBe(true);
     expect(response.body.data.joinCode).toBe('ABCD1234');
+    expect(groupsServiceMock.createGroup).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ name: 'Apartment 12A' })
+    );
   });
 
   it('POST /api/v1/groups rejects whitespace-only name', async () => {
@@ -146,25 +283,172 @@ describe('Groups endpoints (e2e)', () => {
 
     expect(response.body.success).toBe(true);
     expect(response.body.data.memberRole).toBe('MEMBER');
+    expect(groupsServiceMock.joinGroup).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ joinCode: 'ABCD1234' })
+    );
   });
 
   it('POST /api/v1/groups/:groupId/join-code/reset resets join code', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+    groupsServiceMock.resetJoinCode.mockResolvedValueOnce({
+      groupId,
+      joinCode: 'ZXCV9876'
+    });
+
     const response = await request(app!.getHttpServer())
-      .post('/api/v1/groups/group-1/join-code/reset')
+      .post(`/api/v1/groups/${groupId}/join-code/reset`)
       .set('Authorization', 'Bearer valid-token')
       .expect(200);
 
     expect(response.body.success).toBe(true);
     expect(response.body.data.joinCode).toBe('ZXCV9876');
+    expect(groupsServiceMock.resetJoinCode).toHaveBeenCalledWith('user-1', groupId);
   });
 
   it('GET /api/v1/groups/:groupId returns group', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+    groupsServiceMock.getGroup.mockResolvedValueOnce({
+      id: groupId,
+      name: 'Apartment 12A',
+      createdBy: 'user-1',
+      createdAt: '2026-02-23T00:00:00.000Z',
+      updatedAt: '2026-02-23T00:00:00.000Z',
+      memberRole: 'ADMIN',
+      memberStatus: 'ACTIVE',
+      memberCount: 2,
+      joinCode: 'ZXCV9876'
+    });
+
     const response = await request(app!.getHttpServer())
-      .get('/api/v1/groups/group-1')
+      .get(`/api/v1/groups/${groupId}`)
       .set('Authorization', 'Bearer valid-token')
       .expect(200);
 
     expect(response.body.success).toBe(true);
-    expect(response.body.data.id).toBe('group-1');
+    expect(response.body.data.id).toBe(groupId);
+    expect(groupsServiceMock.getGroup).toHaveBeenCalledWith('user-1', groupId);
+  });
+
+  it('GET /api/v1/groups/:groupId/members returns members', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+
+    const response = await request(app!.getHttpServer())
+      .get(`/api/v1/groups/${groupId}/members`)
+      .set('Authorization', 'Bearer valid-token')
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.members).toHaveLength(2);
+    expect(response.body.data.pagination.page).toBe(1);
+    expect(groupsServiceMock.getGroupMembers).toHaveBeenCalledWith(
+      'user-1',
+      groupId,
+      expect.objectContaining({
+        page: 1,
+        pageSize: 20,
+        sortBy: 'role',
+        sortOrder: 'asc'
+      })
+    );
+  });
+
+  it('GET /api/v1/groups/:groupId/dashboard returns group dashboard aggregates', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+
+    const response = await request(app!.getHttpServer())
+      .get(`/api/v1/groups/${groupId}/dashboard`)
+      .set('Authorization', 'Bearer valid-token')
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.group.id).toBe('group-1');
+    expect(response.body.data.members.totalActive).toBe(2);
+    expect(response.body.data.chores.pendingCount).toBe(3);
+    expect(response.body.data.finance.billCount).toBe(4);
+    expect(response.body.data.contract.publishedVersion).toBe(2);
+    expect(groupsServiceMock.getGroupDashboard).toHaveBeenCalledWith('user-1', groupId);
+  });
+
+  it('GET /api/v1/groups/:groupId/dashboard rejects non-app-id groupId', async () => {
+    const response = await request(app!.getHttpServer())
+      .get('/api/v1/groups/not-a-uuid/dashboard')
+      .set('Authorization', 'Bearer valid-token')
+      .expect(400);
+
+    expect(response.body.error.code).toBe('BAD_REQUEST');
+    expect(groupsServiceMock.getGroupDashboard).not.toHaveBeenCalled();
+  });
+
+  it('GET /api/v1/groups/:groupId/members rejects invalid pagination query', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+
+    const response = await request(app!.getHttpServer())
+      .get(`/api/v1/groups/${groupId}/members`)
+      .set('Authorization', 'Bearer valid-token')
+      .query({ page: 0 })
+      .expect(400);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.error.code).toBe('BAD_REQUEST');
+    expect(groupsServiceMock.getGroupMembers).not.toHaveBeenCalled();
+  });
+
+  it('PATCH /api/v1/groups/:groupId/members/:userId/role updates role', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+    const userId = '550e8400-e29b-41d4-a716-446655440001';
+
+    const response = await request(app!.getHttpServer())
+      .patch(`/api/v1/groups/${groupId}/members/${userId}/role`)
+      .set('Authorization', 'Bearer valid-token')
+      .send({ role: 'ADMIN' })
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.role).toBe('ADMIN');
+    expect(groupsServiceMock.updateMemberRole).toHaveBeenCalledWith(
+      'user-1',
+      groupId,
+      userId,
+      expect.objectContaining({ role: 'ADMIN' })
+    );
+  });
+
+  it('PATCH /api/v1/groups/:groupId/members/:userId/role validates role enum', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+    const userId = '550e8400-e29b-41d4-a716-446655440001';
+
+    const response = await request(app!.getHttpServer())
+      .patch(`/api/v1/groups/${groupId}/members/${userId}/role`)
+      .set('Authorization', 'Bearer valid-token')
+      .send({ role: 'OWNER' })
+      .expect(400);
+
+    expect(response.body.error.code).toBe('BAD_REQUEST');
+    expect(groupsServiceMock.updateMemberRole).not.toHaveBeenCalled();
+  });
+
+  it('DELETE /api/v1/groups/:groupId/members/:userId removes member', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+    const userId = '550e8400-e29b-41d4-a716-446655440001';
+
+    const response = await request(app!.getHttpServer())
+      .delete(`/api/v1/groups/${groupId}/members/${userId}`)
+      .set('Authorization', 'Bearer valid-token')
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.removed).toBe(true);
+    expect(groupsServiceMock.removeMember).toHaveBeenCalledWith('user-1', groupId, userId);
+  });
+
+  it('rejects non-UUID groupId with 400', async () => {
+    const response = await request(app!.getHttpServer())
+      .get('/api/v1/groups/not-a-uuid')
+      .set('Authorization', 'Bearer valid-token')
+      .expect(400);
+
+    expect(response.body.error.code).toBe('BAD_REQUEST');
+    expect(groupsServiceMock.getGroup).not.toHaveBeenCalled();
   });
 });
