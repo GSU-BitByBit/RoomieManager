@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Roomie Manager App</title>
+  <title>Roomie Manager</title>
   <link rel="stylesheet" href="app-shell.css">
 </head>
 
@@ -11,16 +11,34 @@
 
     <!-- Sidebar -->
     <aside class="sidebar">
-      <h2>Roomie</h2>
+      <div class="sidebar-header">
+        <span class="sidebar-logo">🏠</span>
+        <h2>Roomie</h2>
+      </div>
 
       <nav>
-        <a href="#" onclick="loadPage('dashboard'); return false;">Dashboard</a>
-        <a href="#" onclick="loadPage('members'); return false;">Members</a>
-        <a href="#" onclick="loadPage('chores'); return false;">Chores</a>
-        <a href="#" onclick="loadPage('bills'); return false;">Bills</a>
-        <a href="#" onclick="loadPage('contract'); return false;">Contract</a>
-        <a href="#" onclick="loadPage('settings'); return false;">Settings</a>
+        <a href="#" class="nav-link active" onclick="loadPage('dashboard'); return false;">
+          <span class="nav-icon">📊</span> Dashboard
+        </a>
+        <a href="#" class="nav-link" onclick="loadPage('members'); return false;">
+          <span class="nav-icon">👥</span> Members
+        </a>
+        <a href="#" class="nav-link" onclick="loadPage('chores'); return false;">
+          <span class="nav-icon">🧹</span> Chores
+        </a>
+        <a href="#" class="nav-link" onclick="loadPage('bills'); return false;">
+          <span class="nav-icon">💰</span> Bills
+        </a>
+        <a href="#" class="nav-link" onclick="loadPage('contract'); return false;">
+          <span class="nav-icon">📝</span> Contract
+        </a>
       </nav>
+
+      <div class="sidebar-footer">
+        <a href="#" class="nav-link" onclick="loadPage('settings'); return false;">
+          <span class="nav-icon">⚙️</span> Settings
+        </a>
+      </div>
     </aside>
 
     <!-- Main content -->
@@ -28,10 +46,18 @@
 
       <!-- Topbar -->
       <header class="topbar">
-        <h3 class="group-name">Apartment 12A</h3>
-
-        <div class="join-code-badge">
-          Code: ABC123
+        <div class="topbar-left">
+          <h3 class="page-title" id="pageTitle">Dashboard</h3>
+        </div>
+        <div class="topbar-right">
+          <div class="group-name-badge">
+            <span class="badge-icon">🏠</span>
+            <span class="group-name">Apartment 12A</span>
+          </div>
+          <div class="join-code-badge" title="Click to copy">
+            <span class="code-label">Code:</span>
+            <span class="code-value">ABC123</span>
+          </div>
         </div>
       </header>
 

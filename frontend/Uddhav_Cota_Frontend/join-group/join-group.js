@@ -1,4 +1,5 @@
-document.getElementById("joinBtn").onclick = () => {
+document.getElementById("joinBtn").onclick = async () => {
+  const token = localStorage.getItem("accessToken")
   const code = document.getElementById("joinCode").value
 
   if (!code) {
@@ -6,33 +7,23 @@ document.getElementById("joinBtn").onclick = () => {
     return
   }
 
-  document.getElementById("joinBtn").onclick = async () => {
-    const token = localStorage.getItem("accessToken")
-    const code = document.getElementById("joinCode").value
+  const res = await fetch("http://localhost:3000/api/v1/groups/join", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token
+    },
+    body: JSON.stringify({ joinCode: code })
+  })
 
-    if (!code) {
-      alert("Enter join code")
-      return
-    }
+  const body = await res.json()
 
-    const res = await fetch("http://localhost:3000/api/v1/groups/join", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
-      body: JSON.stringify({ joinCode: code })
-    })
-
-    const body = await res.json()
-
-    if (!body.success) {
-      alert(body.error.message)
-      return
-    }
-
-    localStorage.setItem("currentGroupId", body.data.id)
-
-    window.location.href = "../app-shell/app-shell.html"
+  if (!body.success) {
+    alert(body.error.message)
+    return
   }
+
+  localStorage.setItem("currentGroupId", body.data.id)
+
+  window.location.href = "../app-shell/app-shell.html"
 }
