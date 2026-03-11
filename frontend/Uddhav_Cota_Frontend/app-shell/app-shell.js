@@ -1,54 +1,24 @@
-// ----------- AUTH + GROUP PROTECTION -----------
+// ----------- FAKE GROUP (UI TEST MODE) -----------
 
-async function loadGroup() {
-  const token = localStorage.getItem("accessToken")
-  const groupId = localStorage.getItem("currentGroupId")
+function loadGroup() {
+  console.log("UI test mode: backend disabled")
 
-  // If no login token → go to login
-  if (!token) {
-    window.location.href = "../../login/login.html"
-    return
+  const group = {
+    name: "Test Apartment",
+    memberRole: "ADMIN",
+    joinCode: "ABC123"
   }
 
-  // If no group selected → go to onboarding
-  if (!groupId) {
-    window.location.href = "../onboarding/onboarding.html"
-    return
+  const nameEl = document.querySelector(".group-name")
+  const codeEl = document.querySelector(".join-code-badge")
+
+  if (nameEl) {
+    nameEl.textContent = group.name
   }
 
-  try {
-    const res = await fetch(
-      `http://localhost:3000/api/v1/groups/${groupId}`,
-      {
-        headers: {
-          "Authorization": "Bearer " + token
-        }
-      }
-    )
-
-    const body = await res.json()
-
-    if (!body.success) {
-      alert(body.error.message)
-      return
-    }
-
-    const group = body.data
-
-    // Update topbar dynamically
-    document.querySelector(".group-name").textContent = group.name
-
-    if (group.memberRole === "ADMIN") {
-      document.querySelector(".join-code-badge").textContent =
-        "Code: " + group.joinCode
-      document.querySelector(".join-code-badge").style.display = "block"
-    } else {
-      document.querySelector(".join-code-badge").style.display = "none"
-    }
-
-  } catch (err) {
-    console.error(err)
-    alert("Failed to load group")
+  if (codeEl) {
+    codeEl.textContent = "Code: " + group.joinCode
+    codeEl.style.display = "block"
   }
 }
 
@@ -57,6 +27,8 @@ async function loadGroup() {
 
 function loadPage(page) {
   const content = document.getElementById("content")
+
+  if (!content) return
 
   if (page === "dashboard") {
     content.innerHTML = `
@@ -104,7 +76,8 @@ function loadPage(page) {
       <h1>Group Settings</h1>
 
       <div class="section">
-        <p><strong>Group settings coming soon</strong></p>
+        <p><strong>Name:</strong> Test Apartment</p>
+        <p><strong>Your role:</strong> Admin</p>
         <button onclick="alert('Rename group (mock)')">Rename group</button>
       </div>
 
@@ -122,5 +95,7 @@ function loadPage(page) {
 
 // ----------- INITIAL LOAD -----------
 
-loadGroup()
-loadPage("dashboard")
+document.addEventListener("DOMContentLoaded", () => {
+  loadGroup()
+  loadPage("dashboard")
+})
