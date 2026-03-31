@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -18,6 +18,8 @@ export interface ReadinessResult {
 
 @Injectable()
 export class HealthService {
+  private readonly logger = new Logger(HealthService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getLiveness(): Promise<{ service: string; version: string; timestamp: string }> {
@@ -42,6 +44,7 @@ export class HealthService {
       checks.database = 'fail';
       checks.migrations = 'fail';
       details.database = this.describeError(error);
+      this.logger.error({ err: error }, 'Database connectivity check failed');
 
       return {
         checks,
@@ -60,11 +63,12 @@ export class HealthService {
       const failedCount = Number(result[0]?.failed_count ?? 0);
       if (failedCount > 0) {
         checks.migrations = 'fail';
-        details.migrations = `Detected ${failedCount} pending failed migration(s).`;
+        details.migrations = `Detected ${failedCount} incomplete migration(s).`;
       }
     } catch (error) {
       checks.migrations = 'fail';
       details.migrations = this.describeError(error);
+      this.logger.error({ err: error }, 'Migration status check failed');
     }
 
     return Object.keys(details).length > 0
@@ -79,7 +83,7 @@ export class HealthService {
 
   private describeError(error: unknown): string {
     if (error instanceof Error) {
-      return error.message;
+      return error.constructor.name;
     }
 
     return 'Unknown error';

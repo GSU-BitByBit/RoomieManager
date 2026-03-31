@@ -22,9 +22,11 @@
     "prisma:migrate:status": "prisma migrate status",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
-    "openapi:generate": "pnpm build && node dist/scripts/generate-openapi.js openapi/openapi.json",
+    "openapi:generate": "pnpm build && node dist/scripts/generate-openapi.js openapi/openapi.json && node dist/scripts/generate-openapi-types.js ../frontend/generated/backend-api.types.ts",
     "openapi:check": "node dist/scripts/check-openapi.js",
-    "verify": "pnpm prisma:generate && pnpm prisma:migrate:status && pnpm lint && pnpm test && pnpm test:e2e && pnpm build && pnpm openapi:check"
+    "openapi:types:generate": "pnpm build && node dist/scripts/generate-openapi-types.js ../frontend/generated/backend-api.types.ts",
+    "openapi:types:check": "node dist/scripts/check-openapi-types.js",
+    "verify": "pnpm prisma:generate && pnpm prisma:migrate:status && pnpm lint && pnpm test && pnpm test:e2e && pnpm build && pnpm openapi:check && pnpm openapi:types:check"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"
@@ -61,6 +63,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.2",
     "jest": "^29.7.0",
+    "openapi-typescript": "^7.10.1",
     "prettier": "^3.4.2",
     "prisma": "^5.22.0",
     "source-map-support": "^0.5.21",

@@ -1,0 +1,20 @@
+@startuml Use Case – Create Roommate Group
+left to right direction
+skinparam actorStyle stickman
+skinparam shadowing false
+
+title Use Case 1: Create Roommate Group
+
+actor "User" as User
+
+rectangle "RoomieManager" {
+  usecase "Create Roommate Group" as UC_Create
+  usecase "Generate Join Code" as UC_GenCode
+  usecase "Assign Admin Role" as UC_Admin
+}
+
+User --> UC_Create
+UC_Create ..> UC_GenCode : <<include>>
+UC_Create ..> UC_Admin : <<include>>
+
+@enduml

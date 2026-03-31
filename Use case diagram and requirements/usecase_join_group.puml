@@ -1,0 +1,20 @@
+@startuml Use Case – Join Roommate Group
+left to right direction
+skinparam actorStyle stickman
+skinparam shadowing false
+
+title Use Case 2: Join Roommate Group
+
+actor "User" as User
+
+rectangle "RoomieManager" {
+  usecase "Join Group\n(via Join Code)" as UC_Join
+  usecase "Validate Join Code" as UC_Validate
+  usecase "Add Member to Group" as UC_AddMember
+}
+
+User --> UC_Join
+UC_Join ..> UC_Validate : <<include>>
+UC_Join ..> UC_AddMember : <<include>>
+
+@enduml

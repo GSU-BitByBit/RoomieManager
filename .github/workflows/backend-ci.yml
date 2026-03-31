@@ -56,6 +56,47 @@ jobs:
             echo "::error::Missing SUPABASE_DATABASE_URL secret."
             exit 1
           fi
+          node -e "
+          const value = process.env.DATABASE_URL;
+          let url;
+          try {
+            url = new URL(value);
+          } catch {
+            console.error('::error::SUPABASE_DATABASE_URL is not a valid URL.');
+            process.exit(1);
+          }
+
+          if (!['postgresql:', 'postgres:'].includes(url.protocol)) {
+            console.error('::error::SUPABASE_DATABASE_URL must use postgres/postgresql protocol.');
+            process.exit(1);
+          }
+
+          if (url.username === 'postgres') {
+            console.error('::error::SUPABASE_DATABASE_URL is using username \\\"postgres\\\".');
+            console.error('::error::For Supabase pooler connections, use username format \\\"postgres.<project-ref>\\\".');
+            process.exit(1);
+          }
+
+          if (!url.username.startsWith('postgres.')) {
+            console.error('::error::Database username must match Supabase pooler format \\\"postgres.<project-ref>\\\".');
+            process.exit(1);
+          }
+
+          if (/^db\\./.test(url.hostname) && url.hostname.endsWith('.supabase.co') && url.port === '5432') {
+            console.error('::error::SUPABASE_DATABASE_URL is using direct host (db.<project-ref>.supabase.co:5432).');
+            console.error('::error::Use Supabase session pooler host on :5432 (aws-1-<region>.pooler.supabase.com:5432).');
+            process.exit(1);
+          }
+
+          if (!(url.hostname.endsWith('.pooler.supabase.com') && url.port === '5432')) {
+            console.error('::error::SUPABASE_DATABASE_URL must use Supabase session pooler host on port 5432.');
+            process.exit(1);
+          }
+
+          if (!url.searchParams.has('sslmode') || url.searchParams.get('sslmode') !== 'require') {
+            console.warn('::warning::SUPABASE_DATABASE_URL should include sslmode=require.');
+          }
+          "
 
       - name: Run migrations
         run: pnpm prisma:migrate:deploy

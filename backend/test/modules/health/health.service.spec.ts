@@ -11,7 +11,7 @@ describe('HealthService', () => {
 
     expect(readiness.checks.database).toBe('fail');
     expect(readiness.checks.migrations).toBe('fail');
-    expect(readiness.details?.database).toContain('db down');
+    expect(readiness.details?.database).toBe('Error');
   });
 
   it('returns readiness with failed migration check when failed rows exist', async () => {
@@ -27,6 +27,6 @@ describe('HealthService', () => {
 
     expect(readiness.checks.database).toBe('ok');
     expect(readiness.checks.migrations).toBe('fail');
-    expect(readiness.details?.migrations).toContain('Detected 2');
+    expect(readiness.details?.migrations).toContain('Detected 2 incomplete');
   });
 });

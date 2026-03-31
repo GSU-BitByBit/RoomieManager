@@ -97,7 +97,7 @@ describe('Auth endpoints (e2e)', () => {
         password: 'StrongPass123!',
         fullName: 'Alex Smith'
       })
-      .expect(200);
+      .expect(201);
 
     expect(response.body).toEqual(
       expect.objectContaining({
@@ -109,6 +109,13 @@ describe('Auth endpoints (e2e)', () => {
           },
           session: null
         }
+      })
+    );
+    expect(authServiceMock.register).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'alex@example.com',
+        password: 'StrongPass123!',
+        fullName: 'Alex Smith'
       })
     );
   });
@@ -124,6 +131,12 @@ describe('Auth endpoints (e2e)', () => {
 
     expect(response.body.success).toBe(true);
     expect(response.body.data.session.accessToken).toBe('access-token');
+    expect(authServiceMock.login).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'alex@example.com',
+        password: 'StrongPass123!'
+      })
+    );
   });
 
   it('GET /api/v1/auth/me returns UNAUTHORIZED when token is missing', async () => {

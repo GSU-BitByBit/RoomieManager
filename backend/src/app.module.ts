@@ -9,6 +9,9 @@ import { validateEnv } from './config/env.schema';
 import { AuthModule } from './modules/auth/auth.module';
 import { GroupsModule } from './modules/groups/groups.module';
 import { HealthModule } from './modules/health/health.module';
+import { ChoresModule } from './modules/chores/chores.module';
+import { ContractsModule } from './modules/contracts/contracts.module';
+import { FinanceModule } from './modules/finance/finance.module';
 
 @Module({
   imports: [
@@ -51,7 +54,10 @@ import { HealthModule } from './modules/health/health.module';
     PrismaModule,
     AuthModule,
     GroupsModule,
-    HealthModule
+    HealthModule,
+    ChoresModule,
+    ContractsModule,
+    FinanceModule
   ]
 })
 export class AppModule {}

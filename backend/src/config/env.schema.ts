@@ -8,7 +8,7 @@ export const envSchema = z.object({
   API_PREFIX: z.string().min(1).default('api/v1'),
   DATABASE_URL: z.string().min(1),
   LOG_LEVEL: z.enum(logLevels).default('info'),
-  CORS_ORIGINS: z.string().default('http://localhost:3000'),
+  CORS_ORIGINS: z.string().default('http://localhost:5173'),
   SUPABASE_URL: z.string().url().optional().or(z.literal('')),
   SUPABASE_ANON_KEY: z.string().optional().or(z.literal('')),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional().or(z.literal('')),
