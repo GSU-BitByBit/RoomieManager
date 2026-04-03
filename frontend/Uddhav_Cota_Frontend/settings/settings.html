@@ -4,58 +4,39 @@
   <title>Settings - Roomie Manager</title>
   <link rel="stylesheet" href="settings.css">
 </head>
-
 <body>
 
-  <div class="container">
-    <div class="page-header">
-      <h1>⚙️ Settings</h1>
-      <p>Manage your group preferences</p>
+  <div class="sidebar">
+    <div class="logo">🏠 Roomie Manager</div>
+    <ul class="nav-links">
+      <li><a href="../members/members.html">Member Page</a></li>
+      <li><a href="../chores/chores.html">Chores Page</a></li>
+      <li><a href="../bills/bills.html">Bills Page</a></li>
+      <li><a href="settings.html" class="active">Settings</a></li>
+    </ul>
+    <button id="logoutBtn">Logout</button>
+  </div>
+
+  <div class="main-content">
+    <h1>Settings</h1>
+
+    <div class="profile-section">
+      <h2>Profile</h2>
+      <label for="fullName">Full Name</label>
+      <input type="text" id="fullName" placeholder="Your Name">
+
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="Your Email">
+
+      <button id="updateProfileBtn">Update Profile</button>
     </div>
 
-    <div class="panel">
-      <div class="panel-header">
-        <h2>Group Information</h2>
-      </div>
-      <div class="panel-body">
-        <div class="setting-row">
-          <span class="label">Group Name</span>
-          <div class="setting-right">
-            <span class="value">Test Apartment</span>
-            <button class="btn btn-secondary btn-sm" id="renameBtn">Edit</button>
-          </div>
-        </div>
-        <div class="setting-row">
-          <span class="label">Your Role</span>
-          <span class="badge badge-admin">👑 Admin</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-header">
-        <h2>Join Code</h2>
-      </div>
-      <div class="panel-body">
-        <div class="setting-row">
-          <div>
-            <span class="label">Current Code</span>
-            <div class="code-display">ABC123</div>
-          </div>
-          <button class="btn btn-secondary btn-sm" id="resetCodeBtn">🔄 Reset Code</button>
-        </div>
-        <p class="text-muted">Share this code with people you want to invite to your group.</p>
-      </div>
-    </div>
-
-    <div class="danger-zone">
-      <h3>⚠️ Danger Zone</h3>
-      <p>These actions are irreversible. Please proceed with caution.</p>
-      <button class="btn btn-danger" id="leaveBtn">Leave Group</button>
+    <div class="group-section">
+      <h2>Group</h2>
+      <button id="leaveGroupBtn" class="danger-btn">Leave Group</button>
     </div>
   </div>
 
   <script src="settings.js"></script>
-
 </body>
 </html>

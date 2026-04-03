@@ -1,105 +1,79 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
+/* onboarding.css */
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
+  font-family: Arial, sans-serif;
+  background: #f0f4f8;
+  margin: 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  min-height: 100vh;
 }
 
 .container {
+  background: #fff;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
   text-align: center;
-  padding: 40px 20px;
+  width: 90%;
+  max-width: 500px;
 }
 
 .logo {
-  font-size: 56px;
-  margin-bottom: 16px;
-  animation: bounce 2s ease infinite;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  font-size: 48px;
+  margin-bottom: 10px;
 }
 
 h1 {
-  font-size: 36px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 12px;
-  letter-spacing: -0.5px;
+  margin: 0;
+  font-size: 32px;
+  color: #333;
 }
 
 .subtitle {
-  color: rgba(255,255,255,0.85);
-  font-size: 16px;
-  max-width: 400px;
-  margin: 0 auto 48px;
-  line-height: 1.5;
+  margin: 10px 0 30px;
+  color: #666;
 }
 
 .options {
   display: flex;
-  gap: 24px;
-  justify-content: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .card {
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(10px);
-  padding: 36px 32px;
-  width: 260px;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: center;
-  position: relative;
-  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 0.2s, background 0.2s;
 }
 
 .card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.2);
-  border-color: #667eea;
+  transform: translateY(-5px);
+  background: #e0f7fa;
 }
 
 .card-icon {
-  font-size: 36px;
-  margin-bottom: 16px;
+  font-size: 32px;
 }
 
 .card h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 8px;
+  margin: 0;
+  font-size: 20px;
+  color: #333;
 }
 
 .card p {
+  margin: 5px 0 0;
   font-size: 14px;
-  color: #6b7280;
-  line-height: 1.4;
-  margin-bottom: 16px;
+  color: #666;
 }
 
 .card-arrow {
-  display: inline-block;
-  font-size: 20px;
-  color: #667eea;
-  font-weight: 700;
-  transition: transform 0.3s;
+  font-size: 24px;
+  color: #007BFF;
 }
-
-.card:hover .card-arrow {
-  transform: translateX(6px);
-}
-

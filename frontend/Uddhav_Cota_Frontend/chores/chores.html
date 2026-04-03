@@ -4,28 +4,32 @@
   <title>Chores - Roomie Manager</title>
   <link rel="stylesheet" href="chores.css">
 </head>
-
 <body>
 
-  <div class="container">
-    <div class="page-header">
-      <h1>🧹 Chores</h1>
-      <p>Manage and track household chores</p>
+  <div class="sidebar">
+    <div class="logo">🏠 Roomie Manager</div>
+    <ul class="nav-links">
+      <li><a href="/Uddhav_Cota_Frontend/members/members.html">Member</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/chores/chores.html">Chores</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/bills/bills.html">Bills</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/settings/settings.html">Settings</a></li>
+    </ul>
+    <button id="logoutBtn">Logout</button>
+  </div>
+
+  <div class="main-content">
+    <h1>Chores</h1>
+
+    <div class="chore-form">
+      <input type="text" id="choreName" placeholder="New Chore">
+      <button id="addChoreBtn">Add</button>
     </div>
 
-    <div class="panel">
-      <div class="panel-header">
-        <h2>Chore List</h2>
-        <button class="btn btn-primary">+ Add Chore</button>
-      </div>
-      <div class="panel-body">
-        <div class="empty-state">
-          <div class="empty-icon">🧹</div>
-          <p>Connect through the app shell to see chores</p>
-        </div>
-      </div>
+    <div id="choresList" class="chores-list">
+      <!-- Chores will be dynamically loaded here -->
     </div>
   </div>
 
+  <script src="chores.js"></script>
 </body>
 </html>

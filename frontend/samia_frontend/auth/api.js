@@ -1,8 +1,9 @@
-// api.js
+// frontend/samia_frontend/auth/api.js
+
 const API_BASE = "http://localhost:3000/api/v1";
 
 async function apiRequest(path, method = "GET", body = null) {
-  const requestId = crypto.randomUUID();
+  const requestId = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
 
   const headers = {
     "Content-Type": "application/json",
@@ -20,10 +21,16 @@ async function apiRequest(path, method = "GET", body = null) {
     body: body ? JSON.stringify(body) : null,
   });
 
-  const data = await res.json();
+  // If backend returns empty body, avoid crash
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`Invalid response from server: ${res.status}`);
+  }
 
   if (!data.success) {
-    throw new Error(data.error.message);
+    throw new Error(data.error?.message || "Unknown error");
   }
 
   return data.data;

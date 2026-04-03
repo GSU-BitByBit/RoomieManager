@@ -4,7 +4,6 @@
   <title>Roomie Manager</title>
   <link rel="stylesheet" href="onboarding.css">
 </head>
-
 <body>
 
   <div class="container">
@@ -29,7 +28,15 @@
     </div>
   </div>
 
-  <script src="onboarding.js"></script>
+  <script>
+    document.getElementById("createGroup").addEventListener("click", () => {
+      window.location.href = "/Uddhav_Cota_Frontend/create-group/create-group.html";
+    });
+
+    document.getElementById("joinGroup").addEventListener("click", () => {
+      window.location.href = "/Uddhav_Cota_Frontend/join-group/join-group.html";
+    });
+  </script>
 
 </body>
 </html>

@@ -1,163 +1,111 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
+/* settings.css */
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: #f0f2f5;
-  padding: 32px;
-}
-
-.container {
-  max-width: 700px;
-  margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: 28px;
-}
-
-.page-header h1 {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 4px;
-}
-
-.page-header p {
-  color: #6b7280;
-  font-size: 15px;
-}
-
-.panel {
-  background: #fff;
-  border-radius: 14px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  overflow: hidden;
-  margin-bottom: 20px;
-}
-
-.panel-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.panel-header h2 {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.panel-body {
-  padding: 20px 24px;
-}
-
-.setting-row {
+  margin: 0;
+  font-family: Arial, sans-serif;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
+  height: 100vh;
 }
 
-.setting-right {
+.sidebar {
+  width: 220px;
+  background: #007BFF;
+  color: #fff;
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  padding: 20px;
 }
 
-.label {
-  font-size: 14px;
-  color: #374151;
-}
-
-.value {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.code-display {
+.sidebar .logo {
   font-size: 20px;
-  font-weight: 700;
-  color: #667eea;
-  letter-spacing: 3px;
-  margin-top: 4px;
+  font-weight: bold;
+  margin-bottom: 30px;
 }
 
-.text-muted {
-  color: #6b7280;
-  font-size: 13px;
-  margin-top: 8px;
+.sidebar .nav-links {
+  list-style: none;
+  padding: 0;
+  flex-grow: 1;
 }
 
-.badge {
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+.sidebar .nav-links li {
+  margin-bottom: 15px;
 }
 
-.badge-admin {
-  background: #ede9fe;
-  color: #7c3aed;
+.sidebar .nav-links a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 16px;
 }
 
-.btn {
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 600;
+.sidebar .nav-links a.active {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+#logoutBtn {
+  background: #ff4d4f;
   border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
-}
-
-.btn-sm {
-  padding: 6px 14px;
-  font-size: 13px;
+  padding: 10px;
   border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
 }
 
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
+#logoutBtn:hover {
+  background: #cc0000;
 }
 
-.btn-secondary:hover {
-  background: #e5e7eb;
+.main-content {
+  flex-grow: 1;
+  padding: 40px;
+  background: #f0f4f8;
+  overflow-y: auto;
 }
 
-.btn-danger {
-  background: #dc2626;
+.profile-section, .group-section {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.profile-section h2, .group-section h2 {
+  margin-top: 0;
+}
+
+.profile-section label {
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.profile-section input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  margin-top: 15px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #007BFF;
   color: #fff;
 }
 
-.btn-danger:hover {
-  background: #b91c1c;
+button:hover {
+  background: #0056b3;
 }
 
-.danger-zone {
-  border: 2px solid #fecaca;
-  border-radius: 14px;
-  padding: 24px;
-  background: #fef2f2;
-  margin-top: 8px;
+.danger-btn {
+  background: #ff4d4f;
 }
 
-.danger-zone h3 {
-  font-size: 16px;
-  font-weight: 700;
-  color: #dc2626;
-  margin-bottom: 8px;
-}
-
-.danger-zone p {
-  font-size: 14px;
-  color: #7f1d1d;
-  margin-bottom: 16px;
+.danger-btn:hover {
+  background: #cc0000;
 }
