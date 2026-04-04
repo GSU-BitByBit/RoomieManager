@@ -1,9 +1,22 @@
-// ----------- MOCK DATA -----------
+// ----------- API CONFIG -----------
 
-const mockGroup = {
-  name: "Test Apartment",
-  joinCode: "ABC123",
-  memberRole: "ADMIN"
+const API_BASE = "http://localhost:3000/api/v1"
+
+function getToken() {
+  return localStorage.getItem("accessToken")
+}
+
+function getGroupId() {
+  return localStorage.getItem("currentGroupId")
+}
+
+// ----------- GROUP DATA (loaded from API) -----------
+
+const groupData = {
+  name: "Loading...",
+  joinCode: "------",
+  memberRole: "MEMBER",
+  memberCount: 0
 }
 
 const mockMembers = [
@@ -41,14 +54,44 @@ const mockRules = [
 ]
 
 
-// ----------- LOAD GROUP -----------
+// ----------- LOAD GROUP (from API) -----------
 
-function loadGroup() {
+async function loadGroup() {
+  const groupId = getGroupId()
+  const token = getToken()
+
+  if (groupId && token) {
+    try {
+      const res = await fetch(API_BASE + "/groups/" + encodeURIComponent(groupId), {
+        headers: { "Authorization": "Bearer " + token }
+      })
+
+      const body = await res.json()
+
+      if (body.success) {
+        groupData.name = body.data.name
+        groupData.joinCode = body.data.joinCode || "------"
+        groupData.memberRole = body.data.memberRole || "MEMBER"
+        groupData.memberCount = body.data.memberCount || 0
+      } else {
+        console.warn("Could not load group:", body.error?.message)
+      }
+    } catch (err) {
+      console.warn("Backend unavailable, using fallback data:", err.message)
+    }
+  } else {
+    console.log("No token/groupId found, running in demo mode")
+    groupData.name = "Demo Apartment"
+    groupData.joinCode = "DEMO01"
+    groupData.memberRole = "ADMIN"
+    groupData.memberCount = mockMembers.length
+  }
+
   const nameEl = document.querySelector(".group-name")
   const codeEl = document.querySelector(".code-value")
 
-  if (nameEl) nameEl.textContent = mockGroup.name
-  if (codeEl) codeEl.textContent = mockGroup.joinCode
+  if (nameEl) nameEl.textContent = groupData.name
+  if (codeEl) codeEl.textContent = groupData.joinCode
 }
 
 
@@ -101,7 +144,7 @@ function dashboard(el) {
   el.innerHTML = `
     <div class="dash-welcome">
       <h1>Welcome back! 👋</h1>
-      <p>Here's what's happening in ${mockGroup.name}</p>
+      <p>Here's what's happening in ${groupData.name}</p>
     </div>
 
     <div class="stats-grid">
@@ -191,7 +234,7 @@ function members(el) {
         <span class="badge badge-${m.role === 'ADMIN' ? 'admin' : 'member'}">
           ${m.role === 'ADMIN' ? '👑 Admin' : 'Member'}
         </span>
-        ${m.name !== 'You' && mockGroup.memberRole === 'ADMIN' ? `<button class="btn btn-danger btn-sm" onclick="alert('Remove ${m.name} (mock)')">Remove</button>` : ''}
+        ${m.name !== 'You' && groupData.memberRole === 'ADMIN' ? `<button class="btn btn-danger btn-sm" onclick="alert('Remove ${m.name} (mock)')">Remove</button>` : ''}
       </div>
     </div>
   `).join("")
@@ -346,7 +389,7 @@ function contract(el) {
     <div class="panel">
       <div class="panel-header">
         <h2>📝 Roommate Contract</h2>
-        ${mockGroup.memberRole === 'ADMIN' ? '<button class="btn btn-primary btn-sm" onclick="alert(\'Add rule (mock)\')">+ Add Rule</button>' : ''}
+        ${groupData.memberRole === 'ADMIN' ? '<button class="btn btn-primary btn-sm" onclick="alert(\'Add rule (mock)\')">+ Add Rule</button>' : ''}
       </div>
       <div class="panel-body">
         <div style="background: #f0f4ff; border-radius: 10px; padding: 16px; margin-bottom: 20px; border-left: 4px solid #667eea;">
@@ -376,17 +419,17 @@ function settings(el) {
           <div class="setting-row">
             <span class="label">Group Name</span>
             <div class="flex-gap">
-              <span class="value">${mockGroup.name}</span>
-              <button class="btn btn-secondary btn-sm" onclick="alert('Rename group (mock)')">Edit</button>
+              <span class="value">${groupData.name}</span>
+              <button class="btn btn-secondary btn-sm" onclick="alert('Rename group (not available yet)')">Edit</button>
             </div>
           </div>
           <div class="setting-row">
             <span class="label">Your Role</span>
-            <span class="badge badge-admin">👑 Admin</span>
+            <span class="badge badge-${groupData.memberRole === 'ADMIN' ? 'admin' : 'member'}">${groupData.memberRole === 'ADMIN' ? '👑 Admin' : 'Member'}</span>
           </div>
           <div class="setting-row">
             <span class="label">Members</span>
-            <span class="value">${mockMembers.length} members</span>
+            <span class="value">${groupData.memberCount} members</span>
           </div>
         </div>
 
@@ -395,9 +438,9 @@ function settings(el) {
           <div class="setting-row">
             <div>
               <span class="label">Current Code</span>
-              <div class="value" style="margin-top: 4px; font-size: 20px; letter-spacing: 3px; color: #667eea;">${mockGroup.joinCode}</div>
+              <div class="value" style="margin-top: 4px; font-size: 20px; letter-spacing: 3px; color: #667eea;">${groupData.joinCode}</div>
             </div>
-            <button class="btn btn-secondary btn-sm" onclick="alert('Join code reset (mock)')">🔄 Reset Code</button>
+            <button class="btn btn-secondary btn-sm" onclick="resetJoinCode()">🔄 Reset Code</button>
           </div>
           <p class="text-muted" style="margin-top: 8px;">Share this code with people you want to invite to your group.</p>
         </div>
@@ -431,16 +474,54 @@ function settings(el) {
       <p>These actions are irreversible. Please proceed with caution.</p>
       <div class="flex-gap">
         <button class="btn btn-danger" onclick="alert('Leave group (mock)')">Leave Group</button>
-        ${mockGroup.memberRole === 'ADMIN' ? '<button class="btn btn-danger" onclick="alert(\'Delete group (mock)\')">Delete Group</button>' : ''}
+        ${groupData.memberRole === 'ADMIN' ? '<button class="btn btn-danger" onclick="alert(\'Delete group (not available yet)\')">Delete Group</button>' : ''}
       </div>
     </div>
   `
 }
 
 
+// ----------- RESET JOIN CODE (API) -----------
+
+async function resetJoinCode() {
+  const groupId = getGroupId()
+  const token = getToken()
+
+  if (!groupId || !token) return
+
+  if (!confirm("Are you sure you want to reset the join code? The old code will stop working.")) return
+
+  try {
+    const res = await fetch(API_BASE + "/groups/" + encodeURIComponent(groupId) + "/join-code/reset", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + token }
+    })
+
+    const body = await res.json()
+
+    if (!body.success) {
+      alert("Failed: " + (body.error?.message || "Unknown error"))
+      return
+    }
+
+    groupData.joinCode = body.data.joinCode
+
+    // Update topbar badge
+    const codeEl = document.querySelector(".code-value")
+    if (codeEl) codeEl.textContent = groupData.joinCode
+
+    // Reload settings page to show new code
+    loadPage("settings")
+    alert("Join code reset to: " + groupData.joinCode)
+  } catch (err) {
+    alert("Network error: could not reset join code")
+  }
+}
+
+
 // ----------- INITIAL LOAD -----------
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadGroup()
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadGroup()
   loadPage("dashboard")
 })
