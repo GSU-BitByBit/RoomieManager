@@ -1,34 +1,108 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard - Roomie Manager</title>
-  <link rel="stylesheet" href="app-shell.css">
+  <link rel="stylesheet" href="app-shell.css" />
 </head>
 <body>
+  <div class="page">
+    <aside class="sidebar">
+      <div class="logo">🏠 Roomie Manager</div>
 
-  <div class="sidebar">
-    <div class="logo">🏠 Roomie Manager</div>
-    <ul class="nav-links">
-      <li><a href="/Uddhav_Cota_Frontend/app-shell/app-shell.html">Dashboard</a></li>
-      <li><a href="/Uddhav_Cota_Frontend/members/members.html">Member</a></li>
-      <li><a href="/Uddhav_Cota_Frontend/chores/chores.html">Chores</a></li>
-      <li><a href="/Uddhav_Cota_Frontend/bills/bills.html">Bills</a></li>
-      <li><a href="/Uddhav_Cota_Frontend/settings/settings.html">Settings</a></li>
-    </ul>
-    <button id="logoutBtn">Logout</button>
+      <nav class="nav">
+        <a href="/Uddhav_Cota_Frontend/app-shell/app-shell.html" class="nav-link active">Dashboard</a>
+        <a href="/Uddhav_Cota_Frontend/members/members.html" class="nav-link">Members</a>
+        <a href="/Uddhav_Cota_Frontend/chores/chores.html" class="nav-link">Chores</a>
+        <a href="/Uddhav_Cota_Frontend/bills/bills.html" class="nav-link">Bills</a>
+        <a href="/Uddhav_Cota_Frontend/contract/contract.html" class="nav-link">contract</a>
+        <a href="/Uddhav_Cota_Frontend/Group-Hub/Group-Hub.html" class="nav-link">Group-Hub</a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="user-card">
+          <span class="user-label">Signed in as</span>
+          <span id="userNameDisplay" class="user-name">Loading...</span>
+        </div>
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <section class="hero">
+        <div class="hero-left">
+          <h1>Good afternoon</h1>
+          <p id="welcomeSubtitle">Welcome to Dashboard!</p>
+        </div>
+
+        <div class="group-pill-box">
+          <span class="group-pill-label">HOME</span>
+          <span id="welcomeTitle" class="group-pill-name">Loading...</span>
+        </div>
+      </section>
+
+      <section class="invite-box">
+        <div class="invite-text">
+          <p class="section-label">INVITE CODE</p>
+          <h2 id="inviteCode">Loading...</h2>
+        </div>
+
+        <button id="copyInviteBtn" class="copy-btn">Copy</button>
+      </section>
+
+      <section class="cards-grid">
+        <div class="summary-card">
+          <p class="card-label">ROOMMATES</p>
+          <h2 id="roommateCount">0</h2>
+          <p id="roommateSubtext">Loading...</p>
+        </div>
+
+        <div class="summary-card">
+          <p class="card-label">OPEN CHORES</p>
+          <h2 id="openChores">0</h2>
+          <p id="choresSubtext">Loading...</p>
+        </div>
+      </section>
+
+      <section class="bottom-grid">
+        <div class="panel large-panel">
+          <h3>Recent Activity</h3>
+          <div id="recentActivity" class="empty-state">
+            No activity yet — things will show up as your household gets going.
+          </div>
+        </div>
+
+        <div class="panel small-panel">
+          <h3>Home Stats</h3>
+
+          <div class="stats-list">
+            <div class="stat-row">
+              <span>Household vibe</span>
+              <strong id="householdVibe">Peaceful</strong>
+            </div>
+
+            <div class="stat-row">
+              <span>Roommates</span>
+              <strong id="statsRoommates">0 active</strong>
+            </div>
+
+            <div class="stat-row">
+              <span>Pending chores</span>
+              <strong id="statsChores">0 open</strong>
+            </div>
+
+            <div class="stat-row">
+              <span>Your role</span>
+              <strong id="statsRole">Member</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 
-  <div class="main-content">
-    <h1>Welcome to your Dashboard!</h1>
-
-    <div id="groupInfo">
-      <p>Loading group...</p>
-    </div>
-  </div>
-
-  <!-- load api.js first -->
   <script src="../../samia_frontend/auth/api.js"></script>
   <script src="app-shell.js"></script>
 </body>
 </html>
-

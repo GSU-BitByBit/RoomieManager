@@ -1,61 +1,354 @@
-/* app-shell.css */
+html,
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  display: flex;
-  height: 100vh;
+  padding: 0;
+  height: 100%;
+  font-family: "Segoe UI", sans-serif;
+  background: #f5f7fb;
+  color: #1f1f1f;
 }
 
+body {
+  overflow: hidden;
+}
+
+.page {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar */
 .sidebar {
-  width: 220px;
-  background: #007BFF;
-  color: #fff;
+  width: 240px;
+  background: #ffffff;
+  border-right: 1px solid #e6e6e6;
+  padding: 24px 18px;
   display: flex;
   flex-direction: column;
-  padding: 20px;
 }
 
-.sidebar .logo {
+.logo {
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 30px;
 }
 
-.sidebar .nav-links {
-  list-style: none;
-  padding: 0;
+.nav {
+  display: flex;
+  flex-direction: column;
   flex-grow: 1;
+  overflow-y: auto;
+  gap: 0;
 }
 
-.sidebar .nav-links li {
-  margin-bottom: 15px;
-}
-
-.sidebar .nav-links a {
-  color: #fff;
+.nav-link {
   text-decoration: none;
-  font-size: 16px;
-}
-
-.sidebar .nav-links a:hover {
-  text-decoration: underline;
-}
-
-#logoutBtn {
-  background: #ff4d4f;
-  border: none;
+  color: #333;
   padding: 10px;
+  display: block;
   border-radius: 8px;
-  color: #fff;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.nav-link.active,
+.nav-link:hover {
+  background: #e0edff;
+  color: #2563eb;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  margin-bottom: 50px;
+}
+
+.user-card {
+  background: #f1f5f9;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-label {
+  font-size: 12px;
+  color: #777;
+}
+
+.user-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.logout-btn {
+  width: 100%;
+  border: none;
+  background: #111827;
+  color: white;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
   cursor: pointer;
 }
 
-#logoutBtn:hover {
-  background: #cc0000;
+.logout-btn:hover {
+  background: #1f2937;
 }
 
+/* Main content */
 .main-content {
-  flex-grow: 1;
-  padding: 40px;
-  background: #f0f4f8;
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 32px;
+  background: linear-gradient(to bottom, #f5f6f8, #f8f4ee);
+}
+
+/* Hero */
+.hero {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.hero-left h1 {
+  margin: 0 0 10px 0;
+  font-size: 48px;
+  font-weight: 700;
+}
+
+.hero-left p {
+  margin: 0;
+  font-size: 22px;
+  color: #555;
+}
+
+.group-pill-box {
+  background: linear-gradient(135deg, #fff4d6, #ffe7a3);
+  border: 1px solid #f0d98c;
+  border-radius: 18px;
+  padding: 16px 22px;
+  min-width: 180px;
+  text-align: right;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.group-pill-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #8b6b00;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.group-pill-name {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  color: #4f3a00;
+}
+
+/* Invite */
+.invite-box {
+  background: linear-gradient(135deg, #ffffff, #fdfbf5);
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 22px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.section-label {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #7a7a7a;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.invite-box h2 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: 2px;
+}
+
+.copy-btn {
+  border: none;
+  background: #0b57d0;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 90px;
+}
+
+.copy-btn:hover {
+  background: #0846a8;
+}
+
+/* Summary cards */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #ffffff, #fcfcfc);
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 24px;
+  min-height: 160px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.03);
+}
+
+.card-label {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  color: #7a7a7a;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.summary-card h2 {
+  margin: 0 0 10px 0;
+  font-size: 52px;
+  line-height: 1;
+}
+
+.summary-card p:last-child {
+  margin: 0;
+  color: #666;
+  font-size: 18px;
+}
+
+/* Bottom */
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.03);
+}
+
+.panel h3 {
+  margin: 0 0 18px 0;
+  font-size: 30px;
+}
+
+.empty-state {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8a8a8a;
+  text-align: center;
+  font-size: 16px;
+}
+
+.stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.stat-row span {
+  color: #666;
+  font-size: 15px;
+}
+
+.stat-row strong {
+  font-size: 15px;
+}
+
+.activity-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.activity-item {
+  background: #f8fafc;
+  border: 1px solid #e9eef5;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.activity-title {
+  margin: 0 0 6px 0;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.activity-meta {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .page {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .cards-grid,
+  .bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    flex-direction: column;
+  }
+
+  .group-pill-box {
+    width: 100%;
+    text-align: left;
+  }
+
+  .hero-left h1 {
+    font-size: 38px;
+  }
+
+  .hero-left p {
+    font-size: 18px;
+  }
+
+  .invite-box {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

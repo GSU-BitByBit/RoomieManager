@@ -8,28 +8,56 @@
 
   <div class="sidebar">
     <div class="logo">🏠 Roomie Manager</div>
+
     <ul class="nav-links">
-      <li><a href="/Uddhav_Cota_Frontend/members/members.html">Member</a></li>
-      <li><a href="/Uddhav_Cota_Frontend/chores/chores.html">Chores</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/app-shell/app-shell.html">Dashboard</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/members/members.html">Members</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/chores/chores.html" class="active">Chores</a></li>
       <li><a href="/Uddhav_Cota_Frontend/bills/bills.html">Bills</a></li>
-      <li><a href="/Uddhav_Cota_Frontend/settings/settings.html">Settings</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/contract/contract.html">Contract</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/Group-Hub/Group-Hub.html">Group-Hub</a></li>
     </ul>
-    <button id="logoutBtn">Logout</button>
+
+    <div class="bottom-section">
+      <div class="user-box">
+        Signed in as
+        <strong id="userNameDisplay">User</strong>
+      </div>
+
+      <button id="logoutBtn" class="logout-btn">Logout</button>
+    </div>
   </div>
 
   <div class="main-content">
-    <h1>Chores</h1>
-
-    <div class="chore-form">
-      <input type="text" id="choreName" placeholder="New Chore">
-      <button id="addChoreBtn">Add</button>
+    <div class="header">
+      <h1>Chores</h1>
+      <p>Manage chores, assign roommates, and track deadlines.</p>
     </div>
 
-    <div id="choresList" class="chores-list">
-      <!-- Chores will be dynamically loaded here -->
+    <div class="chore-form-card">
+      <h2>Add New Chore</h2>
+
+      <div class="form-grid">
+        <input type="text" id="choreName" placeholder="Chore title" />
+        <input type="datetime-local" id="choreDueDate" />
+        <select id="choreAssignee">
+          <option value="">Assign to...</option>
+        </select>
+        <button id="addChoreBtn">Add Chore</button>
+      </div>
     </div>
+
+    <div class="chores-toolbar">
+      <div class="view-toggle">
+        <button id="allChoresBtn" class="toggle-btn active">All Chores</button>
+        <button id="myChoresBtn" class="toggle-btn">My Chores</button>
+      </div>
+    </div>
+
+    <div id="choresList" class="chores-list"></div>
   </div>
 
+  <script src="../../samia_frontend/auth/api.js"></script>
   <script src="chores.js"></script>
 </body>
 </html>

@@ -45,6 +45,7 @@ document.getElementById("signupForm").addEventListener("submit", async (e) => {
     });
 
     localStorage.setItem("accessToken", loginData.session.accessToken);
+    localStorage.setItem("userId", loginData.user.id);
 
     // Redirect to onboarding after first signup
     window.location.href = "../../Uddhav_Cota_Frontend/onboarding/onboarding.html";

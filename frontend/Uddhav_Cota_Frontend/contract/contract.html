@@ -4,28 +4,61 @@
   <title>Contract - Roomie Manager</title>
   <link rel="stylesheet" href="contract.css">
 </head>
-
 <body>
 
-  <div class="container">
-    <div class="page-header">
-      <h1>📝 Contract</h1>
-      <p>Your group's shared rules and agreements</p>
-    </div>
+  <div class="sidebar">
+    <div class="logo">🏠 Roomie Manager</div>
 
-    <div class="panel">
-      <div class="panel-header">
-        <h2>House Rules</h2>
-        <button class="btn btn-primary">+ Add Rule</button>
+    <ul class="nav-links">
+      <li><a href="/Uddhav_Cota_Frontend/app-shell/app-shell.html">Dashboard</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/members/members.html">Members</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/chores/chores.html">Chores</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/bills/bills.html">Bills</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/contract/contract.html" class="active">Contract</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/Group-Hub/Group-Hub.html" >Group Hub</a></li>
+    </ul>
+
+    <div class="bottom-section">
+      <div class="user-box">
+        Signed in as
+        <strong id="userNameDisplay">User</strong>
       </div>
-      <div class="panel-body">
-        <div class="empty-state">
-          <div class="empty-icon">📝</div>
-          <p>Connect through the app shell to see the contract</p>
-        </div>
-      </div>
+      <button id="logoutBtn" class="logout-btn">Logout</button>
     </div>
   </div>
 
+  <div class="main-content">
+    <div class="header">
+      <h1>House Agreement</h1>
+      <p>Create and manage your shared rules.</p>
+    </div>
+
+    <div class="contract-card">
+      <textarea id="contractText" placeholder="Write your house rules here..."></textarea>
+
+      <div class="actions">
+        <button id="saveBtn">Save Draft</button>
+        <button id="publishBtn">Publish</button>
+      </div>
+    </div>
+
+    <div class="version-box">
+      <h3>Current Version</h3>
+      <p id="versionDisplay">Not published yet</p>
+    </div>
+
+    <div class="published-box">
+      <h3>Current Published Contract</h3>
+      <div id="publishedContractText">No published contract yet.</div>
+    </div>
+
+    <div class="history-box">
+      <h3>Version History</h3>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <script src="../../samia_frontend/auth/api.js"></script>
+  <script src="contract.js"></script>
 </body>
 </html>

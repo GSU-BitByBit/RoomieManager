@@ -5,42 +5,97 @@ if (!token) {
   window.location.href = "/samia_frontend/auth/login.html";
 }
 
-// Logout
 const logoutBtn = document.getElementById("logoutBtn");
 logoutBtn?.addEventListener("click", () => {
   localStorage.clear();
   window.location.href = "/samia_frontend/auth/login.html";
 });
 
-const membersList = document.getElementById("membersList");
-const groupId = localStorage.getItem("groupId");
-
-if (!groupId) {
-  membersList.innerHTML = `<p>No group found.</p>`;
-} else {
-  loadMembers();
-}
+const copyInviteBtn = document.getElementById("copyInviteBtn");
 
 async function loadMembers() {
   try {
-    const data = await apiRequest(`/groups/${groupId}/members`, "GET");
+    const userData = await apiRequest("/auth/me", "GET");
+    const user = userData.user || userData || {};
 
-    const members = data.members;
+    const emailName = user.email ? user.email.split("@")[0] : "User";
+    const currentUserName = user.fullName || user.name || emailName;
+    const currentUserId = user.id || "";
 
-    if (!members || members.length === 0) {
-      membersList.innerHTML = `<p>No members in this group yet.</p>`;
+    document.getElementById("userNameDisplay").textContent = currentUserName;
+
+    const groupId = localStorage.getItem("groupId");
+    if (!groupId) {
+      document.getElementById("membersList").innerHTML = "<p>No group found.</p>";
       return;
     }
 
-    membersList.innerHTML = members.map(member => `
-      <div class="member-card">
-        <h3>${member.userId}</h3>
-        <p><strong>Role:</strong> ${member.role}</p>
-        <p><strong>Status:</strong> ${member.status}</p>
-        <p><strong>Joined:</strong> ${new Date(member.joinedAt).toLocaleDateString()}</p>
-      </div>
-    `).join("");
+    const groupData = await apiRequest(`/groups/${groupId}`, "GET");
+    document.getElementById("inviteCode").textContent = groupData.joinCode || "N/A";
+
+    const data = await apiRequest(`/groups/${groupId}/members`, "GET");
+    const members = data.members || [];
+
+    const list = document.getElementById("membersList");
+    list.innerHTML = "";
+
+    let roommateNumber = 1;
+
+    members.forEach((member) => {
+      let displayName;
+
+      if (member.userId === currentUserId) {
+        displayName = currentUserName;
+      } else {
+        roommateNumber += 1;
+        displayName = `Roommate ${roommateNumber - 1}`;
+      }
+
+      const div = document.createElement("div");
+      div.className = "member-card";
+
+      div.innerHTML = `
+        <div class="member-name">${displayName}</div>
+
+        <div class="badge-row">
+          <span class="badge ${member.role === "ADMIN" ? "admin" : "member"}">
+            ${member.role}
+          </span>
+          <span class="badge active">${member.status}</span>
+        </div>
+
+        <div class="joined">
+          Joined: ${member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : "N/A"}
+        </div>
+      `;
+
+      list.appendChild(div);
+    });
+
   } catch (err) {
-    membersList.innerHTML = `<p style="color:red;">${err.message}</p>`;
+    document.getElementById("membersList").innerHTML = `
+      <p style="color:red;">${err.message || "Failed to load members."}</p>
+    `;
   }
 }
+
+copyInviteBtn?.addEventListener("click", async () => {
+  const inviteCode = document.getElementById("inviteCode").textContent.trim();
+
+  if (!inviteCode || inviteCode === "N/A" || inviteCode === "Loading...") {
+    alert("No invite code available.");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(inviteCode);
+    copyInviteBtn.textContent = "Copied!";
+    setTimeout(() => {
+      copyInviteBtn.textContent = "Copy";
+    }, 1500);
+  } catch {
+    alert("Failed to copy invite code.");
+  }
+});
+
+loadMembers();

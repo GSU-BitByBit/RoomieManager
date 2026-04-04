@@ -36,6 +36,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     });
 
     localStorage.setItem("accessToken", data.session.accessToken);
+    localStorage.setItem("userId", data.user.id);
 
     // Redirect: if first login → onboarding, else dashboard
     if (data.isNewUser) {
