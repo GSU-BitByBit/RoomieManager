@@ -4,41 +4,87 @@
   <title>Bills - Roomie Manager</title>
   <link rel="stylesheet" href="bills.css">
 </head>
-
 <body>
 
-  <div class="container">
-    <div class="page-header">
-      <h1>💰 Bills</h1>
-      <p>Track shared expenses and split costs with your roommates</p>
-    </div>
+  <div class="sidebar">
+    <div class="logo">🏠 Roomie Manager</div>
 
-    <div class="stats-row">
-      <div class="stat-card">
-        <span class="stat-icon">💳</span>
-        <h3>Total Unpaid</h3>
-        <div class="stat-value">$165.50</div>
-      </div>
-      <div class="stat-card">
-        <span class="stat-icon">👤</span>
-        <h3>Your Share</h3>
-        <div class="stat-value">$41.38</div>
-      </div>
-    </div>
+    <ul class="nav-links">
+      <li><a href="/Uddhav_Cota_Frontend/app-shell/app-shell.html">Dashboard</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/members/members.html">Members</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/chores/chores.html">Chores</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/bills/bills.html" class="active">Bills</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/contract/contract.html">Contract</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/Group-Hub/Group-Hub.html">Group-Hub</a></li>
+    </ul>
 
-    <div class="panel">
-      <div class="panel-header">
-        <h2>All Bills</h2>
-        <button class="btn btn-primary">+ Add Bill</button>
+    <div class="bottom-section">
+      <div class="user-box">
+        Signed in as
+        <strong id="userNameDisplay">User</strong>
       </div>
-      <div class="panel-body">
-        <div class="empty-state">
-          <div class="empty-icon">📋</div>
-          <p>Connect through the app shell to see bills</p>
-        </div>
-      </div>
+
+      <button id="logoutBtn" class="logout-btn">Logout</button>
     </div>
   </div>
 
+  <div class="main-content">
+    <div class="header">
+      <h1>Bills</h1>
+      <p>Track shared expenses, balances, and payments.</p>
+    </div>
+
+    <div class="top-grid">
+      <div class="form-card">
+        <h2>Add Bill</h2>
+
+        <div class="form-grid">
+          <input type="text" id="billTitle" placeholder="Bill title" />
+          <input type="text" id="billDescription" placeholder="Description" />
+          <input type="number" id="billAmount" placeholder="Amount" step="0.01" min="0" />
+          <select id="paidBySelect">
+            <option value="">Paid by...</option>
+          </select>
+          <button id="addBillBtn">Add Bill</button>
+        </div>
+
+        <p class="helper-text">New bills will be split equally between all active members.</p>
+      </div>
+
+      <div class="form-card">
+        <h2>Record Payment</h2>
+
+        <div class="form-grid payment-grid">
+          <select id="paymentPayer">
+            <option value="">Payer...</option>
+          </select>
+          <select id="paymentPayee">
+            <option value="">Payee...</option>
+          </select>
+          <input type="number" id="paymentAmount" placeholder="Amount" step="0.01" min="0" />
+          <input type="text" id="paymentNote" placeholder="Note (optional)" />
+          <button id="addPaymentBtn">Record Payment</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="balances-card">
+      <div class="section-head">
+        <h2>Balances</h2>
+      </div>
+      <div id="balancesList" class="balances-list"></div>
+      <div id="settlementsList" class="settlements-list"></div>
+    </div>
+
+    <div class="bills-section">
+      <div class="section-head">
+        <h2>Bill History</h2>
+      </div>
+      <div id="billsList" class="bills-list"></div>
+    </div>
+  </div>
+
+  <script src="../../samia_frontend/auth/api.js"></script>
+  <script src="bills.js"></script>
 </body>
 </html>

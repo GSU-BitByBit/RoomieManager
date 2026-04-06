@@ -4,11 +4,10 @@
   <title>Create Group - Roomie Manager</title>
   <link rel="stylesheet" href="create-group.css">
 </head>
-
 <body>
 
   <div class="container">
-    <a href="../onboarding/onboarding.html" class="back-link">← Back</a>
+    <a href="/Uddhav_Cota_Frontend/onboarding/onboarding.html" class="back-link">← Back</a>
     <div class="form-card">
       <div class="form-icon">✨</div>
       <h1>Create a Group</h1>
@@ -16,12 +15,7 @@
 
       <div class="input-group">
         <label for="groupName">Group Name</label>
-        <input
-          type="text"
-          id="groupName"
-          placeholder="e.g. Apartment 12A"
-          maxlength="40"
-        />
+        <input type="text" id="groupName" placeholder="e.g. Apartment 12A" maxlength="40"/>
       </div>
 
       <button id="createBtn">
@@ -31,6 +25,7 @@
     </div>
   </div>
 
+  <script src="../../samia_frontend/auth/api.js"></script>
   <script src="create-group.js"></script>
 
 </body>

@@ -1,3 +1,4 @@
+<!-- frontend/samia_frontend/auth/login.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -16,7 +17,7 @@
     <button type="submit">Login</button>
   </form>
 
-  <p id="error"></p>
+  <p id="error" style="color:red;"></p>
   <p>Don't have an account? <a href="signup.html">Sign up here</a></p>
 </div>
 
@@ -25,20 +26,27 @@
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const errorEl = document.getElementById("error");
+  errorEl.innerText = "";
+
   try {
     const data = await apiRequest("/auth/login", "POST", {
-      email: email.value,
-      password: password.value
+      email: document.getElementById("email").value,
+      password: document.getElementById("password").value
     });
 
     localStorage.setItem("accessToken", data.session.accessToken);
+    localStorage.setItem("userId", data.user.id);
 
-    alert("Login successful!");
-    // Redirect to onboarding/app-shell later
-    // window.location.href = "onboarding.html";
+    // Redirect: if first login → onboarding, else dashboard
+    if (data.isNewUser) {
+      window.location.href = "../../Uddhav_Cota_Frontend/onboarding/onboarding.html";
+    } else {
+      window.location.href = "../../Uddhav_Cota_Frontend/app-shell/app-shell.html";
+    }
 
   } catch (err) {
-    document.getElementById("error").innerText = err.message;
+    errorEl.innerText = err.message;
   }
 });
 </script>

@@ -4,11 +4,10 @@
   <title>Join Group - Roomie Manager</title>
   <link rel="stylesheet" href="join-group.css">
 </head>
-
 <body>
 
   <div class="container">
-    <a href="../onboarding/onboarding.html" class="back-link">← Back</a>
+    <a href="/Uddhav_Cota_Frontend/onboarding/onboarding.html" class="back-link">← Back</a>
     <div class="form-card">
       <div class="form-icon">🔑</div>
       <h1>Join a Group</h1>
@@ -16,12 +15,7 @@
 
       <div class="input-group">
         <label for="joinCode">Join Code</label>
-        <input
-          type="text"
-          id="joinCode"
-          placeholder="e.g. ABC123"
-          maxlength="20"
-        />
+        <input type="text" id="joinCode" placeholder="e.g. ABC123" maxlength="20"/>
       </div>
 
       <button id="joinBtn">
@@ -31,6 +25,7 @@
     </div>
   </div>
 
+  <script src="../../samia_frontend/auth/api.js"></script>
   <script src="join-group.js"></script>
 
 </body>

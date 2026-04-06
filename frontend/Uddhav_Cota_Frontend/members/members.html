@@ -4,28 +4,51 @@
   <title>Members - Roomie Manager</title>
   <link rel="stylesheet" href="members.css">
 </head>
-
 <body>
 
-  <div class="container">
-    <div class="page-header">
-      <h1>👥 Members</h1>
-      <p>View and manage your group members</p>
+  <div class="sidebar">
+    <div class="logo">🏠 Roomie Manager</div>
+
+    <ul class="nav-links">
+      <li><a href="/Uddhav_Cota_Frontend/app-shell/app-shell.html">Dashboard</a></li>
+      <li><a class="active">Members</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/chores/chores.html">Chores</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/bills/bills.html">Bills</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/contract/contract.html">Contract</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/Group-Hub/Group-Hub.html">Group-Hub </a></li>
+    </ul>
+
+
+     <div class="bottom-section">
+    <div class="user-box">
+      Signed in as
+      <strong id="userNameDisplay">User</strong>
     </div>
 
-    <div class="panel">
-      <div class="panel-header">
-        <h2>Group Members</h2>
-        <button class="btn btn-primary">+ Invite</button>
-      </div>
-      <div class="panel-body">
-        <div class="empty-state">
-          <div class="empty-icon">👥</div>
-          <p>Connect through the app shell to see members</p>
-        </div>
-      </div>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+     </div>
     </div>
+
+
+  <div class="main-content">
+    <div class="header">
+      <h1>Members</h1>
+    </div>
+
+    <!-- Invite Code -->
+    <div class="invite-card">
+      <div>
+        <p class="label">INVITE CODE</p>
+        <h2 id="inviteCode">Loading...</h2>
+      </div>
+      <button id="copyInviteBtn">Copy</button>
+    </div>
+
+    <!-- Members -->
+    <div id="membersList" class="members-list"></div>
   </div>
 
+  <script src="../../samia_frontend/auth/api.js"></script>
+  <script src="members.js"></script>
 </body>
 </html>

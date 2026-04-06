@@ -1,30 +1,34 @@
-document.getElementById("createBtn").onclick = async () => {
-  const token = localStorage.getItem("accessToken")
-  const name = document.getElementById("groupName").value
+// create-group.js
 
-  if (!name) {
-    alert("Enter group name")
-    return
-  }
+const createBtn = document.getElementById("createBtn");
+const groupNameInput = document.getElementById("groupName");
 
-  const res = await fetch("http://localhost:3000/api/v1/groups", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + token
-    },
-    body: JSON.stringify({ name })
-  })
-
-  const body = await res.json()
-
-  if (!body.success) {
-    alert(body.error.message)
-    return
-  }
-
-  // Save group ID
-  localStorage.setItem("currentGroupId", body.data.id)
-
-  window.location.href = "../app-shell/app-shell.html"
+// Check login
+const token = localStorage.getItem("accessToken");
+if (!token) {
+  window.location.href = "/samia_frontend/auth/login.html"; //
 }
+
+createBtn.addEventListener("click", async () => {
+  const groupName = groupNameInput.value.trim();
+
+  if (!groupName) {
+    alert("Please enter a valid group name.");
+    return;
+  }
+
+  try {
+    // ✅ use apiRequest instead of fetch
+    const data = await apiRequest("/groups", "POST", {
+      name: groupName,
+    });
+    localStorage.setItem("group", JSON.stringify(data));
+    alert(`Group "${groupName}" created successfully!`);
+
+    //
+    window.location.href = "/Uddhav_Cota_Frontend/app-shell/app-shell.html";
+
+  } catch (err) {
+    alert(err.message || "Failed to create group");
+  }
+});

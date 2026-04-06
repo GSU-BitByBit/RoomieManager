@@ -1,29 +1,34 @@
-document.getElementById("joinBtn").onclick = async () => {
-  const token = localStorage.getItem("accessToken")
-  const code = document.getElementById("joinCode").value
+// join-group.js
 
-  if (!code) {
-    alert("Enter join code")
-    return
-  }
+const joinBtn = document.getElementById("joinBtn");
+const joinCodeInput = document.getElementById("joinCode");
 
-  const res = await fetch("http://localhost:3000/api/v1/groups/join", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + token
-    },
-    body: JSON.stringify({ joinCode: code })
-  })
-
-  const body = await res.json()
-
-  if (!body.success) {
-    alert(body.error.message)
-    return
-  }
-
-  localStorage.setItem("currentGroupId", body.data.id)
-
-  window.location.href = "../app-shell/app-shell.html"
+// Check login
+const token = localStorage.getItem("accessToken");
+if (!token) {
+  window.location.href = "/samia_frontend/auth/login.html";
 }
+
+joinBtn.addEventListener("click", async () => {
+  const joinCode = joinCodeInput.value.trim();
+
+  if (!joinCode) {
+    alert("Please enter a valid join code.");
+    return;
+  }
+
+  try {
+    // ✅ correct endpoint + apiRequest
+    const data = await apiRequest("/groups/join", "POST", {
+      joinCode: joinCode,
+    });
+    localStorage.setItem("group", JSON.stringify(data));
+    alert(`Successfully joined the group!`);
+
+    // ✅ redirect to dashboard
+    window.location.href = "/Uddhav_Cota_Frontend/app-shell/app-shell.html";
+
+  } catch (err) {
+    alert(err.message || "Failed to join group");
+  }
+});

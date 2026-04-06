@@ -1,3 +1,4 @@
+<!-- frontend/samia_frontend/auth/signup.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -17,7 +18,7 @@
     <button type="submit">Sign Up</button>
   </form>
 
-  <p id="error"></p>
+  <p id="error" style="color:red;"></p>
   <p>Already have an account? <a href="login.html">Login here</a></p>
 </div>
 
@@ -26,18 +27,31 @@
 document.getElementById("signupForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const errorEl = document.getElementById("error");
+  errorEl.innerText = "";
+
   try {
-    const data = await apiRequest("/auth/register", "POST", {
-      fullName: fullName.value,
-      email: email.value,
-      password: password.value
+    // 1. Register user
+    await apiRequest("/auth/register", "POST", {
+      fullName: document.getElementById("fullName").value,
+      email: document.getElementById("email").value,
+      password: document.getElementById("password").value
     });
 
-    alert("Sign up successful! You can now log in.");
-    window.location.href = "login.html";
+    // 2. Auto login after signup
+    const loginData = await apiRequest("/auth/login", "POST", {
+      email: document.getElementById("email").value,
+      password: document.getElementById("password").value
+    });
+
+    localStorage.setItem("accessToken", loginData.session.accessToken);
+    localStorage.setItem("userId", loginData.user.id);
+
+    // Redirect to onboarding after first signup
+    window.location.href = "../../Uddhav_Cota_Frontend/onboarding/onboarding.html";
 
   } catch (err) {
-    document.getElementById("error").innerText = err.message;
+    errorEl.innerText = err.message || "Something went wrong";
   }
 });
 </script>
