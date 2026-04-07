@@ -4,20 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard - Roomie Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="app-shell.css" />
+  <link rel="stylesheet" href="/shared/theme.css" />
 </head>
 <body>
   <div class="page">
     <aside class="sidebar">
-      <div class="logo">🏠 Roomie Manager</div>
+      <div class="logo"><i class="fa-solid fa-house"></i><span>Roomie Manager</span></div>
 
       <nav class="nav">
         <a href="/Uddhav_Cota_Frontend/app-shell/app-shell.html" class="nav-link active">Dashboard</a>
-        <a href="/Uddhav_Cota_Frontend/members/members.html" class="nav-link">Members</a>
         <a href="/Uddhav_Cota_Frontend/chores/chores.html" class="nav-link">Chores</a>
         <a href="/Uddhav_Cota_Frontend/bills/bills.html" class="nav-link">Bills</a>
-        <a href="/Uddhav_Cota_Frontend/contract/contract.html" class="nav-link">contract</a>
-        <a href="/Uddhav_Cota_Frontend/Group-Hub/Group-Hub.html" class="nav-link">Group-Hub</a>
+        <a href="/Uddhav_Cota_Frontend/members/members.html" class="nav-link">Members</a>
+        <a href="/Uddhav_Cota_Frontend/contract/contract.html" class="nav-link">Contract</a>
+        <a href="/Uddhav_Cota_Frontend/settings/settings.html" class="nav-link">Settings</a>
       </nav>
 
       <div class="sidebar-bottom">
@@ -29,72 +34,131 @@
       </div>
     </aside>
 
-    <main class="main-content">
-      <section class="hero">
-        <div class="hero-left">
-          <h1>Good afternoon</h1>
+    <main class="main-content dashboard-main">
+      <section class="dashboard-top">
+        <div class="dashboard-copy">
+          <p class="eyebrow">Dashboard</p>
+          <h1>Household overview</h1>
           <p id="welcomeSubtitle">Welcome to Dashboard!</p>
         </div>
 
-        <div class="group-pill-box">
-          <span class="group-pill-label">HOME</span>
-          <span id="welcomeTitle" class="group-pill-name">Loading...</span>
+        <div class="dashboard-context">
+          <div class="context-card">
+            <span class="group-pill-label">HOME</span>
+            <span id="welcomeTitle" class="group-pill-name">Loading...</span>
+
+            <div class="context-meta">
+              <span class="context-chip"><i class="fa-solid fa-key"></i> <span id="inviteCode">Loading...</span></span>
+              <button id="copyInviteBtn" class="copy-btn">Copy invite</button>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section class="invite-box">
-        <div class="invite-text">
-          <p class="section-label">INVITE CODE</p>
-          <h2 id="inviteCode">Loading...</h2>
-        </div>
-
-        <button id="copyInviteBtn" class="copy-btn">Copy</button>
-      </section>
-
-      <section class="cards-grid">
-        <div class="summary-card">
-          <p class="card-label">ROOMMATES</p>
-          <h2 id="roommateCount">0</h2>
+      <section class="cards-grid metrics-grid">
+        <a class="summary-card metric-card metric-link" href="/Uddhav_Cota_Frontend/members/members.html">
+          <div class="metric-head">
+            <div class="metric-icon"><i class="fa-solid fa-people-group"></i></div>
+            <div>
+              <p class="card-label">ROOMMATES</p>
+              <h2 id="roommateCount">0</h2>
+            </div>
+            <i class="fa-solid fa-arrow-up-right-from-square metric-arrow" aria-hidden="true"></i>
+          </div>
           <p id="roommateSubtext">Loading...</p>
-        </div>
+        </a>
 
-        <div class="summary-card">
-          <p class="card-label">OPEN CHORES</p>
-          <h2 id="openChores">0</h2>
+        <a class="summary-card metric-card metric-link" href="/Uddhav_Cota_Frontend/chores/chores.html">
+          <div class="metric-head">
+            <div class="metric-icon"><i class="fa-solid fa-broom"></i></div>
+            <div>
+              <p class="card-label">OPEN CHORES</p>
+              <h2 id="openChores">0</h2>
+            </div>
+            <i class="fa-solid fa-arrow-up-right-from-square metric-arrow" aria-hidden="true"></i>
+          </div>
           <p id="choresSubtext">Loading...</p>
+        </a>
+
+        <a class="summary-card metric-card metric-link" href="/Uddhav_Cota_Frontend/bills/bills.html">
+          <div class="metric-head">
+            <div class="metric-icon"><i class="fa-solid fa-receipt"></i></div>
+            <div>
+              <p class="card-label">UNPAID BILLS</p>
+              <h2 id="unpaidBillsCount">0</h2>
+            </div>
+            <i class="fa-solid fa-arrow-up-right-from-square metric-arrow" aria-hidden="true"></i>
+          </div>
+          <p id="unpaidBillsSubtext">Loading...</p>
+        </a>
+
+        <div class="summary-card metric-card metric-card-status">
+          <div class="metric-head">
+            <div class="metric-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+            <div>
+              <p class="card-label">HOUSEHOLD STATUS</p>
+              <h2 id="householdStatus">Steady</h2>
+            </div>
+          </div>
+          <p id="householdStatusSubtext" class="metric-note">Loading household status...</p>
         </div>
       </section>
 
-      <section class="bottom-grid">
-        <div class="panel large-panel">
-          <h3>Recent Activity</h3>
+      <section class="bottom-grid dashboard-grid">
+        <div class="panel large-panel activity-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Activity</p>
+              <h3>Recent Activity</h3>
+            </div>
+          </div>
           <div id="recentActivity" class="empty-state">
             No activity yet — things will show up as your household gets going.
           </div>
         </div>
 
-        <div class="panel small-panel">
-          <h3>Home Stats</h3>
+        <div class="panel small-panel detail-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Snapshot</p>
+              <h3>Quick summary</h3>
+            </div>
+          </div>
 
-          <div class="stats-list">
-            <div class="stat-row">
-              <span>Household vibe</span>
-              <strong id="householdVibe">Peaceful</strong>
+          <div class="details-list">
+            <div class="detail-row">
+              <span>Household</span>
+              <strong id="welcomeTitlePanel">Loading...</strong>
             </div>
 
-            <div class="stat-row">
-              <span>Roommates</span>
-              <strong id="statsRoommates">0 active</strong>
+            <div class="detail-row">
+              <span>Invite code</span>
+              <strong id="inviteCodePanel">Loading...</strong>
             </div>
 
-            <div class="stat-row">
-              <span>Pending chores</span>
-              <strong id="statsChores">0 open</strong>
-            </div>
-
-            <div class="stat-row">
+            <div class="detail-row">
               <span>Your role</span>
               <strong id="statsRole">Member</strong>
+            </div>
+
+            <div class="detail-row">
+              <span>Assigned to you</span>
+              <strong id="assignedToMePanel">0 pending</strong>
+            </div>
+
+            <div class="detail-row">
+              <span>Next chore</span>
+              <strong id="nextChorePanel">No assigned chores</strong>
+            </div>
+
+            <div class="detail-row">
+              <span>Unpaid total</span>
+              <strong id="unpaidTotalPanel">You are settled</strong>
+            </div>
+
+            <div class="detail-row">
+              <span>Latest bill</span>
+              <strong id="latestBillPanel">No bills yet</strong>
             </div>
           </div>
         </div>
@@ -103,6 +167,7 @@
   </div>
 
   <script src="../../samia_frontend/auth/api.js"></script>
+  <script src="/shared/ui-feedback.js"></script>
   <script src="app-shell.js"></script>
 </body>
 </html>

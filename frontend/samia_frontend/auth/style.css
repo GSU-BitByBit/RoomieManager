@@ -6,72 +6,98 @@
 }
 
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f0f4f8;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(900px 500px at -5% -10%, rgba(155, 106, 228, 0.25), transparent 60%),
+    radial-gradient(700px 420px at 105% 0%, rgba(183, 140, 247, 0.3), transparent 60%),
+    linear-gradient(180deg, #fbf8ff 0%, #f3ecff 100%);
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
+  padding: 16px;
 }
 
 .container {
-  max-width: 400px;
+  max-width: 430px;
   width: 100%;
-  background-color: #fff;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  background-color: rgba(255, 255, 255, 0.93);
+  backdrop-filter: blur(10px);
+  padding: 34px 30px;
+  border-radius: 20px;
+  border: 1px solid #e5dcf8;
+  box-shadow: 0 16px 34px rgba(87, 60, 140, 0.18);
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 16px;
   text-align: center;
 }
 
 h1 {
-  font-size: 24px;
-  margin-bottom: 5px;
+  font-size: 30px;
+  margin-bottom: 4px;
+  color: #4f2b8f;
+  line-height: 1.2;
+}
+
+h1 i {
+  margin-right: 8px;
+  color: #9b6ae4;
 }
 
 p {
-  font-size: 16px;
-  margin-bottom: 20px;
+  font-size: 14px;
+  color: #6d5f91;
+  margin-bottom: 18px;
 }
 
 form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 14px;
 }
 
 input {
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1px solid #d8cbf6;
+  border-radius: 12px;
   width: 100%;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: #9b6ae4;
+  box-shadow: 0 0 0 3px rgba(155, 106, 228, 0.18);
 }
 
 button {
-  padding: 10px;
-  font-size: 16px;
-  background-color: #0077ff;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #7f4dca, #9b6ae4);
   color: #fff;
   border: none;
-  border-radius: 5px;
+  border-radius: 12px;
   cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
 
 button:hover {
-  background-color: #005fcc;
+  filter: brightness(1.05);
+  transform: translateY(-1px);
 }
 
 p#error {
-  color: red;
+  color: #7b2f64;
   font-size: 14px;
+  margin-bottom: 0;
 }
 
 a {
-  color: #0077ff;
+  color: #7f4dca;
+  font-weight: 600;
   text-decoration: none;
 }
 

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Settings - Roomie Manager</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+	<link rel="stylesheet" href="settings.css">
+	<link rel="stylesheet" href="/shared/theme.css">
+</head>
+<body>
+	<div class="sidebar">
+		<div class="logo"><i class="fa-solid fa-house"></i><span>Roomie Manager</span></div>
+
+		<ul class="nav-links">
+			<li><a href="/Uddhav_Cota_Frontend/app-shell/app-shell.html">Dashboard</a></li>
+			<li><a href="/Uddhav_Cota_Frontend/chores/chores.html">Chores</a></li>
+			<li><a href="/Uddhav_Cota_Frontend/bills/bills.html">Bills</a></li>
+			<li><a href="/Uddhav_Cota_Frontend/members/members.html">Members</a></li>
+			<li><a href="/Uddhav_Cota_Frontend/contract/contract.html">Contract</a></li>
+			<li><a href="/Uddhav_Cota_Frontend/settings/settings.html" class="active">Settings</a></li>
+		</ul>
+
+		<div class="bottom-section">
+			<div class="user-box">
+				Signed in as
+				<strong id="userNameDisplay">User</strong>
+			</div>
+			<button id="logoutBtn" class="logout-btn">Logout</button>
+		</div>
+	</div>
+
+	<main class="main-content settings-main">
+		<section class="page-head">
+			<p class="eyebrow"><i class="fa-solid fa-gear"></i> Settings</p>
+			<h1>Household Settings</h1>
+			<p>Manage household access, member controls, and high-impact account actions.</p>
+		</section>
+
+		<section class="settings-card households-card">
+			<div class="households-head">
+				<h2>Households</h2>
+				<p class="section-hint">Create, join, switch, and open your households using the original card view.</p>
+			</div>
+
+			<div id="groupsGrid" class="groups-grid"></div>
+		</section>
+
+		<section class="settings-grid">
+			<article class="settings-card">
+				<h2>Member Management</h2>
+				<p id="memberManageHint" class="section-hint">Only admins can kick members.</p>
+				<div id="memberActionsList" class="member-actions-list"></div>
+			</article>
+
+			<article class="settings-card danger-zone">
+				<h2>Danger Zone</h2>
+				<p class="section-hint">Each action below requires double confirmation.</p>
+
+				<div class="danger-grid">
+					<div class="danger-item">
+						<h3>Delete Group</h3>
+						<p>Permanently remove the active household and related records.</p>
+						<button id="deleteGroupBtn" class="danger-btn" type="button">Delete group</button>
+					</div>
+
+					<div class="danger-item">
+						<h3>Delete Account</h3>
+						<p>Permanently remove your account and sign out on completion.</p>
+						<button id="deleteAccountBtn" class="danger-btn" type="button">Delete account</button>
+					</div>
+				</div>
+
+				<p id="dangerStatus" class="danger-status"></p>
+			</article>
+		</section>
+	</main>
+
+	<div id="confirmActionModal" class="modal-backdrop hidden" aria-hidden="true">
+		<div class="confirm-card settings-confirm-card">
+			<h3 id="confirmActionTitle">Confirm action</h3>
+			<p id="confirmActionDescription" class="confirm-description">Review this action before continuing.</p>
+
+			<div id="confirmStepOne" class="confirm-step">
+				<p class="confirm-note">Step 1 of 2: Review and continue.</p>
+			</div>
+
+			<div id="confirmStepTwo" class="confirm-step hidden">
+				<p id="confirmActionPrompt" class="confirm-note">Step 2 of 2: Type the confirmation phrase.</p>
+				<input
+					id="confirmActionInput"
+					class="confirm-input"
+					type="text"
+					placeholder="Type phrase exactly"
+					autocomplete="off"
+				>
+				<p id="confirmActionError" class="confirm-error"></p>
+			</div>
+
+			<div class="modal-footer">
+				<button id="confirmActionCancelBtn" class="modal-cancel-btn" type="button">Cancel</button>
+				<button id="confirmActionBackBtn" class="modal-cancel-btn hidden" type="button">Back</button>
+				<button id="confirmActionContinueBtn" class="confirm-continue-btn" type="button">Continue</button>
+				<button id="confirmActionSubmitBtn" class="danger-btn hidden" type="button">Confirm</button>
+			</div>
+		</div>
+	</div>
+
+	<script src="../../samia_frontend/auth/api.js"></script>
+	<script src="/shared/ui-feedback.js"></script>
+	<script src="settings.js"></script>
+</body>
+</html>

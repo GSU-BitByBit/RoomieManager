@@ -3,7 +3,6 @@
 const joinBtn = document.getElementById("joinBtn");
 const joinCodeInput = document.getElementById("joinCode");
 
-// Check login
 const token = localStorage.getItem("accessToken");
 if (!token) {
   window.location.href = "/samia_frontend/auth/login.html";
@@ -18,14 +17,14 @@ joinBtn.addEventListener("click", async () => {
   }
 
   try {
-    // ✅ correct endpoint + apiRequest
     const data = await apiRequest("/groups/join", "POST", {
       joinCode: joinCode,
     });
-    localStorage.setItem("group", JSON.stringify(data));
+    const joinedGroupId = data?.id || data?.group?.id;
+    if (joinedGroupId) {
+      localStorage.setItem("groupId", joinedGroupId);
+    }
     alert(`Successfully joined the group!`);
-
-    // ✅ redirect to dashboard
     window.location.href = "/Uddhav_Cota_Frontend/app-shell/app-shell.html";
 
   } catch (err) {

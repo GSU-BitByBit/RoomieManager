@@ -2,14 +2,21 @@
 <html>
 <head>
   <title>Create Group - Roomie Manager</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="create-group.css">
+  <link rel="stylesheet" href="/shared/theme.css">
 </head>
 <body>
 
   <div class="container">
-    <a href="/Uddhav_Cota_Frontend/onboarding/onboarding.html" class="back-link">← Back</a>
+    <a href="/Uddhav_Cota_Frontend/onboarding/onboarding.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back</a>
     <div class="form-card">
-      <div class="form-icon">✨</div>
+      <div class="form-icon"><i class="fa-solid fa-people-roof"></i></div>
       <h1>Create a Group</h1>
       <p class="hint">Give your household a name to get started</p>
 
@@ -20,11 +27,12 @@
 
       <button id="createBtn">
         <span class="btn-text">Create Group</span>
-        <span class="btn-arrow">→</span>
+        <span class="btn-arrow"><i class="fa-solid fa-arrow-right"></i></span>
       </button>
     </div>
   </div>
 
+  <script src="/shared/ui-feedback.js"></script>
   <script src="../../samia_frontend/auth/api.js"></script>
   <script src="create-group.js"></script>
 

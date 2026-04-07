@@ -3,10 +3,9 @@
 const createBtn = document.getElementById("createBtn");
 const groupNameInput = document.getElementById("groupName");
 
-// Check login
 const token = localStorage.getItem("accessToken");
 if (!token) {
-  window.location.href = "/samia_frontend/auth/login.html"; //
+  window.location.href = "/samia_frontend/auth/login.html";
 }
 
 createBtn.addEventListener("click", async () => {
@@ -18,14 +17,14 @@ createBtn.addEventListener("click", async () => {
   }
 
   try {
-    // ✅ use apiRequest instead of fetch
     const data = await apiRequest("/groups", "POST", {
       name: groupName,
     });
-    localStorage.setItem("group", JSON.stringify(data));
+    const createdGroupId = data?.id || data?.group?.id;
+    if (createdGroupId) {
+      localStorage.setItem("groupId", createdGroupId);
+    }
     alert(`Group "${groupName}" created successfully!`);
-
-    //
     window.location.href = "/Uddhav_Cota_Frontend/app-shell/app-shell.html";
 
   } catch (err) {

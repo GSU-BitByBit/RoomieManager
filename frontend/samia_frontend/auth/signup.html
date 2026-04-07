@@ -2,13 +2,20 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Up</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/shared/theme.css">
 </head>
 <body>
 
 <div class="container">
-  <h1>Create Account</h1>
+  <h1><i class="fa-solid fa-user-plus"></i> Create Account</h1>
   <p>Sign up for Roomie Manager</p>
 
   <form id="signupForm">
@@ -23,6 +30,7 @@
 </div>
 
 <script src="api.js"></script>
+<script src="/shared/ui-feedback.js"></script>
 <script>
 document.getElementById("signupForm").addEventListener("submit", async (e) => {
   e.preventDefault();

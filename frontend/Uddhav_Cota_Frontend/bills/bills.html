@@ -2,89 +2,195 @@
 <html>
 <head>
   <title>Bills - Roomie Manager</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="bills.css">
+  <link rel="stylesheet" href="/shared/theme.css">
 </head>
 <body>
 
   <div class="sidebar">
-    <div class="logo">🏠 Roomie Manager</div>
+    <div class="logo"><i class="fa-solid fa-house"></i><span>Roomie Manager</span></div>
 
     <ul class="nav-links">
       <li><a href="/Uddhav_Cota_Frontend/app-shell/app-shell.html">Dashboard</a></li>
-      <li><a href="/Uddhav_Cota_Frontend/members/members.html">Members</a></li>
       <li><a href="/Uddhav_Cota_Frontend/chores/chores.html">Chores</a></li>
       <li><a href="/Uddhav_Cota_Frontend/bills/bills.html" class="active">Bills</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/members/members.html">Members</a></li>
       <li><a href="/Uddhav_Cota_Frontend/contract/contract.html">Contract</a></li>
-      <li><a href="/Uddhav_Cota_Frontend/Group-Hub/Group-Hub.html">Group-Hub</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/settings/settings.html">Settings</a></li>
     </ul>
 
-    <div class="bottom-section">
-      <div class="user-box">
-        Signed in as
-        <strong id="userNameDisplay">User</strong>
+    <div class="sidebar-bottom">
+      <div class="user-card">
+        <span class="user-label">Signed in as</span>
+        <span id="userNameDisplay" class="user-name">User</span>
       </div>
 
       <button id="logoutBtn" class="logout-btn">Logout</button>
     </div>
   </div>
 
-  <div class="main-content">
-    <div class="header">
-      <h1>Bills</h1>
-      <p>Track shared expenses, balances, and payments.</p>
-    </div>
-
-    <div class="top-grid">
-      <div class="form-card">
-        <h2>Add Bill</h2>
-
-        <div class="form-grid">
-          <input type="text" id="billTitle" placeholder="Bill title" />
-          <input type="text" id="billDescription" placeholder="Description" />
-          <input type="number" id="billAmount" placeholder="Amount" step="0.01" min="0" />
-          <select id="paidBySelect">
-            <option value="">Paid by...</option>
-          </select>
-          <button id="addBillBtn">Add Bill</button>
-        </div>
-
-        <p class="helper-text">New bills will be split equally between all active members.</p>
+  <div class="main-content expenses-main">
+    <section class="expenses-header">
+      <div>
+        <h1>All expenses</h1>
+        <p class="expenses-subtitle">A simple timeline of shared group spending.</p>
       </div>
 
-      <div class="form-card">
-        <h2>Record Payment</h2>
-
-        <div class="form-grid payment-grid">
-          <select id="paymentPayer">
-            <option value="">Payer...</option>
-          </select>
-          <select id="paymentPayee">
-            <option value="">Payee...</option>
-          </select>
-          <input type="number" id="paymentAmount" placeholder="Amount" step="0.01" min="0" />
-          <input type="text" id="paymentNote" placeholder="Note (optional)" />
-          <button id="addPaymentBtn">Record Payment</button>
-        </div>
+      <div class="expenses-actions">
+        <button id="openAddExpenseBtn" class="cta-btn expense-btn" type="button">
+          <i class="fa-solid fa-plus"></i>
+          <span>Add an expense</span>
+        </button>
+        <button id="openSettleUpBtn" class="cta-btn settle-btn" type="button">
+          <i class="fa-solid fa-arrow-right-arrow-left"></i>
+          <span>Settle up</span>
+        </button>
       </div>
-    </div>
+    </section>
 
-    <div class="balances-card">
-      <div class="section-head">
+    <section class="balances-strip">
+      <article class="strip-card">
         <h2>Balances</h2>
-      </div>
-      <div id="balancesList" class="balances-list"></div>
-      <div id="settlementsList" class="settlements-list"></div>
-    </div>
+        <div id="balancesList" class="balances-list"></div>
+      </article>
 
-    <div class="bills-section">
-      <div class="section-head">
-        <h2>Bill History</h2>
+      <article class="strip-card">
+        <h2>Settlements</h2>
+        <div id="settlementsList" class="settlements-list"></div>
+      </article>
+    </section>
+
+    <section class="timeline-card">
+      <div class="timeline-head">
+        <h2>Expense timeline</h2>
+        <p class="timeline-hint">Delete requires backend endpoint support.</p>
       </div>
-      <div id="billsList" class="bills-list"></div>
+      <div id="billsList" class="bills-timeline"></div>
+    </section>
+  </div>
+
+  <div id="addExpenseModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head modal-head-expense">
+        <h3>Add an expense</h3>
+        <button class="icon-close" type="button" data-close="addExpenseModal" aria-label="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="field-grid">
+          <label class="field">
+            <span>Title</span>
+            <input type="text" id="billTitle" placeholder="e.g. Internet bill" />
+          </label>
+
+          <label class="field">
+            <span>Amount</span>
+            <input type="number" id="billAmount" placeholder="0.00" step="0.01" min="0" />
+          </label>
+
+          <label class="field field-full">
+            <span>Description</span>
+            <input type="text" id="billDescription" placeholder="Optional" />
+          </label>
+
+          <label class="field field-full">
+            <span>Paid by</span>
+            <select id="paidBySelect">
+              <option value="">Paid by...</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="split-mode-block">
+          <p class="split-label">Split</p>
+          <label class="split-choice">
+            <input type="radio" name="splitMode" value="all" checked />
+            <span>Equally with all active members</span>
+          </label>
+          <label class="split-choice">
+            <input type="radio" name="splitMode" value="selected" />
+            <span>Only with selected members</span>
+          </label>
+        </div>
+
+        <div id="selectedMembersWrap" class="selected-members-wrap hidden">
+          <p>Select members to include:</p>
+          <div id="selectedMembersList" class="selected-members-list"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="cancelAddExpenseBtn" class="modal-cancel-btn" type="button">Cancel</button>
+        <button id="addBillBtn" class="modal-save-btn expense-save-btn" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settleUpModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head modal-head-settle">
+        <h3>Settle up</h3>
+        <button class="icon-close" type="button" data-close="settleUpModal" aria-label="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="field-grid">
+          <label class="field">
+            <span>Payer</span>
+            <select id="paymentPayer">
+              <option value="">Payer...</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Payee</span>
+            <select id="paymentPayee">
+              <option value="">Payee...</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Amount</span>
+            <input type="number" id="paymentAmount" placeholder="0.00" step="0.01" min="0" />
+          </label>
+
+          <label class="field field-full">
+            <span>Note</span>
+            <input type="text" id="paymentNote" placeholder="Optional" />
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="cancelSettleUpBtn" class="modal-cancel-btn" type="button">Cancel</button>
+        <button id="addPaymentBtn" class="modal-save-btn settle-save-btn" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteConfirmModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="confirm-card">
+      <h3 id="deleteConfirmTitle">Delete expense?</h3>
+      <p id="deleteConfirmMessage">This action permanently deletes the selected expense.</p>
+      <div class="modal-footer">
+        <button id="deleteCancelBtn" class="modal-cancel-btn" type="button">Cancel</button>
+        <button id="deleteConfirmBtn" class="danger-btn" type="button">Delete</button>
+      </div>
     </div>
   </div>
 
   <script src="../../samia_frontend/auth/api.js"></script>
+  <script src="/shared/ui-feedback.js"></script>
   <script src="bills.js"></script>
 </body>
 </html>

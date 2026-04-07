@@ -2,20 +2,27 @@
 <html>
 <head>
   <title>Chores - Roomie Manager</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="chores.css">
+  <link rel="stylesheet" href="/shared/theme.css">
 </head>
 <body>
 
   <div class="sidebar">
-    <div class="logo">🏠 Roomie Manager</div>
+    <div class="logo"><i class="fa-solid fa-house"></i><span>Roomie Manager</span></div>
 
     <ul class="nav-links">
       <li><a href="/Uddhav_Cota_Frontend/app-shell/app-shell.html">Dashboard</a></li>
-      <li><a href="/Uddhav_Cota_Frontend/members/members.html">Members</a></li>
       <li><a href="/Uddhav_Cota_Frontend/chores/chores.html" class="active">Chores</a></li>
       <li><a href="/Uddhav_Cota_Frontend/bills/bills.html">Bills</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/members/members.html">Members</a></li>
       <li><a href="/Uddhav_Cota_Frontend/contract/contract.html">Contract</a></li>
-      <li><a href="/Uddhav_Cota_Frontend/Group-Hub/Group-Hub.html">Group-Hub</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/settings/settings.html">Settings</a></li>
     </ul>
 
     <div class="bottom-section">
@@ -28,14 +35,29 @@
     </div>
   </div>
 
-  <div class="main-content">
-    <div class="header">
-      <h1>Chores</h1>
-      <p>Manage chores, assign roommates, and track deadlines.</p>
-    </div>
+  <div class="main-content chores-main">
+    <section class="chores-top">
+      <div class="page-copy">
+        <p class="eyebrow">Chores</p>
+        <h1>Calendar view</h1>
+        <p>Plan chores like a real calendar so due dates are easy to scan at a glance.</p>
+      </div>
 
-    <div class="chore-form-card">
-      <h2>Add New Chore</h2>
+      <div class="top-actions">
+        <button id="recurringChoresBtn" class="secondary-btn recurring-btn" type="button">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          <span>Recurring chores</span>
+          <span class="soon-tag">Coming soon</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="chore-form-card">
+      <div class="section-head section-head--stacked">
+        <div>
+          <h2>Add New Chore</h2>
+        </div>
+      </div>
 
       <div class="form-grid">
         <input type="text" id="choreName" placeholder="Chore title" />
@@ -45,19 +67,64 @@
         </select>
         <button id="addChoreBtn">Add Chore</button>
       </div>
-    </div>
+    </section>
 
     <div class="chores-toolbar">
-      <div class="view-toggle">
+      <div class="view-toggle calendar-toggle">
         <button id="allChoresBtn" class="toggle-btn active">All Chores</button>
         <button id="myChoresBtn" class="toggle-btn">My Chores</button>
       </div>
+
+      <p id="viewModeHint" class="view-mode-hint">Showing chores for the whole household.</p>
+
+
     </div>
 
-    <div id="choresList" class="chores-list"></div>
+    <section class="calendar-surface">
+      <div class="calendar-surface-head">
+        <div>
+          <p class="eyebrow">Date calendar</p>
+          <h2>Scroll months and pick a date</h2>
+        </div>
+
+        <div class="calendar-head-actions">
+          <button id="unscheduledBtn" class="calendar-ghost-btn" type="button">
+            <i class="fa-solid fa-list-check"></i>
+            <span id="unscheduledCountLabel">No date</span>
+          </button>
+
+          <button id="jumpToTodayBtn" class="calendar-ghost-btn" type="button">
+            <i class="fa-solid fa-calendar-day"></i>
+            <span>Jump to Today</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="calendar-legend">
+        <span><span class="legend-bar legend-bar-overdue"></span> Overdue</span>
+        <span><span class="legend-bar legend-bar-today"></span> Today</span>
+        <span><span class="legend-bar legend-bar-soon"></span> Due soon</span>
+        <span><span class="legend-bar legend-bar-complete"></span> Completed</span>
+      </div>
+
+      <div id="calendarScroller" class="month-scroller"></div>
+    </section>
+
+    <section class="agenda-surface">
+      <div class="agenda-head">
+        <div>
+          <p class="eyebrow">Selected date</p>
+          <h2 id="agendaTitle">Chores</h2>
+          <p id="agendaSubtitle" class="section-note">Choose a date in the calendar above.</p>
+        </div>
+      </div>
+
+      <div id="agendaList" class="agenda-list"></div>
+    </section>
   </div>
 
   <script src="../../samia_frontend/auth/api.js"></script>
+  <script src="/shared/ui-feedback.js"></script>
   <script src="chores.js"></script>
 </body>
 </html>

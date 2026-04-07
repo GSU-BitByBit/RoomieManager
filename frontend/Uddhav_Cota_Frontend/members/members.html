@@ -2,20 +2,27 @@
 <html>
 <head>
   <title>Members - Roomie Manager</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="members.css">
+  <link rel="stylesheet" href="/shared/theme.css">
 </head>
 <body>
 
   <div class="sidebar">
-    <div class="logo">🏠 Roomie Manager</div>
+    <div class="logo"><i class="fa-solid fa-house"></i><span>Roomie Manager</span></div>
 
     <ul class="nav-links">
       <li><a href="/Uddhav_Cota_Frontend/app-shell/app-shell.html">Dashboard</a></li>
-      <li><a class="active">Members</a></li>
       <li><a href="/Uddhav_Cota_Frontend/chores/chores.html">Chores</a></li>
       <li><a href="/Uddhav_Cota_Frontend/bills/bills.html">Bills</a></li>
+      <li><a href="/Uddhav_Cota_Frontend/members/members.html" class="active">Members</a></li>
       <li><a href="/Uddhav_Cota_Frontend/contract/contract.html">Contract</a></li>
-      <li><a href="/Uddhav_Cota_Frontend/Group-Hub/Group-Hub.html">Group-Hub </a></li>
+      <li><a href="/Uddhav_Cota_Frontend/settings/settings.html">Settings</a></li>
     </ul>
 
 
@@ -49,6 +56,7 @@
   </div>
 
   <script src="../../samia_frontend/auth/api.js"></script>
+  <script src="/shared/ui-feedback.js"></script>
   <script src="members.js"></script>
 </body>
 </html>
