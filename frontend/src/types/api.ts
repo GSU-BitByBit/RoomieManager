@@ -1,4 +1,8 @@
+import type { components } from "../../generated/backend-api.types";
+
 // API response types matching backend response contract
+
+type BackendSchemas = components["schemas"];
 
 export interface ApiMeta {
   requestId: string;
@@ -24,13 +28,13 @@ export interface ApiFailure {
 export type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
 
 export type ErrorCode =
-  | 'BAD_REQUEST'
-  | 'UNAUTHORIZED'
-  | 'FORBIDDEN'
-  | 'NOT_FOUND'
-  | 'CONFLICT'
-  | 'INTERNAL_ERROR'
-  | 'SERVICE_UNAVAILABLE';
+  | "BAD_REQUEST"
+  | "UNAUTHORIZED"
+  | "FORBIDDEN"
+  | "NOT_FOUND"
+  | "CONFLICT"
+  | "INTERNAL_ERROR"
+  | "SERVICE_UNAVAILABLE";
 
 // Pagination
 export interface PaginationMeta {
@@ -46,7 +50,7 @@ export interface PaginationQuery {
   page?: number;
   pageSize?: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
 }
 
 // Auth
@@ -86,7 +90,7 @@ export interface GroupSummary {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
-  memberRole: 'ADMIN' | 'MEMBER';
+  memberRole: "ADMIN" | "MEMBER";
   memberStatus: string;
   memberCount: number;
   joinCode?: string;
@@ -106,7 +110,7 @@ export interface JoinCodeResetResponse {
 export interface GroupMember {
   userId: string;
   displayName: string | null;
-  role: 'ADMIN' | 'MEMBER';
+  role: "ADMIN" | "MEMBER";
   status: string;
   joinedAt: string;
   createdAt: string;
@@ -122,7 +126,7 @@ export interface MembersListResponse {
 export interface UpdateMemberRoleResponse {
   groupId: string;
   userId: string;
-  role: 'ADMIN' | 'MEMBER';
+  role: "ADMIN" | "MEMBER";
   status: string;
   updatedAt: string;
 }
@@ -136,59 +140,36 @@ export interface RemoveMemberResponse {
 }
 
 // Dashboard
-export interface DashboardResponse {
-  group: GroupSummary;
-  members: {
-    totalActive: number;
-    adminCount: number;
-    memberCount: number;
-  };
-  chores: {
-    pendingCount: number;
-    completedCount: number;
-    overdueCount: number;
-    assignedToMePendingCount: number;
-  };
-  finance: {
-    billCount: number;
-    paymentCount: number;
-    latestBillAt: string | null;
-    latestPaymentAt: string | null;
-  };
-  contract: {
-    hasDraft: boolean;
-    publishedVersion: number | null;
-    updatedAt: string | null;
-  };
-}
+export type DashboardResponse = BackendSchemas["GroupDashboardResponseDto"];
 
 // Chores
-export interface Chore {
-  id: string;
-  groupId: string;
-  title: string;
-  description: string | null;
-  status: 'PENDING' | 'COMPLETED';
-  dueDate: string | null;
-  assignedToUserId: string | null;
-  createdBy: string;
-  completedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type Chore = BackendSchemas["ChoreSummaryDto"];
 
-export interface ChoresListResponse {
-  groupId: string;
-  chores: Chore[];
-  pagination: PaginationMeta;
-}
+export type ChoresListResponse = BackendSchemas["GroupChoresResponseDto"];
 
 export interface ChoresQuery extends PaginationQuery {
-  status?: 'PENDING' | 'COMPLETED';
+  status?: BackendSchemas["ChoreStatus"];
   assigneeUserId?: string;
-  dueAfter?: string;
-  dueBefore?: string;
+  dueOnFrom?: string;
+  dueOnTo?: string;
 }
+
+export type ChoreCalendarOccurrence =
+  BackendSchemas["ChoreCalendarOccurrenceDto"];
+
+export type ChoreCalendarResponse =
+  BackendSchemas["GroupChoreCalendarResponseDto"];
+
+export type ChoreTemplate = BackendSchemas["ChoreTemplateSummaryDto"];
+
+export type GroupChoreTemplatesResponse =
+  BackendSchemas["GroupChoreTemplatesResponseDto"];
+
+export type ChoreTemplateAssignmentStrategy =
+  BackendSchemas["ChoreTemplateAssignmentStrategy"];
+
+export type ChoreTemplateParticipant =
+  BackendSchemas["ChoreTemplateParticipantSummaryDto"];
 
 // Finance
 export interface BillSplit {
@@ -205,7 +186,7 @@ export interface Bill {
   totalAmount: string;
   currency: string;
   paidByUserId: string;
-  splitMethod: 'EQUAL' | 'CUSTOM';
+  splitMethod: "EQUAL" | "CUSTOM";
   createdBy: string;
   incurredAt: string;
   dueDate: string | null;
@@ -308,9 +289,8 @@ export interface CreatePaymentDto {
   idempotencyKey?: string;
 }
 
-export interface CreateChoreDto {
-  title: string;
-  description?: string;
-  dueDate?: string;
-  assignedToUserId?: string;
-}
+export type CreateChoreDto = BackendSchemas["CreateChoreDto"];
+
+export type CreateChoreTemplateDto = BackendSchemas["CreateChoreTemplateDto"];
+
+export type UpdateChoreTemplateDto = BackendSchemas["UpdateChoreTemplateDto"];

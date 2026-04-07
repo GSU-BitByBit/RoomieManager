@@ -83,19 +83,19 @@ export default function FinancePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-sage-200 border-t-sage-500" />
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Finance</h1>
-          <p className="mt-1 text-sm text-gray-500">Bills, payments, and balances</p>
+          <h1 className="page-title">Finance</h1>
+          <p className="page-subtitle">Bills, payments, and balances</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2.5">
           <button onClick={() => setShowCreatePayment(true)} className="btn-secondary">
             <ArrowRightLeft size={16} />
             Record Payment
@@ -107,37 +107,30 @@ export default function FinancePage() {
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
-      )}
+      {error && <div className="alert-error">{error}</div>}
 
-      {/* Tabs */}
-      <div className="mb-6 flex border-b border-gray-200">
+      <div className="flex w-fit gap-1 rounded-2xl border border-sage-100/40 bg-white/50 p-1.5 backdrop-blur-sm">
         <button
           onClick={() => setTab('bills')}
-          className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
             tab === 'bills'
-              ? 'border-brand-600 text-brand-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'bg-white text-charcoal shadow-sm'
+              : 'text-slate-400 hover:text-charcoal'
           }`}
         >
-          <span className="flex items-center gap-2">
-            <Receipt size={16} />
-            Bills
-          </span>
+          <Receipt size={16} />
+          Bills
         </button>
         <button
           onClick={() => setTab('balances')}
-          className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
             tab === 'balances'
-              ? 'border-brand-600 text-brand-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'bg-white text-charcoal shadow-sm'
+              : 'text-slate-400 hover:text-charcoal'
           }`}
         >
-          <span className="flex items-center gap-2">
-            <Wallet size={16} />
-            Balances
-          </span>
+          <Wallet size={16} />
+          Balances
         </button>
       </div>
 
@@ -191,10 +184,12 @@ function BillsList({
 }) {
   if (bills.length === 0) {
     return (
-      <div className="card flex flex-col items-center justify-center py-16 text-center">
-        <Receipt className="mb-4 h-12 w-12 text-gray-300" />
-        <h3 className="text-lg font-medium text-gray-900">No bills yet</h3>
-        <p className="mt-1 text-sm text-gray-500">Create a bill to start tracking expenses</p>
+      <div className="card flex flex-col items-center justify-center px-6 py-16 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sage-50">
+          <Receipt className="h-6 w-6 text-sage-300" />
+        </div>
+        <h3 className="font-display text-xl text-charcoal">No bills yet</h3>
+        <p className="mt-2 text-sm text-slate-500">Create a bill to start tracking expenses</p>
       </div>
     );
   }
@@ -202,14 +197,14 @@ function BillsList({
   return (
     <div className="space-y-3">
       {bills.map((bill) => (
-        <div key={bill.id} className="card p-4">
+        <div key={bill.id} className="card p-5">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="font-medium text-gray-900">{bill.title}</h3>
+              <h3 className="font-medium text-charcoal">{bill.title}</h3>
               {bill.description && (
-                <p className="mt-0.5 text-sm text-gray-500">{bill.description}</p>
+                <p className="mt-0.5 text-sm text-slate-500">{bill.description}</p>
               )}
-              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
                 <span>Paid by {getUserLabel(bill.paidByUserId)}</span>
                 <span>{format(parseISO(bill.incurredAt), 'MMM d, yyyy')}</span>
                 <span className="badge-gray">{bill.splitMethod}</span>
@@ -217,7 +212,7 @@ function BillsList({
               </div>
             </div>
             <div className="text-right">
-              <p className="text-lg font-bold text-gray-900">
+              <p className="text-lg font-bold text-charcoal">
                 {bill.currency} {parseFloat(bill.totalAmount).toFixed(2)}
               </p>
             </div>
@@ -239,10 +234,12 @@ function BalancesView({
 }) {
   if (balances.balances.length === 0) {
     return (
-      <div className="card flex flex-col items-center justify-center py-16 text-center">
-        <Wallet className="mb-4 h-12 w-12 text-gray-300" />
-        <h3 className="text-lg font-medium text-gray-900">No balances yet</h3>
-        <p className="mt-1 text-sm text-gray-500">Create a bill to start tracking balances</p>
+      <div className="card flex flex-col items-center justify-center px-6 py-16 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-dusty-50">
+          <Wallet className="h-6 w-6 text-dusty-300" />
+        </div>
+        <h3 className="font-display text-xl text-charcoal">No balances yet</h3>
+        <p className="mt-2 text-sm text-slate-500">Create a bill to start tracking balances</p>
       </div>
     );
   }
@@ -251,11 +248,10 @@ function BalancesView({
     <div className="space-y-8">
       {balances.balances.map((cb) => (
         <div key={cb.currency} className="space-y-4">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
             {cb.currency} Balances
           </h3>
 
-          {/* Member balances */}
           <div className="grid gap-3 sm:grid-cols-2">
             {cb.memberBalances.map((mb) => {
               const net = mb.netAmount;
@@ -266,13 +262,13 @@ function BalancesView({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {isPositive ? (
-                        <TrendingUp size={16} className="text-green-500" />
+                        <TrendingUp size={16} className="text-sage-500" />
                       ) : isZero ? (
-                        <DollarSign size={16} className="text-gray-400" />
+                        <DollarSign size={16} className="text-slate-400" />
                       ) : (
-                        <TrendingDown size={16} className="text-red-500" />
+                        <TrendingDown size={16} className="text-blush-500" />
                       )}
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-charcoal">
                         {getUserLabel(mb.userId)}
                       </span>
                       {mb.userId === currentUserId && (
@@ -281,7 +277,11 @@ function BalancesView({
                     </div>
                     <span
                       className={`font-bold ${
-                        isPositive ? 'text-green-600' : isZero ? 'text-gray-500' : 'text-red-600'
+                        isPositive
+                          ? 'text-sage-600'
+                          : isZero
+                            ? 'text-slate-500'
+                            : 'text-blush-600'
                       }`}
                     >
                       {isPositive ? '+' : ''}
@@ -293,21 +293,20 @@ function BalancesView({
             })}
           </div>
 
-          {/* Suggested settlements */}
           {cb.settlements.length > 0 && (
             <div>
-              <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-400">
+              <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Suggested Settlements
               </h3>
               <div className="space-y-2">
                 {cb.settlements.map((s, i) => (
                   <div key={i} className="card flex items-center justify-between p-4">
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="font-medium text-gray-900">{getUserLabel(s.fromUserId)}</span>
-                      <ArrowRightLeft size={14} className="text-gray-400" />
-                      <span className="font-medium text-gray-900">{getUserLabel(s.toUserId)}</span>
+                      <span className="font-medium text-charcoal">{getUserLabel(s.fromUserId)}</span>
+                      <ArrowRightLeft size={14} className="text-slate-400" />
+                      <span className="font-medium text-charcoal">{getUserLabel(s.toUserId)}</span>
                     </div>
-                    <span className="font-bold text-gray-900">
+                    <span className="font-bold text-charcoal">
                       {cb.currency} {s.amount.toFixed(2)}
                     </span>
                   </div>
@@ -384,18 +383,19 @@ function CreateBillModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="card w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+    <div className="modal-backdrop">
+      <div className="modal-panel max-h-[90vh] max-w-lg overflow-y-auto">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Create Bill</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <h2 className="font-display text-xl text-charcoal">Create Bill</h2>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-sage-50 hover:text-charcoal"
+          >
             <X size={20} />
           </button>
         </div>
 
-        {localError && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{localError}</div>
-        )}
+        {localError && <div className="mb-4 alert-error">{localError}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -466,7 +466,7 @@ function CreateBillModal({
           </div>
 
           <div>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-slate-500">
               Split equally among {members.length} member{members.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -541,18 +541,19 @@ function CreatePaymentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="card w-full max-w-lg p-6">
+    <div className="modal-backdrop">
+      <div className="modal-panel max-w-lg">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Record Payment</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <h2 className="font-display text-xl text-charcoal">Record Payment</h2>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-sage-50 hover:text-charcoal"
+          >
             <X size={20} />
           </button>
         </div>
 
-        {localError && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{localError}</div>
-        )}
+        {localError && <div className="mb-4 alert-error">{localError}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

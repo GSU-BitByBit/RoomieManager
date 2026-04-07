@@ -2,6 +2,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsDate, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
+import { transformDateOnlyValue } from '../../../common/time/date-only.util';
+
 export class CreateChoreDto {
   @ApiProperty({
     example: 'Take out trash',
@@ -25,20 +27,20 @@ export class CreateChoreDto {
   @MaxLength(1000)
   description?: string;
 
-  @ApiPropertyOptional({
-    example: '2026-03-10T21:00:00.000Z',
-    description: 'Optional ISO-8601 due date for the chore'
+  @ApiProperty({
+    type: String,
+    format: 'date',
+    example: '2026-03-10',
+    description: 'Required date-only due slot for the chore (YYYY-MM-DD).'
   })
-  @Transform(({ value }) => (value ? new Date(value) : value))
-  @IsOptional()
+  @Transform(({ value }) => transformDateOnlyValue(value))
   @IsDate()
-  dueDate?: Date;
+  dueOn!: Date;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'user-uuid',
-    description: 'Optional user ID to assign the chore to at creation time'
+    description: 'Required active group member who will own this one-off chore.'
   })
-  @IsOptional()
   @IsString()
-  assigneeUserId?: string;
+  assigneeUserId!: string;
 }

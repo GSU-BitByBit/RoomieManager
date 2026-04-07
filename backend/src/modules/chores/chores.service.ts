@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException
@@ -17,14 +18,26 @@ import {
 import { ErrorCode } from '../../common/http/http-error-code';
 import { buildPaginationMeta, resolvePagination } from '../../common/http/pagination';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { formatDateOnlyUtc, toDateOnlyUtc } from '../../common/time/date-only.util';
+import { CHORE_GENERATION_HORIZON_DAYS } from './chore.constants';
+import { ChoreGenerationService } from './chore-generation.service';
+import type { ChoreCalendarQueryDto } from './dto/chore-calendar.query';
 import type { CreateChoreDto } from './dto/create-chore.dto';
 import type { ListChoresQueryDto } from './dto/list-chores.query';
 import type { UpdateChoreAssigneeDto } from './dto/update-chore-assignee.dto';
-import type { ChoreSummary, GroupChoresResponse } from './interfaces/chore-response.interface';
+import type {
+  ChoreCalendarOccurrence,
+  ChoreSummary,
+  GroupChoreCalendarResponse,
+  GroupChoresResponse
+} from './interfaces/chore-response.interface';
 
 @Injectable()
 export class ChoresService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly choreGenerationService: ChoreGenerationService
+  ) {}
 
   async createChore(
     actorUserId: string,
@@ -32,27 +45,32 @@ export class ChoresService {
     payload: CreateChoreDto
   ): Promise<ChoreSummary> {
     return this.prisma.$transaction(async (tx) => {
-      await this.assertActiveMembership(tx, actorUserId, groupId);
+      const membership = await this.assertActiveMembership(tx, actorUserId, groupId);
 
-      let assigneeUserId: string | null = null;
-      if (payload.assigneeUserId) {
-        const assigneeMembership = await tx.groupMember.findUnique({
-          where: {
-            groupId_userId: {
-              groupId,
-              userId: payload.assigneeUserId
-            }
-          }
+      if (!payload.assigneeUserId) {
+        throw new BadRequestException({
+          code: ErrorCode.BadRequest,
+          message: 'Assignee is required for one-off chores.'
         });
+      }
 
-        if (!assigneeMembership || assigneeMembership.status !== GroupMemberStatus.ACTIVE) {
-          throw new BadRequestException({
-            code: ErrorCode.BadRequest,
-            message: 'Assignee must be an active member of the group.'
-          });
-        }
+      if (!payload.dueOn) {
+        throw new BadRequestException({
+          code: ErrorCode.BadRequest,
+          message: 'dueOn is required for one-off chores.'
+        });
+      }
 
-        assigneeUserId = payload.assigneeUserId;
+      await this.assertActiveGroupMember(tx, groupId, payload.assigneeUserId);
+
+      if (
+        membership.role !== GroupMemberRole.ADMIN &&
+        payload.assigneeUserId !== membership.userId
+      ) {
+        throw new ForbiddenException({
+          code: ErrorCode.Forbidden,
+          message: 'Active members can only create one-off chores for themselves.'
+        });
       }
 
       const chore = await tx.chore.create({
@@ -61,8 +79,8 @@ export class ChoresService {
           title: payload.title.trim(),
           description: payload.description?.trim() || null,
           status: ChoreStatus.PENDING,
-          dueDate: payload.dueDate ?? null,
-          assignedToUserId: assigneeUserId,
+          dueOn: toDateOnlyUtc(payload.dueOn),
+          assignedToUserId: payload.assigneeUserId,
           createdBy: actorUserId
         }
       });
@@ -74,24 +92,22 @@ export class ChoresService {
           actorUserId,
           type: ChoreActivityType.CREATED,
           details: {
-            ...(assigneeUserId ? { assigneeUserId } : {})
+            assigneeUserId: payload.assigneeUserId
           }
         }
       });
 
-      if (assigneeUserId) {
-        await tx.choreActivity.create({
-          data: {
-            choreId: chore.id,
-            groupId,
-            actorUserId,
-            type: ChoreActivityType.ASSIGNED,
-            details: {
-              assigneeUserId
-            }
+      await tx.choreActivity.create({
+        data: {
+          choreId: chore.id,
+          groupId,
+          actorUserId,
+          type: ChoreActivityType.ASSIGNED,
+          details: {
+            assigneeUserId: payload.assigneeUserId
           }
-        });
-      }
+        }
+      });
 
       return this.mapChoreSummary(chore);
     });
@@ -104,6 +120,7 @@ export class ChoresService {
   ): Promise<GroupChoresResponse> {
     return this.prisma.$transaction(async (tx) => {
       await this.assertActiveMembership(tx, userId, groupId);
+      await this.choreGenerationService.maintainGroupGenerationHorizon(groupId, { tx });
       const pagination = resolvePagination(query);
 
       const where: Prisma.ChoreWhereInput = {
@@ -118,10 +135,10 @@ export class ChoresService {
         where.assignedToUserId = query.assigneeUserId;
       }
 
-      if (query.dueAfter || query.dueBefore) {
-        where.dueDate = {
-          ...(query.dueAfter ? { gte: query.dueAfter } : {}),
-          ...(query.dueBefore ? { lte: query.dueBefore } : {})
+      if (query.dueOnFrom || query.dueOnTo) {
+        where.dueOn = {
+          ...(query.dueOnFrom ? { gte: toDateOnlyUtc(query.dueOnFrom) } : {}),
+          ...(query.dueOnTo ? { lte: toDateOnlyUtc(query.dueOnTo) } : {})
         };
       }
 
@@ -142,14 +159,48 @@ export class ChoresService {
     });
   }
 
-  async updateChoreAssignee(
+  async getGroupChoreCalendar(
+    userId: string,
+    groupId: string,
+    query: ChoreCalendarQueryDto
+  ): Promise<GroupChoreCalendarResponse> {
+    return this.prisma.$transaction(async (tx) => {
+      await this.assertActiveMembership(tx, userId, groupId);
+
+      const start = toDateOnlyUtc(query.start);
+      const end = toDateOnlyUtc(query.end);
+      this.assertValidCalendarRange(start, end);
+
+      await this.choreGenerationService.maintainGroupGenerationHorizon(groupId, { tx });
+
+      const occurrences = await tx.chore.findMany({
+        where: {
+          groupId,
+          dueOn: {
+            gte: start,
+            lte: end
+          }
+        },
+        orderBy: [{ dueOn: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }]
+      });
+
+      return {
+        groupId,
+        start: formatDateOnlyUtc(start),
+        end: formatDateOnlyUtc(end),
+        occurrences: occurrences.map((occurrence) => this.mapCalendarOccurrence(occurrence))
+      };
+    });
+  }
+
+  async updateOccurrenceAssignee(
     actorUserId: string,
-    choreId: string,
+    occurrenceId: string,
     payload: UpdateChoreAssigneeDto
   ): Promise<ChoreSummary> {
     return this.prisma.$transaction(async (tx) => {
       const chore = await tx.chore.findUnique({
-        where: { id: choreId }
+        where: { id: occurrenceId }
       });
 
       if (!chore) {
@@ -161,41 +212,33 @@ export class ChoresService {
 
       const membership = await this.assertActiveMembership(tx, actorUserId, chore.groupId);
 
-      let assigneeUserId: string | null = null;
-      if (payload.assigneeUserId) {
-        const assigneeMembership = await tx.groupMember.findUnique({
-          where: {
-            groupId_userId: {
-              groupId: chore.groupId,
-              userId: payload.assigneeUserId
-            }
-          }
+      if (!payload.assigneeUserId) {
+        throw new BadRequestException({
+          code: ErrorCode.BadRequest,
+          message: 'Assignee is required for occurrence reassignment.'
         });
-
-        if (!assigneeMembership || assigneeMembership.status !== GroupMemberStatus.ACTIVE) {
-          throw new BadRequestException({
-            code: ErrorCode.BadRequest,
-            message: 'Assignee must be an active member of the group.'
-          });
-        }
-
-        if (
-          membership.role !== GroupMemberRole.ADMIN &&
-          payload.assigneeUserId !== membership.userId
-        ) {
-          throw new ForbiddenException({
-            code: ErrorCode.Forbidden,
-            message: 'Only admins can assign chores to other members.'
-          });
-        }
-
-        assigneeUserId = payload.assigneeUserId;
       }
 
+      if (membership.role !== GroupMemberRole.ADMIN) {
+        throw new ForbiddenException({
+          code: ErrorCode.Forbidden,
+          message: 'Only admins can reassign chore occurrences.'
+        });
+      }
+
+      if (chore.status !== ChoreStatus.PENDING) {
+        throw new ConflictException({
+          code: ErrorCode.Conflict,
+          message: 'Only pending chore occurrences can be reassigned.'
+        });
+      }
+
+      await this.assertActiveGroupMember(tx, chore.groupId, payload.assigneeUserId);
+
       const updated = await tx.chore.update({
-        where: { id: choreId },
+        where: { id: occurrenceId },
         data: {
-          assignedToUserId: assigneeUserId
+          assignedToUserId: payload.assigneeUserId
         }
       });
 
@@ -204,12 +247,10 @@ export class ChoresService {
           choreId: updated.id,
           groupId: updated.groupId,
           actorUserId,
-          type: assigneeUserId ? ChoreActivityType.ASSIGNED : ChoreActivityType.UNASSIGNED,
-          details: assigneeUserId
-            ? {
-                assigneeUserId
-              }
-            : undefined
+          type: ChoreActivityType.ASSIGNED,
+          details: {
+            assigneeUserId: payload.assigneeUserId
+          }
         }
       });
 
@@ -217,10 +258,10 @@ export class ChoresService {
     });
   }
 
-  async completeChore(actorUserId: string, choreId: string): Promise<ChoreSummary> {
+  async completeOccurrence(actorUserId: string, occurrenceId: string): Promise<ChoreSummary> {
     return this.prisma.$transaction(async (tx) => {
       const chore = await tx.chore.findUnique({
-        where: { id: choreId }
+        where: { id: occurrenceId }
       });
 
       if (!chore) {
@@ -233,7 +274,14 @@ export class ChoresService {
       const membership = await this.assertActiveMembership(tx, actorUserId, chore.groupId);
       const isAdmin = membership.role === GroupMemberRole.ADMIN;
 
-      if (!isAdmin && chore.assignedToUserId && chore.assignedToUserId !== actorUserId) {
+      if (chore.status === ChoreStatus.CANCELLED) {
+        throw new ConflictException({
+          code: ErrorCode.Conflict,
+          message: 'Cancelled chore occurrences cannot be completed.'
+        });
+      }
+
+      if (!isAdmin && chore.assignedToUserId !== actorUserId) {
         throw new ForbiddenException({
           code: ErrorCode.Forbidden,
           message: 'Only admins or the assignee can complete this chore.'
@@ -247,10 +295,11 @@ export class ChoresService {
       const now = new Date();
 
       const updated = await tx.chore.update({
-        where: { id: choreId },
+        where: { id: occurrenceId },
         data: {
           status: ChoreStatus.COMPLETED,
-          completedAt: now
+          completedAt: now,
+          completedByUserId: actorUserId
         }
       });
 
@@ -298,26 +347,77 @@ export class ChoresService {
       title: chore.title,
       description: chore.description,
       status: chore.status,
-      dueDate: chore.dueDate?.toISOString() ?? null,
-      assignedToUserId: chore.assignedToUserId ?? null,
+      dueOn: formatDateOnlyUtc(chore.dueOn),
+      assigneeUserId: chore.assignedToUserId,
       createdBy: chore.createdBy,
+      templateId: chore.templateId,
+      completedByUserId: chore.completedByUserId,
       completedAt: chore.completedAt?.toISOString() ?? null,
       createdAt: chore.createdAt.toISOString(),
       updatedAt: chore.updatedAt.toISOString()
     };
   }
 
+  private mapCalendarOccurrence(chore: Chore): ChoreCalendarOccurrence {
+    return {
+      id: chore.id,
+      templateId: chore.templateId,
+      title: chore.title,
+      description: chore.description,
+      dueOn: formatDateOnlyUtc(chore.dueOn),
+      assigneeUserId: chore.assignedToUserId,
+      status: chore.status,
+      completedAt: chore.completedAt?.toISOString() ?? null,
+      completedByUserId: chore.completedByUserId
+    };
+  }
+
   private buildChoreOrderBy(query: ListChoresQueryDto): Prisma.ChoreOrderByWithRelationInput[] {
     switch (query.sortBy) {
       case 'createdAt':
-        return [{ createdAt: query.sortOrder }, { dueDate: 'asc' }];
+        return [{ createdAt: query.sortOrder }, { dueOn: 'asc' }];
       case 'updatedAt':
         return [{ updatedAt: query.sortOrder }, { createdAt: query.sortOrder }];
       case 'status':
-        return [{ status: query.sortOrder }, { dueDate: 'asc' }, { createdAt: 'asc' }];
-      case 'dueDate':
+        return [{ status: query.sortOrder }, { dueOn: 'asc' }, { createdAt: 'asc' }];
+      case 'dueOn':
       default:
-        return [{ dueDate: query.sortOrder }, { createdAt: query.sortOrder }];
+        return [{ dueOn: query.sortOrder }, { createdAt: query.sortOrder }];
     }
+  }
+
+  private assertValidCalendarRange(start: Date, end: Date): void {
+    const daySpan = Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+
+    if (daySpan < 0 || daySpan > CHORE_GENERATION_HORIZON_DAYS) {
+      throw new BadRequestException({
+        code: ErrorCode.BadRequest,
+        message: `Calendar range must use start <= end and span no more than ${CHORE_GENERATION_HORIZON_DAYS} days.`
+      });
+    }
+  }
+
+  private async assertActiveGroupMember(
+    tx: Prisma.TransactionClient,
+    groupId: string,
+    userId: string
+  ): Promise<GroupMember> {
+    const membership = await tx.groupMember.findUnique({
+      where: {
+        groupId_userId: {
+          groupId,
+          userId
+        }
+      }
+    });
+
+    if (!membership || membership.status !== GroupMemberStatus.ACTIVE) {
+      throw new BadRequestException({
+        code: ErrorCode.BadRequest,
+        message: 'Assignee must be an active member of the group.'
+      });
+    }
+
+    return membership;
   }
 }

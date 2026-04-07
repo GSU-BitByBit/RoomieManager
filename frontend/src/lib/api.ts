@@ -171,14 +171,71 @@ export const chores = {
     return request<import('@/types/api').Chore>('POST', `/groups/${groupId}/chores`, dto);
   },
 
-  assign(choreId: string, assigneeUserId: string | null) {
-    return request<import('@/types/api').Chore>('PATCH', `/chores/${choreId}/assign`, {
-      assigneeUserId: assigneeUserId ?? undefined,
+  updateAssignee(occurrenceId: string, assigneeUserId: string) {
+    return request<import('@/types/api').Chore>('PATCH', `/chores/${occurrenceId}/assignee`, {
+      assigneeUserId,
     });
   },
 
-  complete(choreId: string) {
-    return request<import('@/types/api').Chore>('PATCH', `/chores/${choreId}/complete`);
+  complete(occurrenceId: string) {
+    return request<import('@/types/api').Chore>('PATCH', `/chores/${occurrenceId}/complete`);
+  },
+
+  calendar(groupId: string, start: string, end: string) {
+    return request<import('@/types/api').ChoreCalendarResponse>(
+      'GET',
+      `/groups/${groupId}/chores/calendar${buildQuery({ start, end })}`,
+    );
+  },
+};
+
+export const choreTemplates = {
+  list(groupId: string) {
+    return request<import('@/types/api').GroupChoreTemplatesResponse>(
+      'GET',
+      `/groups/${groupId}/chore-templates`,
+    );
+  },
+
+  create(groupId: string, dto: import('@/types/api').CreateChoreTemplateDto) {
+    return request<import('@/types/api').ChoreTemplate>(
+      'POST',
+      `/groups/${groupId}/chore-templates`,
+      dto,
+    );
+  },
+
+  update(
+    groupId: string,
+    templateId: string,
+    dto: import('@/types/api').UpdateChoreTemplateDto,
+  ) {
+    return request<import('@/types/api').ChoreTemplate>(
+      'PATCH',
+      `/groups/${groupId}/chore-templates/${templateId}`,
+      dto,
+    );
+  },
+
+  pause(groupId: string, templateId: string) {
+    return request<import('@/types/api').ChoreTemplate>(
+      'POST',
+      `/groups/${groupId}/chore-templates/${templateId}/pause`,
+    );
+  },
+
+  resume(groupId: string, templateId: string) {
+    return request<import('@/types/api').ChoreTemplate>(
+      'POST',
+      `/groups/${groupId}/chore-templates/${templateId}/resume`,
+    );
+  },
+
+  archive(groupId: string, templateId: string) {
+    return request<import('@/types/api').ChoreTemplate>(
+      'POST',
+      `/groups/${groupId}/chore-templates/${templateId}/archive`,
+    );
   },
 };
 
@@ -241,5 +298,5 @@ export const contracts = {
   },
 };
 
-const api = { auth, groups, members, chores, finance, contracts };
+const api = { auth, groups, members, chores, choreTemplates, finance, contracts };
 export default api;

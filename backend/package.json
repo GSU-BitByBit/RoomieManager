@@ -22,6 +22,8 @@
     "prisma:migrate:status": "prisma migrate status",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
+    "chores:redesign:audit": "ts-node --transpile-only scripts/chore-redesign-remediation.ts",
+    "chores:redesign:audit:json": "ts-node --transpile-only scripts/chore-redesign-remediation.ts --json --no-fail-on-blockers",
     "openapi:generate": "pnpm build && node dist/scripts/generate-openapi.js openapi/openapi.json && node dist/scripts/generate-openapi-types.js ../frontend/generated/backend-api.types.ts",
     "openapi:check": "node dist/scripts/check-openapi.js",
     "openapi:types:generate": "pnpm build && node dist/scripts/generate-openapi-types.js ../frontend/generated/backend-api.types.ts",

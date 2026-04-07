@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { contracts as contractsApi, groups as groupsApi, ApiError } from '@/lib/api';
-import type { ContractResponse, ContractVersion, GroupSummary } from '@/types/api';
+import { format, parseISO } from 'date-fns';
 import {
   FileText,
   Save,
@@ -13,7 +12,9 @@ import {
   ChevronUp,
   AlertTriangle,
 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+
+import { contracts as contractsApi, groups as groupsApi, ApiError } from '@/lib/api';
+import type { ContractResponse, ContractVersion, GroupSummary } from '@/types/api';
 
 type Tab = 'editor' | 'versions';
 
@@ -25,42 +26,46 @@ export default function ContractsPage() {
   const [versions, setVersions] = useState<ContractVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  // Editor state
   const [draftContent, setDraftContent] = useState('');
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [dirty, setDirty] = useState(false);
-
-  // Versions
   const [expandedVersion, setExpandedVersion] = useState<number | null>(null);
 
   const fetchContract = useCallback(async () => {
-    if (!groupId) return;
+    if (!groupId) {
+      return;
+    }
+
     try {
-      const [data, groupData] = await Promise.all([
-        contractsApi.get(groupId),
-        groupsApi.get(groupId),
-      ]);
+      const [data, groupData] = await Promise.all([contractsApi.get(groupId), groupsApi.get(groupId)]);
       setContractData(data);
       setGroup(groupData);
       setDraftContent(data.contract.draftContent);
       setDirty(false);
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message);
-      else setError('Failed to load contract');
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to load contract');
+      }
     } finally {
       setLoading(false);
     }
   }, [groupId]);
 
   const fetchVersions = useCallback(async () => {
-    if (!groupId) return;
+    if (!groupId) {
+      return;
+    }
+
     try {
       const data = await contractsApi.listVersions(groupId, { pageSize: 50 });
       setVersions(data.versions);
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message);
+      if (err instanceof ApiError) {
+        setError(err.message);
+      }
     }
   }, [groupId]);
 
@@ -72,40 +77,55 @@ export default function ContractsPage() {
   const isAdmin = group?.memberRole === 'ADMIN';
 
   const handleSaveDraft = async () => {
-    if (!groupId) return;
+    if (!groupId) {
+      return;
+    }
+
     setSaving(true);
     setError('');
+
     try {
       await contractsApi.updateDraft(groupId, draftContent);
       setDirty(false);
       fetchContract();
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message);
-      else setError('Failed to save draft');
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to save draft');
+      }
     } finally {
       setSaving(false);
     }
   };
 
   const handlePublish = async () => {
-    if (!groupId) return;
-    if (!window.confirm('Publish the current draft as a new version? This cannot be undone.'))
+    if (!groupId) {
       return;
+    }
+
+    if (!window.confirm('Publish the current draft as a new version? This cannot be undone.')) {
+      return;
+    }
 
     setPublishing(true);
     setError('');
+
     try {
-      // Save first if dirty
       if (dirty) {
         await contractsApi.updateDraft(groupId, draftContent);
       }
+
       await contractsApi.publish(groupId);
       fetchContract();
       fetchVersions();
       setDirty(false);
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message);
-      else setError('Failed to publish');
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to publish');
+      }
     } finally {
       setPublishing(false);
     }
@@ -114,100 +134,131 @@ export default function ContractsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-sage-200 border-t-sage-500" />
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Group Contract</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {contractData?.contract.publishedVersion
-            ? `Published v${contractData.contract.publishedVersion}`
-            : 'No published version yet'}
-        </p>
+    <div className="space-y-6">
+      <div className="card p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h1 className="font-display text-2xl text-charcoal">Group Contract</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {contractData?.contract.publishedVersion
+                ? `Published v${contractData.contract.publishedVersion}`
+                : 'No published version yet'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <SummaryCard
+              label="Published"
+              value={
+                contractData?.contract.publishedVersion
+                  ? `v${contractData.contract.publishedVersion}`
+                  : 'None'
+              }
+            />
+            <SummaryCard label="Draft" value={dirty ? 'Unsaved' : contractData?.contract.draftContent ? 'Ready' : 'Empty'} />
+            <SummaryCard label="History" value={`${versions.length}`} />
+            <SummaryCard
+              label="Updated"
+              value={
+                contractData?.contract.updatedAt
+                  ? format(parseISO(contractData.contract.updatedAt), 'MMM d')
+                  : 'Never'
+              }
+            />
+          </div>
+        </div>
+
+        {error && <div className="mt-4 alert-error">{error}</div>}
+
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setTab('editor')}
+            className={`rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+              tab === 'editor'
+                ? 'bg-sage-100 text-sage-700'
+                : 'bg-cream-50 text-slate-500 hover:bg-sage-50 hover:text-charcoal'
+            }`}
+          >
+            <span className="inline-flex items-center gap-2">
+              {isAdmin ? <Edit3 size={16} /> : <Eye size={16} />}
+              {isAdmin ? 'Draft Editor' : 'View Draft'}
+            </span>
+          </button>
+          <button
+            onClick={() => setTab('versions')}
+            className={`rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+              tab === 'versions'
+                ? 'bg-sage-100 text-sage-700'
+                : 'bg-cream-50 text-slate-500 hover:bg-sage-50 hover:text-charcoal'
+            }`}
+          >
+            <span className="inline-flex items-center gap-2">
+              <History size={16} />
+              Version History
+            </span>
+          </button>
+
+          {tab === 'editor' && isAdmin && (
+            <div className="ml-auto flex items-center gap-3">
+              <span className="text-xs text-slate-400">
+                {dirty ? 'Unsaved changes' : 'All changes saved'}
+              </span>
+              <button
+                onClick={handleSaveDraft}
+                className="btn-secondary btn-sm"
+                disabled={saving || !dirty}
+              >
+                <Save size={14} />
+                {saving ? 'Saving...' : 'Save Draft'}
+              </button>
+              <button
+                onClick={handlePublish}
+                className="btn-primary btn-sm"
+                disabled={publishing || (!draftContent.trim() && !dirty)}
+              >
+                <Send size={14} />
+                {publishing ? 'Publishing...' : 'Publish'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
-      )}
-
-      {/* Tabs */}
-      <div className="mb-6 flex border-b border-gray-200">
-        <button
-          onClick={() => setTab('editor')}
-          className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-            tab === 'editor'
-              ? 'border-brand-600 text-brand-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            {isAdmin ? <Edit3 size={16} /> : <Eye size={16} />}
-            {isAdmin ? 'Draft Editor' : 'View Draft'}
-          </span>
-        </button>
-        <button
-          onClick={() => setTab('versions')}
-          className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-            tab === 'versions'
-              ? 'border-brand-600 text-brand-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <History size={16} />
-            Version History ({versions.length})
-          </span>
-        </button>
-      </div>
-
-      {tab === 'editor' && (
-        <div>
-          {/* Published content preview */}
+      {tab === 'editor' ? (
+        <div className="space-y-5">
           {contractData?.latestPublishedContent && (
-            <div className="mb-4 card p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Eye size={16} className="text-green-600" />
-                <span className="text-sm font-medium text-green-700">
+            <div className="card p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <Eye size={16} className="text-sage-600" />
+                <span className="text-sm font-medium text-sage-700">
                   Latest Published (v{contractData.contract.publishedVersion})
                 </span>
               </div>
-              <div className="prose prose-sm max-w-none rounded-lg bg-green-50 p-4 text-gray-700 whitespace-pre-wrap">
+              <div className="whitespace-pre-wrap rounded-2xl border border-sage-100/60 bg-sage-50/70 p-4 text-sm text-charcoal">
                 {contractData.latestPublishedContent}
               </div>
             </div>
           )}
 
-          {/* Draft editor */}
-          <div className="card p-4">
-            <div className="flex items-center justify-between mb-3">
+          <div className="card p-5">
+            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <FileText size={16} className="text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">Draft</span>
+                <FileText size={16} className="text-slate-400" />
+                <span className="text-sm font-medium text-charcoal">Current Draft</span>
                 {dirty && <span className="badge-yellow">Unsaved changes</span>}
               </div>
-              {isAdmin && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleSaveDraft}
-                    className="btn-secondary btn-sm"
-                    disabled={saving || !dirty}
-                  >
-                    <Save size={14} />
-                    {saving ? 'Saving...' : 'Save Draft'}
-                  </button>
-                  <button
-                    onClick={handlePublish}
-                    className="btn-primary btn-sm"
-                    disabled={publishing || (!draftContent.trim() && !dirty)}
-                  >
-                    <Send size={14} />
-                    {publishing ? 'Publishing...' : 'Publish'}
-                  </button>
-                </div>
+
+              {!isAdmin && (
+                <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+                  <AlertTriangle size={12} />
+                  Only admins can edit the contract draft
+                </span>
               )}
             </div>
 
@@ -215,92 +266,91 @@ export default function ContractsPage() {
               <textarea
                 className="input min-h-[400px] resize-y font-mono text-sm"
                 value={draftContent}
-                onChange={(e) => {
-                  setDraftContent(e.target.value);
+                onChange={(event) => {
+                  setDraftContent(event.target.value);
                   setDirty(true);
                 }}
-                placeholder="Write your roommate contract here...
+                placeholder={`Write your group contract here...
 
 Examples of things to include:
 - Quiet hours
 - Guest policy
 - Cleaning schedule
 - Shared expenses rules
-- Kitchen/bathroom usage
+- Kitchen and bathroom etiquette
 - Pet policy
-- Move-out notice period"
+- Move-out notice period`}
               />
             ) : (
-              <div className="rounded-lg bg-gray-50 p-4 min-h-[200px] whitespace-pre-wrap text-sm text-gray-700">
-                {draftContent || (
-                  <span className="text-gray-400 italic">No draft content yet</span>
-                )}
+              <div className="min-h-[240px] whitespace-pre-wrap rounded-2xl border border-sage-100/60 bg-cream-50/60 p-4 text-sm text-charcoal">
+                {draftContent || <span className="italic text-slate-400">No draft content yet</span>}
               </div>
-            )}
-
-            {!isAdmin && (
-              <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
-                <AlertTriangle size={12} />
-                Only admins can edit the contract draft
-              </p>
             )}
           </div>
         </div>
-      )}
-
-      {tab === 'versions' && (
-        <div>
-          {versions.length === 0 ? (
-            <div className="card flex flex-col items-center justify-center py-16 text-center">
-              <History className="mb-4 h-12 w-12 text-gray-300" />
-              <h3 className="text-lg font-medium text-gray-900">No published versions</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {isAdmin
-                  ? 'Write a draft and publish it to create the first version'
-                  : 'The admin has not published any contract versions yet'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {versions.map((v) => (
-                <div key={v.id} className="card">
-                  <button
-                    className="flex w-full items-center justify-between p-4 text-left"
-                    onClick={() =>
-                      setExpandedVersion(expandedVersion === v.version ? null : v.version)
-                    }
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900">Version {v.version}</span>
-                        {v.version === contractData?.contract.publishedVersion && (
-                          <span className="badge-green">Latest</span>
-                        )}
-                      </div>
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        Published {format(parseISO(v.createdAt), 'MMM d, yyyy h:mm a')}
-                      </p>
-                    </div>
-                    {expandedVersion === v.version ? (
-                      <ChevronUp size={18} className="text-gray-400" />
-                    ) : (
-                      <ChevronDown size={18} className="text-gray-400" />
+      ) : versions.length === 0 ? (
+        <div className="card flex flex-col items-center justify-center px-6 py-16 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sage-50">
+            <History className="h-6 w-6 text-sage-300" />
+          </div>
+          <h3 className="font-display text-xl text-charcoal">No published versions</h3>
+          <p className="mt-2 text-sm text-slate-500">
+            {isAdmin
+              ? 'Write a draft and publish it to create the first version.'
+              : 'The admin has not published any contract versions yet.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {versions.map((version) => (
+            <div key={version.id} className="card">
+              <button
+                className="flex w-full items-center justify-between gap-4 p-5 text-left"
+                onClick={() =>
+                  setExpandedVersion(expandedVersion === version.version ? null : version.version)
+                }
+              >
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-charcoal">
+                      Version {version.version}
+                    </span>
+                    {version.version === contractData?.contract.publishedVersion && (
+                      <span className="badge-green">Latest</span>
                     )}
-                  </button>
-
-                  {expandedVersion === v.version && (
-                    <div className="border-t border-gray-100 p-4">
-                      <div className="rounded-lg bg-gray-50 p-4 whitespace-pre-wrap text-sm text-gray-700">
-                        {v.content}
-                      </div>
-                    </div>
-                  )}
+                  </div>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Published {format(parseISO(version.createdAt), 'MMM d, yyyy h:mm a')}
+                  </p>
                 </div>
-              ))}
+
+                {expandedVersion === version.version ? (
+                  <ChevronUp size={18} className="text-slate-400" />
+                ) : (
+                  <ChevronDown size={18} className="text-slate-400" />
+                )}
+              </button>
+
+              {expandedVersion === version.version && (
+                <div className="border-t border-sage-100/50 px-5 pb-5 pt-4">
+                  <div className="whitespace-pre-wrap rounded-2xl border border-sage-100/50 bg-cream-50/60 p-4 text-sm text-charcoal">
+                    {version.content}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function SummaryCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-sage-100/50 bg-cream-50/60 px-4 py-3 text-center">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-charcoal">{value}</p>
     </div>
   );
 }

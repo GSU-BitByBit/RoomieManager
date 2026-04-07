@@ -26,10 +26,10 @@ export interface GroupDashboardMembersSummary {
 }
 
 export interface GroupDashboardChoresSummary {
-  pendingCount: number;
-  completedCount: number;
   overdueCount: number;
-  assignedToMePendingCount: number;
+  dueTodayCount: number;
+  dueNext7DaysCount: number;
+  assignedToMeDueNext7DaysCount: number;
 }
 
 export interface GroupDashboardFinanceSummary {

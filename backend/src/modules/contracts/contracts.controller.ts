@@ -14,20 +14,25 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
-  ApiCreatedResponse,
   ApiForbiddenResponse,
-  ApiOkResponse,
   ApiOperation,
   ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse
 } from '@nestjs/swagger';
 
+import { ApiSuccessResponse } from '../../common/http/api-success-response.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SupabaseJwtAuthGuard } from '../auth/guards/supabase-jwt-auth.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/auth-user.interface';
 import { ParseAppIdPipe } from '../../common/http/parse-app-id.pipe';
 import { ContractsService } from './contracts.service';
+import {
+  ContractDetailResponseDto,
+  ContractSummaryDto,
+  ContractVersionSummaryDto,
+  ContractVersionsResponseDto
+} from './dto/contract-response.dto';
 import { ListContractVersionsQueryDto } from './dto/list-contract-versions.query';
 import { UpdateContractDraftDto } from './dto/update-contract-draft.dto';
 import type {
@@ -36,6 +41,50 @@ import type {
   ContractVersionSummary,
   ContractVersionsResponse
 } from './interfaces/contract-response.interface';
+
+const CONTRACT_DETAIL_EXAMPLE = {
+  contract: {
+    id: 'cm8wb6r8u000emk6zubf6s23n',
+    groupId: 'cm8z9ab120001mk8z4og1j0e9',
+    draftContent: 'Draft roommate contract content.',
+    publishedVersion: 2,
+    updatedBy: '550e8400-e29b-41d4-a716-446655440001',
+    createdAt: '2026-03-05T16:40:00.000Z',
+    updatedAt: '2026-03-05T16:43:00.000Z'
+  },
+  latestPublishedContent: 'Published roommate contract v2.'
+} as const;
+
+const CONTRACT_SUMMARY_EXAMPLE = {
+  id: 'cm8wb6r8u000emk6zubf6s23n',
+  groupId: 'cm8z9ab120001mk8z4og1j0e9',
+  draftContent: 'Updated draft contract text.',
+  publishedVersion: 2,
+  updatedBy: '550e8400-e29b-41d4-a716-446655440001',
+  createdAt: '2026-03-05T16:40:00.000Z',
+  updatedAt: '2026-03-05T16:44:00.000Z'
+} as const;
+
+const CONTRACT_VERSION_EXAMPLE = {
+  id: 'cm8wb8l66000fmk6z5nwnk1j5',
+  version: 3,
+  content: 'Published roommate contract v3.',
+  publishedBy: '550e8400-e29b-41d4-a716-446655440001',
+  createdAt: '2026-03-05T16:45:00.000Z'
+} as const;
+
+const CONTRACT_VERSIONS_EXAMPLE = {
+  groupId: 'cm8w9z0abc123def456ghi789',
+  versions: [CONTRACT_VERSION_EXAMPLE],
+  pagination: {
+    page: 1,
+    pageSize: 20,
+    totalItems: 3,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPreviousPage: false
+  }
+} as const;
 
 @ApiTags('Contracts')
 @ApiBearerAuth('bearer')
@@ -47,29 +96,10 @@ export class ContractsController {
   @Get('groups/:groupId/contract')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get the current contract for a group (draft + latest published).' })
-  @ApiOkResponse({
+  @ApiSuccessResponse({
     description: 'Returns the contract detail.',
-    schema: {
-      example: {
-        success: true,
-        data: {
-          contract: {
-            id: 'cm8wb6r8u000emk6zubf6s23n',
-            groupId: 'cm8z9ab120001mk8z4og1j0e9',
-            draftContent: 'Draft roommate contract content.',
-            publishedVersion: 2,
-            updatedBy: '550e8400-e29b-41d4-a716-446655440001',
-            createdAt: '2026-03-05T16:40:00.000Z',
-            updatedAt: '2026-03-05T16:43:00.000Z'
-          },
-          latestPublishedContent: 'Published roommate contract v2.'
-        },
-        meta: {
-          requestId: 'ee28f5cd-268a-4701-b70d-f52304989bd8',
-          timestamp: '2026-03-05T16:43:00.000Z'
-        }
-      }
-    }
+    type: ContractDetailResponseDto,
+    example: CONTRACT_DETAIL_EXAMPLE
   })
   @ApiBadRequestResponse({ description: 'Invalid group ID format.' })
   @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
@@ -85,26 +115,10 @@ export class ContractsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update the contract draft (admin only).' })
   @ApiBody({ type: UpdateContractDraftDto })
-  @ApiOkResponse({
+  @ApiSuccessResponse({
     description: 'Returns updated contract summary.',
-    schema: {
-      example: {
-        success: true,
-        data: {
-          id: 'cm8wb6r8u000emk6zubf6s23n',
-          groupId: 'cm8z9ab120001mk8z4og1j0e9',
-          draftContent: 'Updated draft contract text.',
-          publishedVersion: 2,
-          updatedBy: '550e8400-e29b-41d4-a716-446655440001',
-          createdAt: '2026-03-05T16:40:00.000Z',
-          updatedAt: '2026-03-05T16:44:00.000Z'
-        },
-        meta: {
-          requestId: 'be530f89-77bb-40e0-afd7-059b68ca3833',
-          timestamp: '2026-03-05T16:44:00.000Z'
-        }
-      }
-    }
+    type: ContractSummaryDto,
+    example: CONTRACT_SUMMARY_EXAMPLE
   })
   @ApiBadRequestResponse({ description: 'Invalid group ID or contract draft payload.' })
   @ApiForbiddenResponse({ description: 'Caller is not an active admin of this group.' })
@@ -120,24 +134,11 @@ export class ContractsController {
   @Post('groups/:groupId/contract/publish')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Publish the current draft as a new version (admin only).' })
-  @ApiCreatedResponse({
+  @ApiSuccessResponse({
+    status: HttpStatus.CREATED,
     description: 'Returns the newly published version.',
-    schema: {
-      example: {
-        success: true,
-        data: {
-          id: 'cm8wb8l66000fmk6z5nwnk1j5',
-          version: 3,
-          content: 'Published roommate contract v3.',
-          publishedBy: '550e8400-e29b-41d4-a716-446655440001',
-          createdAt: '2026-03-05T16:45:00.000Z'
-        },
-        meta: {
-          requestId: 'dbbc2891-4de3-4b65-ad4d-26a4952309e8',
-          timestamp: '2026-03-05T16:45:00.000Z'
-        }
-      }
-    }
+    type: ContractVersionSummaryDto,
+    example: CONTRACT_VERSION_EXAMPLE
   })
   @ApiBadRequestResponse({ description: 'Invalid group ID or empty draft content.' })
   @ApiForbiddenResponse({ description: 'Caller is not an active admin of this group.' })
@@ -156,37 +157,10 @@ export class ContractsController {
   @ApiQuery({ name: 'pageSize', required: false, type: Number })
   @ApiQuery({ name: 'sortBy', required: false, enum: ['version', 'createdAt'] })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
-  @ApiOkResponse({
+  @ApiSuccessResponse({
     description: 'Returns version history with pagination metadata.',
-    schema: {
-      example: {
-        success: true,
-        data: {
-          groupId: 'cm8w9z0abc123def456ghi789',
-          versions: [
-            {
-              id: 'cm8wb8l66000fmk6z5nwnk1j5',
-              version: 3,
-              content: 'Rent due by 5th. Quiet hours after 10PM.',
-              publishedBy: '550e8400-e29b-41d4-a716-446655440001',
-              createdAt: '2026-03-05T14:44:00.000Z'
-            }
-          ],
-          pagination: {
-            page: 1,
-            pageSize: 20,
-            totalItems: 3,
-            totalPages: 1,
-            hasNextPage: false,
-            hasPreviousPage: false
-          }
-        },
-        meta: {
-          requestId: '8f9c8a41-26b8-4e53-a35e-64f4db76d79e',
-          timestamp: '2026-03-05T14:45:00.000Z'
-        }
-      }
-    }
+    type: ContractVersionsResponseDto,
+    example: CONTRACT_VERSIONS_EXAMPLE
   })
   @ApiBadRequestResponse({
     description: 'Invalid group ID or invalid pagination/sort query values.'

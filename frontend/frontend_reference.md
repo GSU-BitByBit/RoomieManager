@@ -171,7 +171,7 @@ Implemented list route defaults:
 
 - `GET /api/v1/groups` defaults to `sortBy=updatedAt`, `sortOrder=desc`.
 - `GET /api/v1/groups/:groupId/members` defaults to `sortBy=role`, `sortOrder=asc`.
-- `GET /api/v1/groups/:groupId/chores` defaults to `sortBy=dueDate`, `sortOrder=asc`.
+- `GET /api/v1/groups/:groupId/chores` defaults to `sortBy=dueOn`, `sortOrder=asc`.
 - `GET /api/v1/groups/:groupId/contract/versions` defaults to `sortBy=version`, `sortOrder=desc`.
 - `GET /api/v1/groups/:groupId/bills` defaults to `sortBy=incurredAt`, `sortOrder=desc`.
 
@@ -955,12 +955,12 @@ Module 6 (Bills/Payments/Balances):
 
 `GET /api/v1/groups/:groupId/chores` query params:
 
-- `status` (optional: `PENDING`, `COMPLETED`)
+- `status` (optional: `PENDING`, `COMPLETED`, `CANCELLED`)
 - `assigneeUserId` (optional)
-- `dueAfter` and `dueBefore` (optional ISO timestamps)
+- `dueOnFrom` and `dueOnTo` (optional `YYYY-MM-DD` dates)
 - `page` (optional, default `1`)
 - `pageSize` (optional, default `20`, max `100`)
-- `sortBy` (optional: `dueDate`, `createdAt`, `updatedAt`, `status`; default `dueDate`)
+- `sortBy` (optional: `dueOn`, `createdAt`, `updatedAt`, `status`; default `dueOn`)
 - `sortOrder` (optional: `asc`, `desc`; default `asc`)
 
 `GET /api/v1/groups/:groupId/chores` response data:
@@ -986,7 +986,9 @@ Short-term recommended approach:
 4. Enable member-management, chores, and contracts screens now:
    - members list, role changes, removal
    - chore list for a group (optionally filtered by status/assignee/due date)
-   - create chore, assign/unassign chore, mark chore complete
+   - create one-off chore occurrence, reassign occurrence, mark occurrence complete
+   - recurring chore template list/create/update/pause/resume/archive
+   - calendar occurrence view via `/groups/:groupId/chores/calendar`
    - finance list/create flows for bills and payments
    - group balances screen using `/groups/:groupId/balances`
    - view group contract (draft + published), edit draft (admin), publish version (admin), view version history
@@ -1093,10 +1095,17 @@ export async function apiGet<T>(path: string): Promise<T> {
 - **New behavior**: Rejoining a group always resets role to `MEMBER`.
 - **New validation**: Password fields now enforce `maxLength: 128`.
 - **New endpoints (Module 5)**:
-  - `POST /api/v1/groups/:groupId/chores` — create chore
-  - `GET /api/v1/groups/:groupId/chores` — list/filter chores by status, assignee, due date
-  - `PATCH /api/v1/chores/:choreId/assign` — assign/unassign chore (admins can assign to others; members can assign to themselves)
-  - `PATCH /api/v1/chores/:choreId/complete` — mark chore complete (admins or assignee)
+  - `POST /api/v1/groups/:groupId/chores` — create one-off chore occurrence
+  - `GET /api/v1/groups/:groupId/chores` — list/filter chore occurrences by status, assignee, and dueOn date
+  - `GET /api/v1/groups/:groupId/chores/calendar` — return a flat occurrence list for a required bounded date range
+  - `PATCH /api/v1/chores/:occurrenceId/assignee` — reassign a chore occurrence (admin only)
+  - `PATCH /api/v1/chores/:occurrenceId/complete` — mark a chore occurrence complete (admins or assignee)
+  - `GET /api/v1/groups/:groupId/chore-templates` — list recurring chore templates
+  - `POST /api/v1/groups/:groupId/chore-templates` — create recurring chore template (admin only)
+  - `PATCH /api/v1/groups/:groupId/chore-templates/:templateId` — update recurring chore template (admin only)
+  - `POST /api/v1/groups/:groupId/chore-templates/:templateId/pause` — pause recurring chore template (admin only)
+  - `POST /api/v1/groups/:groupId/chore-templates/:templateId/resume` — resume recurring chore template (admin only)
+  - `POST /api/v1/groups/:groupId/chore-templates/:templateId/archive` — archive recurring chore template (admin only)
 - **Security**: Error responses no longer leak internal details (Prisma column names, Supabase error codes, raw error messages). Error `details` field may be absent or contain only safe information.
 - **Security**: Health readiness failure response no longer includes raw database error messages.
 - **Schema**: `JoinCode` model now has an `expiresAt` column (not yet enforced in application logic).

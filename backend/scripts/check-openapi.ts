@@ -116,8 +116,8 @@ const LIST_ENDPOINT_CONTRACTS: ListEndpointContract[] = [
     queryParams: [
       { name: 'status' },
       { name: 'assigneeUserId', type: 'string' },
-      { name: 'dueAfter', type: 'string' },
-      { name: 'dueBefore', type: 'string' },
+      { name: 'dueOnFrom', type: 'string' },
+      { name: 'dueOnTo', type: 'string' },
       { name: 'page', type: 'number' },
       { name: 'pageSize', type: 'number' },
       { name: 'sortBy', type: 'string' },
@@ -269,11 +269,11 @@ const CORE_ENDPOINT_CONTRACTS: EndpointContract[] = [
   {
     path: '/api/v1/groups/{groupId}/chores',
     method: 'post',
-    statusCodes: ['201', '401'],
+    statusCodes: ['201', '400', '401', '403'],
     requiresAuth: true,
     requiredPathParams: ['groupId'],
     requiresRequestBody: true,
-    requiredDataKeys: ['id', 'groupId', 'title', 'status', 'createdBy']
+    requiredDataKeys: ['id', 'groupId', 'title', 'status', 'dueOn', 'assigneeUserId', 'createdBy']
   },
   {
     path: '/api/v1/groups/{groupId}/chores',
@@ -283,21 +283,142 @@ const CORE_ENDPOINT_CONTRACTS: EndpointContract[] = [
     requiredPathParams: ['groupId']
   },
   {
-    path: '/api/v1/chores/{choreId}/assign',
-    method: 'patch',
-    statusCodes: ['200', '401'],
+    path: '/api/v1/groups/{groupId}/chores/calendar',
+    method: 'get',
+    statusCodes: ['200', '400', '401', '403'],
     requiresAuth: true,
-    requiredPathParams: ['choreId'],
-    requiresRequestBody: true,
-    requiredDataKeys: ['id', 'groupId', 'title', 'status', 'createdBy']
+    requiredPathParams: ['groupId'],
+    requiredDataKeys: ['groupId', 'start', 'end', 'occurrences']
   },
   {
-    path: '/api/v1/chores/{choreId}/complete',
+    path: '/api/v1/chores/{occurrenceId}/assignee',
     method: 'patch',
-    statusCodes: ['200', '401'],
+    statusCodes: ['200', '400', '401', '403'],
     requiresAuth: true,
-    requiredPathParams: ['choreId'],
-    requiredDataKeys: ['id', 'groupId', 'title', 'status', 'createdBy']
+    requiredPathParams: ['occurrenceId'],
+    requiresRequestBody: true,
+    requiredDataKeys: [
+      'id',
+      'groupId',
+      'title',
+      'status',
+      'dueOn',
+      'createdBy',
+      'assigneeUserId'
+    ]
+  },
+  {
+    path: '/api/v1/chores/{occurrenceId}/complete',
+    method: 'patch',
+    statusCodes: ['200', '400', '401', '403'],
+    requiresAuth: true,
+    requiredPathParams: ['occurrenceId'],
+    requiredDataKeys: [
+      'id',
+      'groupId',
+      'title',
+      'status',
+      'dueOn',
+      'createdBy',
+      'completedByUserId'
+    ]
+  },
+  {
+    path: '/api/v1/groups/{groupId}/chore-templates',
+    method: 'get',
+    statusCodes: ['200', '400', '401', '403'],
+    requiresAuth: true,
+    requiredPathParams: ['groupId'],
+    requiredDataKeys: ['groupId', 'templates']
+  },
+  {
+    path: '/api/v1/groups/{groupId}/chore-templates',
+    method: 'post',
+    statusCodes: ['201', '400', '401', '403'],
+    requiresAuth: true,
+    requiredPathParams: ['groupId'],
+    requiresRequestBody: true,
+    requiredDataKeys: [
+      'id',
+      'groupId',
+      'title',
+      'status',
+      'startsOn',
+      'repeatEveryDays',
+      'assignmentStrategy',
+      'assigneeUserId',
+      'participants'
+    ]
+  },
+  {
+    path: '/api/v1/groups/{groupId}/chore-templates/{templateId}',
+    method: 'patch',
+    statusCodes: ['200', '400', '401', '403'],
+    requiresAuth: true,
+    requiredPathParams: ['groupId', 'templateId'],
+    requiresRequestBody: true,
+    requiredDataKeys: [
+      'id',
+      'groupId',
+      'title',
+      'status',
+      'startsOn',
+      'repeatEveryDays',
+      'assignmentStrategy',
+      'assigneeUserId',
+      'participants'
+    ]
+  },
+  {
+    path: '/api/v1/groups/{groupId}/chore-templates/{templateId}/pause',
+    method: 'post',
+    statusCodes: ['200', '400', '401', '403'],
+    requiresAuth: true,
+    requiredPathParams: ['groupId', 'templateId'],
+    requiredDataKeys: [
+      'id',
+      'groupId',
+      'status',
+      'startsOn',
+      'repeatEveryDays',
+      'assignmentStrategy',
+      'assigneeUserId',
+      'participants'
+    ]
+  },
+  {
+    path: '/api/v1/groups/{groupId}/chore-templates/{templateId}/resume',
+    method: 'post',
+    statusCodes: ['200', '400', '401', '403'],
+    requiresAuth: true,
+    requiredPathParams: ['groupId', 'templateId'],
+    requiredDataKeys: [
+      'id',
+      'groupId',
+      'status',
+      'startsOn',
+      'repeatEveryDays',
+      'assignmentStrategy',
+      'assigneeUserId',
+      'participants'
+    ]
+  },
+  {
+    path: '/api/v1/groups/{groupId}/chore-templates/{templateId}/archive',
+    method: 'post',
+    statusCodes: ['200', '400', '401', '403'],
+    requiresAuth: true,
+    requiredPathParams: ['groupId', 'templateId'],
+    requiredDataKeys: [
+      'id',
+      'groupId',
+      'status',
+      'startsOn',
+      'repeatEveryDays',
+      'assignmentStrategy',
+      'assigneeUserId',
+      'participants'
+    ]
   },
   {
     path: '/api/v1/groups/{groupId}/contract',

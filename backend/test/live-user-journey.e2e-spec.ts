@@ -157,12 +157,11 @@ interface LiveSession {
       expect(memberIds).toContain(secondaryUser.userId);
     }
 
-    const createChorePayload: { title: string; assigneeUserId?: string } = {
-      title: `Trash ${uniqueSuffix}`
+    const createChorePayload = {
+      title: `Trash ${uniqueSuffix}`,
+      dueOn: '2026-04-06',
+      assigneeUserId: secondaryUser ? secondaryUser.userId : primary.userId
     };
-    if (secondaryUser) {
-      createChorePayload.assigneeUserId = secondaryUser.userId;
-    }
 
     const createChore = await request(server)
       .post(`/api/v1/groups/${groupId}/chores`)

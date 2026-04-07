@@ -1,4 +1,9 @@
-import { INestApplication, UnauthorizedException, ValidationPipe } from '@nestjs/common';
+import {
+  ConflictException,
+  INestApplication,
+  UnauthorizedException,
+  ValidationPipe
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 
@@ -119,10 +124,10 @@ describe('Groups endpoints (e2e)', () => {
         memberCount: 1
       },
       chores: {
-        pendingCount: 3,
-        completedCount: 5,
         overdueCount: 1,
-        assignedToMePendingCount: 2
+        dueTodayCount: 1,
+        dueNext7DaysCount: 4,
+        assignedToMeDueNext7DaysCount: 2
       },
       finance: {
         billCount: 4,
@@ -368,10 +373,19 @@ describe('Groups endpoints (e2e)', () => {
     expect(response.body.success).toBe(true);
     expect(response.body.data.group.id).toBe('group-1');
     expect(response.body.data.members.totalActive).toBe(2);
-    expect(response.body.data.chores.pendingCount).toBe(3);
+    expect(response.body.data.chores).toEqual({
+      overdueCount: 1,
+      dueTodayCount: 1,
+      dueNext7DaysCount: 4,
+      assignedToMeDueNext7DaysCount: 2
+    });
     expect(response.body.data.finance.billCount).toBe(4);
     expect(response.body.data.contract.publishedVersion).toBe(2);
-    expect(groupsServiceMock.getGroupDashboard).toHaveBeenCalledWith('user-1', groupId, 'alex@example.com');
+    expect(groupsServiceMock.getGroupDashboard).toHaveBeenCalledWith(
+      'user-1',
+      groupId,
+      'alex@example.com'
+    );
   });
 
   it('GET /api/v1/groups/:groupId/dashboard rejects non-app-id groupId', async () => {
@@ -444,6 +458,37 @@ describe('Groups endpoints (e2e)', () => {
     expect(response.body.success).toBe(true);
     expect(response.body.data.removed).toBe(true);
     expect(groupsServiceMock.removeMember).toHaveBeenCalledWith('user-1', groupId, userId);
+  });
+
+  it('DELETE /api/v1/groups/:groupId/members/:userId returns explicit conflict details for blocking chore dependencies', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+    const userId = '550e8400-e29b-41d4-a716-446655440001';
+
+    groupsServiceMock.removeMember.mockRejectedValueOnce(
+      new ConflictException({
+        code: 'CONFLICT',
+        message:
+          'Member cannot be removed while assigned pending chore occurrences or recurring chore templates remain. Reassign them first.',
+        details: {
+          pendingOccurrenceCount: 2,
+          activeTemplateCount: 1,
+          pausedTemplateCount: 0
+        }
+      })
+    );
+
+    const response = await request(app!.getHttpServer())
+      .delete(`/api/v1/groups/${groupId}/members/${userId}`)
+      .set('Authorization', 'Bearer valid-token')
+      .expect(409);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.error.code).toBe('CONFLICT');
+    expect(response.body.error.details).toEqual({
+      pendingOccurrenceCount: 2,
+      activeTemplateCount: 1,
+      pausedTemplateCount: 0
+    });
   });
 
   it('rejects non-UUID groupId with 400', async () => {

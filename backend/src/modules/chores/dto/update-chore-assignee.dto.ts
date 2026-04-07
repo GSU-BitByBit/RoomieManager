@@ -1,13 +1,11 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
 
 export class UpdateChoreAssigneeDto {
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'user-uuid',
-    description:
-      'User ID of the new assignee. Omit or set to null/undefined to unassign the chore completely.'
+    description: 'User ID of the active group member who should own this chore.'
   })
-  @IsOptional()
   @IsString()
-  assigneeUserId?: string;
+  assigneeUserId!: string;
 }

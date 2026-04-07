@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import {
   ChoreStatus,
+  ChoreTemplateStatus,
   GroupMemberRole,
   GroupMemberStatus,
   Prisma,
@@ -18,6 +19,8 @@ import { randomInt } from 'node:crypto';
 import { ErrorCode } from '../../common/http/http-error-code';
 import { buildPaginationMeta, resolvePagination } from '../../common/http/pagination';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { addUtcDays, toDateOnlyUtc } from '../../common/time/date-only.util';
+import { ChoreGenerationService } from '../chores/chore-generation.service';
 import type { CreateGroupDto } from './dto/create-group.dto';
 import type { JoinGroupDto } from './dto/join-group.dto';
 import { ListGroupMembersQueryDto } from './dto/list-group-members.query';
@@ -38,10 +41,28 @@ const JOIN_CODE_LENGTH = 8;
 const MAX_JOIN_CODE_ATTEMPTS = 12;
 const AUDIT_ACTION_MEMBER_ROLE_UPDATED = 'MEMBER_ROLE_UPDATED';
 const AUDIT_ACTION_MEMBER_REMOVED = 'MEMBER_REMOVED';
+const NOOP_CHORE_GENERATION_SERVICE = {
+  maintainGroupGenerationHorizon: async () => ({
+    groupId: '',
+    horizonThroughOn: '',
+    processedTemplateCount: 0,
+    createdOccurrenceCount: 0,
+    templates: []
+  })
+} as unknown as ChoreGenerationService;
+
+interface BlockingChoreAssignmentCounts {
+  pendingOccurrenceCount: number;
+  activeTemplateCount: number;
+  pausedTemplateCount: number;
+}
 
 @Injectable()
 export class GroupsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly choreGenerationService: ChoreGenerationService = NOOP_CHORE_GENERATION_SERVICE
+  ) {}
 
   async createGroup(
     userId: string,
@@ -281,16 +302,22 @@ export class GroupsService {
       });
 
       const shouldIncludeJoinCode = membership.role === GroupMemberRole.ADMIN;
-      const now = new Date();
+      const today = toDateOnlyUtc(new Date());
+      const next7Days = addUtcDays(today, 7);
+
+      await this.choreGenerationService.maintainGroupGenerationHorizon(groupId, {
+        tx,
+        today
+      });
 
       const [
         activeMemberCount,
         activeAdminCount,
         joinCodeRecord,
-        pendingChoreCount,
-        completedChoreCount,
         overdueChoreCount,
-        assignedToMePendingCount,
+        dueTodayCount,
+        dueNext7DaysCount,
+        assignedToMeDueNext7DaysCount,
         billCount,
         paymentCount,
         latestBill,
@@ -319,21 +346,9 @@ export class GroupsService {
         tx.chore.count({
           where: {
             groupId,
-            status: ChoreStatus.PENDING
-          }
-        }),
-        tx.chore.count({
-          where: {
-            groupId,
-            status: ChoreStatus.COMPLETED
-          }
-        }),
-        tx.chore.count({
-          where: {
-            groupId,
             status: ChoreStatus.PENDING,
-            dueDate: {
-              lt: now
+            dueOn: {
+              lt: today
             }
           }
         }),
@@ -341,7 +356,28 @@ export class GroupsService {
           where: {
             groupId,
             status: ChoreStatus.PENDING,
-            assignedToUserId: userId
+            dueOn: today
+          }
+        }),
+        tx.chore.count({
+          where: {
+            groupId,
+            status: ChoreStatus.PENDING,
+            dueOn: {
+              gte: today,
+              lte: next7Days
+            }
+          }
+        }),
+        tx.chore.count({
+          where: {
+            groupId,
+            status: ChoreStatus.PENDING,
+            assignedToUserId: userId,
+            dueOn: {
+              gte: today,
+              lte: next7Days
+            }
           }
         }),
         tx.bill.count({
@@ -383,10 +419,10 @@ export class GroupsService {
           memberCount: Math.max(activeMemberCount - activeAdminCount, 0)
         },
         chores: {
-          pendingCount: pendingChoreCount,
-          completedCount: completedChoreCount,
           overdueCount: overdueChoreCount,
-          assignedToMePendingCount
+          dueTodayCount,
+          dueNext7DaysCount,
+          assignedToMeDueNext7DaysCount
         },
         finance: {
           billCount,
@@ -552,6 +588,8 @@ export class GroupsService {
           await this.assertNotLastAdmin(tx, groupId);
         }
 
+        await this.assertNoBlockingChoreAssignments(tx, groupId, memberUserId);
+
         const updatedMembership = await tx.groupMember.update({
           where: { id: membership.id },
           data: {
@@ -579,6 +617,77 @@ export class GroupsService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
     );
+  }
+
+  private async assertNoBlockingChoreAssignments(
+    tx: Prisma.TransactionClient,
+    groupId: string,
+    memberUserId: string
+  ): Promise<void> {
+    const [pendingOccurrenceCount, activeTemplateCount, pausedTemplateCount] = await Promise.all([
+      tx.chore.count({
+        where: {
+          groupId,
+          assignedToUserId: memberUserId,
+          status: ChoreStatus.PENDING
+        }
+      }),
+      tx.choreTemplate.count({
+        where: {
+          groupId,
+          status: ChoreTemplateStatus.ACTIVE,
+          OR: [
+            {
+              assignedToUserId: memberUserId
+            },
+            {
+              participants: {
+                some: {
+                  userId: memberUserId
+                }
+              }
+            }
+          ]
+        }
+      }),
+      tx.choreTemplate.count({
+        where: {
+          groupId,
+          status: ChoreTemplateStatus.PAUSED,
+          OR: [
+            {
+              assignedToUserId: memberUserId
+            },
+            {
+              participants: {
+                some: {
+                  userId: memberUserId
+                }
+              }
+            }
+          ]
+        }
+      })
+    ]);
+
+    const blockingCounts: BlockingChoreAssignmentCounts = {
+      pendingOccurrenceCount,
+      activeTemplateCount,
+      pausedTemplateCount
+    };
+
+    if (
+      blockingCounts.pendingOccurrenceCount > 0 ||
+      blockingCounts.activeTemplateCount > 0 ||
+      blockingCounts.pausedTemplateCount > 0
+    ) {
+      throw new ConflictException({
+        code: ErrorCode.Conflict,
+        message:
+          'Member cannot be removed while assigned pending chore occurrences or recurring chore templates remain. Reassign them first.',
+        details: blockingCounts
+      });
+    }
   }
 
   private async assertActiveMembership(

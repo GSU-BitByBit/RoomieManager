@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Plus, Users, ArrowRight, Copy, Check, LogIn, Home, X, Sparkles } from 'lucide-react';
+
 import { groups as groupsApi, ApiError } from '@/lib/api';
 import type { GroupSummary } from '@/types/api';
-import { Plus, Users, ArrowRight, Copy, Check, LogIn } from 'lucide-react';
 
 export default function GroupsPage() {
   const navigate = useNavigate();
@@ -10,17 +11,14 @@ export default function GroupsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Create group state
   const [showCreate, setShowCreate] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [creating, setCreating] = useState(false);
 
-  // Join group state
   const [showJoin, setShowJoin] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [joining, setJoining] = useState(false);
 
-  // Copy feedback
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const fetchGroups = useCallback(async () => {
@@ -28,8 +26,11 @@ export default function GroupsPage() {
       const data = await groupsApi.list();
       setGroupsList(data.groups);
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message);
-      else setError('Failed to load groups');
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to load groups');
+      }
     } finally {
       setLoading(false);
     }
@@ -39,37 +40,51 @@ export default function GroupsPage() {
     fetchGroups();
   }, [fetchGroups]);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newGroupName.trim()) return;
+  const handleCreate = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!newGroupName.trim()) {
+      return;
+    }
+
     setCreating(true);
     setError('');
+
     try {
       const group = await groupsApi.create(newGroupName.trim());
       setGroupsList((prev) => [group, ...prev]);
       setNewGroupName('');
       setShowCreate(false);
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message);
-      else setError('Failed to create group');
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to create group');
+      }
     } finally {
       setCreating(false);
     }
   };
 
-  const handleJoin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!joinCode.trim()) return;
+  const handleJoin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!joinCode.trim()) {
+      return;
+    }
+
     setJoining(true);
     setError('');
+
     try {
       const group = await groupsApi.join(joinCode.trim());
       setGroupsList((prev) => [group, ...prev]);
       setJoinCode('');
       setShowJoin(false);
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message);
-      else setError('Failed to join group');
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to join group');
+      }
     } finally {
       setJoining(false);
     }
@@ -84,21 +99,19 @@ export default function GroupsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-sage-200 border-t-sage-500" />
       </div>
     );
   }
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Groups</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Manage your roommate groups
-          </p>
+          <h1 className="page-title">My Groups</h1>
+          <p className="page-subtitle">Manage your groups</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2.5">
           <button onClick={() => setShowJoin(true)} className="btn-secondary">
             <LogIn size={16} />
             Join Group
@@ -110,31 +123,44 @@ export default function GroupsPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
-      )}
+      {error && <div className="mb-6 alert-error">{error}</div>}
 
-      {/* Create group modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="card w-full max-w-md p-6">
-            <h2 className="mb-4 text-lg font-semibold">Create a new group</h2>
-            <form onSubmit={handleCreate} className="space-y-4">
+        <div className="modal-backdrop">
+          <div className="modal-panel">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="font-display text-xl text-charcoal">Create a new group</h2>
+              <button
+                onClick={() => setShowCreate(false)}
+                className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-sage-50 hover:text-charcoal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreate} className="space-y-5">
               <div>
-                <label htmlFor="groupName" className="label">Group Name</label>
+                <label htmlFor="groupName" className="label">
+                  Group Name
+                </label>
                 <input
                   id="groupName"
                   className="input"
                   placeholder="e.g. Apartment 12A"
                   value={newGroupName}
-                  onChange={(e) => setNewGroupName(e.target.value)}
+                  onChange={(event) => setNewGroupName(event.target.value)}
                   required
                   maxLength={120}
                   autoFocus
                 />
               </div>
-              <div className="flex gap-2 justify-end">
-                <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">
+
+              <div className="flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(false)}
+                  className="btn-ghost"
+                >
                   Cancel
                 </button>
                 <button type="submit" className="btn-primary" disabled={creating}>
@@ -146,28 +172,39 @@ export default function GroupsPage() {
         </div>
       )}
 
-      {/* Join group modal */}
       {showJoin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="card w-full max-w-md p-6">
-            <h2 className="mb-4 text-lg font-semibold">Join an existing group</h2>
-            <form onSubmit={handleJoin} className="space-y-4">
+        <div className="modal-backdrop">
+          <div className="modal-panel">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="font-display text-xl text-charcoal">Join an existing group</h2>
+              <button
+                onClick={() => setShowJoin(false)}
+                className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-sage-50 hover:text-charcoal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleJoin} className="space-y-5">
               <div>
-                <label htmlFor="joinCode" className="label">Join Code</label>
+                <label htmlFor="joinCode" className="label">
+                  Join Code
+                </label>
                 <input
                   id="joinCode"
-                  className="input uppercase"
+                  className="input font-mono uppercase tracking-wider"
                   placeholder="e.g. AB12CD34"
                   value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
                   required
                   minLength={4}
                   maxLength={20}
                   autoFocus
                 />
               </div>
-              <div className="flex gap-2 justify-end">
-                <button type="button" onClick={() => setShowJoin(false)} className="btn-secondary">
+
+              <div className="flex justify-end gap-2.5">
+                <button type="button" onClick={() => setShowJoin(false)} className="btn-ghost">
                   Cancel
                 </button>
                 <button type="submit" className="btn-primary" disabled={joining}>
@@ -179,13 +216,16 @@ export default function GroupsPage() {
         </div>
       )}
 
-      {/* Groups list */}
       {groupsList.length === 0 ? (
-        <div className="card flex flex-col items-center justify-center py-16 text-center">
-          <Users className="mb-4 h-12 w-12 text-gray-300" />
-          <h3 className="text-lg font-medium text-gray-900">No groups yet</h3>
-          <p className="mt-1 text-sm text-gray-500">Create a group or join one with a code</p>
-          <div className="mt-6 flex gap-2">
+        <div className="card flex flex-col items-center justify-center px-6 py-20 text-center">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-sage-50">
+            <Home className="h-7 w-7 text-sage-300" />
+          </div>
+          <h3 className="font-display text-xl text-charcoal">No groups yet</h3>
+          <p className="mt-2 max-w-sm text-sm text-slate-500">
+            Create a group or join one with a code.
+          </p>
+          <div className="mt-8 flex gap-2.5">
             <button onClick={() => setShowJoin(true)} className="btn-secondary">
               <LogIn size={16} />
               Join Group
@@ -197,47 +237,57 @@ export default function GroupsPage() {
           </div>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {groupsList.map((group) => (
-            <div
+            <button
               key={group.id}
-              className="card cursor-pointer p-5 transition-shadow hover:shadow-md"
+              type="button"
+              className="group/card card cursor-pointer p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sage-100/30"
               onClick={() => navigate(`/groups/${group.id}`)}
             >
-              <div className="flex items-start justify-between">
+              <div className="mb-3 flex items-start justify-between">
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-gray-900 truncate">{group.name}</h3>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className={group.memberRole === 'ADMIN' ? 'badge-blue' : 'badge-gray'}>
-                      {group.memberRole}
+                  <h3 className="truncate text-lg font-semibold text-charcoal">{group.name}</h3>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <span className={group.memberRole === 'ADMIN' ? 'badge-blue' : 'badge-green'}>
+                      {group.memberRole === 'ADMIN' ? 'Admin' : 'Member'}
                     </span>
-                    <span className="text-xs text-gray-500">
-                      {group.memberCount} member{group.memberCount !== 1 ? 's' : ''}
+                    <span className="flex items-center gap-1 text-xs text-slate-400">
+                      <Users size={12} />
+                      {group.memberCount}
                     </span>
                   </div>
                 </div>
-                <ArrowRight size={18} className="mt-1 text-gray-400" />
+
+                <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-xl bg-sage-50 text-sage-400 transition-all duration-200 group-hover/card:bg-sage-100 group-hover/card:text-sage-600">
+                  <ArrowRight size={16} />
+                </div>
               </div>
 
               {group.joinCode && (
-                <div className="mt-3 flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
-                  <span className="text-xs text-gray-500">Join code:</span>
-                  <code className="flex-1 text-sm font-mono font-medium text-gray-700">
+                <div className="mt-2 flex items-center gap-2 rounded-xl border border-sage-100/30 bg-cream-100/60 px-3 py-2">
+                  <Sparkles size={12} className="shrink-0 text-sage-400" />
+                  <code className="flex-1 text-xs font-mono font-medium tracking-wider text-charcoal">
                     {group.joinCode}
                   </code>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      copyCode(group.joinCode!, group.id);
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void copyCode(group.joinCode!, group.id);
                     }}
-                    className="text-gray-400 hover:text-gray-600"
-                    title="Copy code"
+                    className="text-slate-400 transition-colors hover:text-sage-600"
+                    title="Copy invite code"
                   >
-                    {copiedId === group.id ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                    {copiedId === group.id ? (
+                      <Check size={14} className="text-sage-500" />
+                    ) : (
+                      <Copy size={14} />
+                    )}
                   </button>
                 </div>
               )}
-            </div>
+            </button>
           ))}
         </div>
       )}
