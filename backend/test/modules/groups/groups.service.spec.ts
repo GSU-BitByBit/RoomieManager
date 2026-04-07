@@ -340,6 +340,70 @@ describe('GroupsService', () => {
     );
   });
 
+  it('reactivates an inactive membership and resets role to member when rejoining', async () => {
+    const reactivatedMembership = {
+      id: 'gm-1',
+      groupId: 'group-1',
+      userId: 'user-2',
+      role: GroupMemberRole.MEMBER,
+      status: GroupMemberStatus.ACTIVE,
+      displayName: 'Jordan',
+      joinedAt: new Date('2026-03-01T12:00:00.000Z'),
+      createdAt: new Date('2026-02-23T00:10:00.000Z'),
+      updatedAt: new Date('2026-03-01T12:00:00.000Z')
+    };
+
+    const txMock = {
+      joinCode: {
+        findUnique: jest.fn().mockResolvedValue({
+          groupId: 'group-1',
+          code: 'ABCD1234',
+          group: {
+            id: 'group-1',
+            name: 'Apartment 12A',
+            createdBy: 'user-1',
+            createdAt: new Date('2026-02-23T00:00:00.000Z'),
+            updatedAt: new Date('2026-02-23T00:00:00.000Z')
+          }
+        })
+      },
+      groupMember: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'gm-1',
+          groupId: 'group-1',
+          userId: 'user-2',
+          role: GroupMemberRole.ADMIN,
+          status: GroupMemberStatus.INACTIVE,
+          displayName: 'Jordan',
+          joinedAt: new Date('2026-02-23T00:10:00.000Z'),
+          createdAt: new Date('2026-02-23T00:10:00.000Z'),
+          updatedAt: new Date('2026-02-23T00:10:00.000Z')
+        }),
+        update: jest.fn().mockResolvedValue(reactivatedMembership),
+        count: jest.fn().mockResolvedValue(2)
+      }
+    };
+
+    const prismaMock = {
+      $transaction: jest.fn(async (callback: (tx: any) => Promise<any>) => callback(txMock))
+    };
+
+    const service = new GroupsService(prismaMock as any);
+    const result = await service.joinGroup('user-2', { joinCode: 'ABCD1234' }, 'Jordan');
+
+    expect(result.memberRole).toBe(GroupMemberRole.MEMBER);
+    expect(result.memberStatus).toBe(GroupMemberStatus.ACTIVE);
+    expect(txMock.groupMember.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'gm-1' },
+        data: expect.objectContaining({
+          role: GroupMemberRole.MEMBER,
+          status: GroupMemberStatus.ACTIVE
+        })
+      })
+    );
+  });
+
   it('throws forbidden for non-admin reset', async () => {
     const txMock = {
       groupMember: {
@@ -532,11 +596,12 @@ describe('GroupsService', () => {
       expect((error as ConflictException).getResponse()).toEqual(
         expect.objectContaining({
           code: 'CONFLICT',
-          details: {
+          details: expect.objectContaining({
             pendingOccurrenceCount: 2,
             activeTemplateCount: 0,
-            pausedTemplateCount: 0
-          }
+            pausedTemplateCount: 0,
+            financeBalances: []
+          })
         })
       );
     }
@@ -710,6 +775,79 @@ describe('GroupsService', () => {
     );
   });
 
+  it('blocks removing a member who still has unsettled finance balances', async () => {
+    const adminMembership = {
+      id: 'gm-admin',
+      groupId: 'group-1',
+      userId: 'admin-1',
+      role: GroupMemberRole.ADMIN,
+      status: GroupMemberStatus.ACTIVE,
+      joinedAt: new Date('2026-02-23T00:00:00.000Z'),
+      createdAt: new Date('2026-02-23T00:00:00.000Z'),
+      updatedAt: new Date('2026-02-23T00:00:00.000Z')
+    };
+    const targetMembership = {
+      id: 'gm-member',
+      groupId: 'group-1',
+      userId: 'user-2',
+      role: GroupMemberRole.MEMBER,
+      status: GroupMemberStatus.ACTIVE,
+      joinedAt: new Date('2026-02-23T00:10:00.000Z'),
+      createdAt: new Date('2026-02-23T00:10:00.000Z'),
+      updatedAt: new Date('2026-02-23T00:10:00.000Z')
+    };
+
+    const txMock = {
+      groupMember: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce(adminMembership)
+          .mockResolvedValueOnce(targetMembership)
+      },
+      chore: {
+        count: jest.fn().mockResolvedValue(0)
+      },
+      choreTemplate: {
+        count: jest.fn().mockResolvedValueOnce(0).mockResolvedValueOnce(0)
+      }
+    };
+    const financeServiceMock = {
+      getMemberNetBalancesByCurrency: jest
+        .fn()
+        .mockResolvedValue([{ currency: 'USD', netAmount: -12.5 }])
+    };
+
+    const prismaMock = {
+      $transaction: jest.fn(async (callback: (tx: any) => Promise<any>) => callback(txMock))
+    };
+
+    const service = new GroupsService(
+      prismaMock as any,
+      undefined as any,
+      financeServiceMock as any
+    );
+
+    try {
+      await service.removeMember('admin-1', 'group-1', 'user-2');
+      throw new Error('Expected removeMember to throw');
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConflictException);
+      expect((error as ConflictException).getResponse()).toEqual(
+        expect.objectContaining({
+          code: 'CONFLICT',
+          message:
+            'Member cannot be removed while they still have unsettled group balances. Settle balances first.',
+          details: expect.objectContaining({
+            pendingOccurrenceCount: 0,
+            activeTemplateCount: 0,
+            pausedTemplateCount: 0,
+            financeBalances: [{ currency: 'USD', netAmount: -12.5 }]
+          })
+        })
+      );
+    }
+  });
+
   it('allows removing a member when only completed/cancelled occurrences and archived templates remain', async () => {
     const adminMembership = {
       id: 'gm-admin',
@@ -807,5 +945,332 @@ describe('GroupsService', () => {
     await expect(service.removeMember('admin-1', 'group-1', 'admin-1')).rejects.toBeInstanceOf(
       BadRequestException
     );
+  });
+
+  it('allows a regular member to leave when no blockers remain', async () => {
+    const membership = {
+      id: 'gm-member',
+      groupId: 'group-1',
+      userId: 'user-2',
+      role: GroupMemberRole.MEMBER,
+      status: GroupMemberStatus.ACTIVE,
+      joinedAt: new Date('2026-02-23T00:10:00.000Z'),
+      createdAt: new Date('2026-02-23T00:10:00.000Z'),
+      updatedAt: new Date('2026-02-23T00:10:00.000Z')
+    };
+    const updatedMembership = {
+      ...membership,
+      status: GroupMemberStatus.INACTIVE,
+      updatedAt: new Date('2026-02-23T00:30:00.000Z')
+    };
+
+    const txMock = {
+      groupMember: {
+        findUnique: jest.fn().mockResolvedValue(membership),
+        update: jest.fn().mockResolvedValue(updatedMembership)
+      },
+      chore: {
+        count: jest.fn().mockResolvedValue(0)
+      },
+      choreTemplate: {
+        count: jest.fn().mockResolvedValueOnce(0).mockResolvedValueOnce(0)
+      },
+      groupAuditLog: {
+        create: jest.fn().mockResolvedValue({})
+      }
+    };
+
+    const prismaMock = {
+      $transaction: jest.fn(async (callback: (tx: any) => Promise<any>) => callback(txMock))
+    };
+
+    const service = new GroupsService(prismaMock as any);
+    const result = await service.leaveGroup('user-2', 'group-1');
+
+    expect(result).toEqual({
+      groupId: 'group-1',
+      userId: 'user-2',
+      status: GroupMemberStatus.INACTIVE,
+      left: true,
+      updatedAt: '2026-02-23T00:30:00.000Z'
+    });
+    expect(txMock.groupAuditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          actorUserId: 'user-2',
+          targetUserId: 'user-2',
+          action: 'MEMBER_LEFT'
+        })
+      })
+    );
+  });
+
+  it('allows an admin to leave when another active admin remains', async () => {
+    const membership = {
+      id: 'gm-admin',
+      groupId: 'group-1',
+      userId: 'admin-1',
+      role: GroupMemberRole.ADMIN,
+      status: GroupMemberStatus.ACTIVE,
+      joinedAt: new Date('2026-02-23T00:00:00.000Z'),
+      createdAt: new Date('2026-02-23T00:00:00.000Z'),
+      updatedAt: new Date('2026-02-23T00:00:00.000Z')
+    };
+    const updatedMembership = {
+      ...membership,
+      status: GroupMemberStatus.INACTIVE,
+      updatedAt: new Date('2026-02-23T00:40:00.000Z')
+    };
+
+    const txMock = {
+      groupMember: {
+        findUnique: jest.fn().mockResolvedValue(membership),
+        count: jest.fn().mockResolvedValue(2),
+        update: jest.fn().mockResolvedValue(updatedMembership)
+      },
+      chore: {
+        count: jest.fn().mockResolvedValue(0)
+      },
+      choreTemplate: {
+        count: jest.fn().mockResolvedValueOnce(0).mockResolvedValueOnce(0)
+      },
+      groupAuditLog: {
+        create: jest.fn().mockResolvedValue({})
+      }
+    };
+
+    const prismaMock = {
+      $transaction: jest.fn(async (callback: (tx: any) => Promise<any>) => callback(txMock))
+    };
+
+    const service = new GroupsService(prismaMock as any);
+    const result = await service.leaveGroup('admin-1', 'group-1');
+
+    expect(result.left).toBe(true);
+    expect(txMock.groupMember.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          groupId: 'group-1',
+          status: GroupMemberStatus.ACTIVE,
+          role: GroupMemberRole.ADMIN
+        })
+      })
+    );
+  });
+
+  it('blocks the last active admin from leaving', async () => {
+    const membership = {
+      id: 'gm-admin',
+      groupId: 'group-1',
+      userId: 'admin-1',
+      role: GroupMemberRole.ADMIN,
+      status: GroupMemberStatus.ACTIVE,
+      joinedAt: new Date('2026-02-23T00:00:00.000Z'),
+      createdAt: new Date('2026-02-23T00:00:00.000Z'),
+      updatedAt: new Date('2026-02-23T00:00:00.000Z')
+    };
+
+    const txMock = {
+      groupMember: {
+        findUnique: jest.fn().mockResolvedValue(membership),
+        count: jest.fn().mockResolvedValue(1)
+      }
+    };
+
+    const prismaMock = {
+      $transaction: jest.fn(async (callback: (tx: any) => Promise<any>) => callback(txMock))
+    };
+
+    const service = new GroupsService(prismaMock as any);
+
+    await expect(service.leaveGroup('admin-1', 'group-1')).rejects.toBeInstanceOf(
+      ConflictException
+    );
+  });
+
+  it('blocks leaving when the member still has pending chore occurrences assigned', async () => {
+    const membership = {
+      id: 'gm-member',
+      groupId: 'group-1',
+      userId: 'user-2',
+      role: GroupMemberRole.MEMBER,
+      status: GroupMemberStatus.ACTIVE,
+      joinedAt: new Date('2026-02-23T00:10:00.000Z'),
+      createdAt: new Date('2026-02-23T00:10:00.000Z'),
+      updatedAt: new Date('2026-02-23T00:10:00.000Z')
+    };
+
+    const txMock = {
+      groupMember: {
+        findUnique: jest.fn().mockResolvedValue(membership)
+      },
+      chore: {
+        count: jest.fn().mockResolvedValue(2)
+      },
+      choreTemplate: {
+        count: jest.fn().mockResolvedValueOnce(0).mockResolvedValueOnce(0)
+      }
+    };
+
+    const prismaMock = {
+      $transaction: jest.fn(async (callback: (tx: any) => Promise<any>) => callback(txMock))
+    };
+
+    const service = new GroupsService(prismaMock as any);
+
+    await expect(service.leaveGroup('user-2', 'group-1')).rejects.toBeInstanceOf(
+      ConflictException
+    );
+  });
+
+  it('blocks leaving when the member still participates in active round-robin templates', async () => {
+    const membership = {
+      id: 'gm-member',
+      groupId: 'group-1',
+      userId: 'user-2',
+      role: GroupMemberRole.MEMBER,
+      status: GroupMemberStatus.ACTIVE,
+      joinedAt: new Date('2026-02-23T00:10:00.000Z'),
+      createdAt: new Date('2026-02-23T00:10:00.000Z'),
+      updatedAt: new Date('2026-02-23T00:10:00.000Z')
+    };
+
+    const txMock = {
+      groupMember: {
+        findUnique: jest.fn().mockResolvedValue(membership)
+      },
+      chore: {
+        count: jest.fn().mockResolvedValue(0)
+      },
+      choreTemplate: {
+        count: jest.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(0)
+      }
+    };
+
+    const prismaMock = {
+      $transaction: jest.fn(async (callback: (tx: any) => Promise<any>) => callback(txMock))
+    };
+
+    const service = new GroupsService(prismaMock as any);
+
+    await expect(service.leaveGroup('user-2', 'group-1')).rejects.toBeInstanceOf(
+      ConflictException
+    );
+  });
+
+  it('blocks leaving when the member still has unsettled finance balances', async () => {
+    const membership = {
+      id: 'gm-member',
+      groupId: 'group-1',
+      userId: 'user-2',
+      role: GroupMemberRole.MEMBER,
+      status: GroupMemberStatus.ACTIVE,
+      joinedAt: new Date('2026-02-23T00:10:00.000Z'),
+      createdAt: new Date('2026-02-23T00:10:00.000Z'),
+      updatedAt: new Date('2026-02-23T00:10:00.000Z')
+    };
+
+    const txMock = {
+      groupMember: {
+        findUnique: jest.fn().mockResolvedValue(membership)
+      },
+      chore: {
+        count: jest.fn().mockResolvedValue(0)
+      },
+      choreTemplate: {
+        count: jest.fn().mockResolvedValueOnce(0).mockResolvedValueOnce(0)
+      }
+    };
+    const financeServiceMock = {
+      getMemberNetBalancesByCurrency: jest
+        .fn()
+        .mockResolvedValue([{ currency: 'USD', netAmount: -14.75 }])
+    };
+
+    const prismaMock = {
+      $transaction: jest.fn(async (callback: (tx: any) => Promise<any>) => callback(txMock))
+    };
+
+    const service = new GroupsService(
+      prismaMock as any,
+      undefined as any,
+      financeServiceMock as any
+    );
+
+    await expect(service.leaveGroup('user-2', 'group-1')).rejects.toBeInstanceOf(
+      ConflictException
+    );
+  });
+
+  it('allows the sole remaining active admin to destroy the group', async () => {
+    const membership = {
+      id: 'gm-admin',
+      groupId: 'group-1',
+      userId: 'admin-1',
+      role: GroupMemberRole.ADMIN,
+      status: GroupMemberStatus.ACTIVE,
+      joinedAt: new Date('2026-02-23T00:00:00.000Z'),
+      createdAt: new Date('2026-02-23T00:00:00.000Z'),
+      updatedAt: new Date('2026-02-23T00:00:00.000Z')
+    };
+
+    const txMock = {
+      groupMember: {
+        findUnique: jest.fn().mockResolvedValue(membership),
+        count: jest.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1)
+      },
+      group: {
+        delete: jest.fn().mockResolvedValue({ id: 'group-1' })
+      }
+    };
+
+    const prismaMock = {
+      $transaction: jest.fn(async (callback: (tx: any) => Promise<any>) => callback(txMock))
+    };
+
+    const service = new GroupsService(prismaMock as any);
+    const result = await service.destroyGroup('admin-1', 'group-1');
+
+    expect(result).toEqual({
+      groupId: 'group-1',
+      destroyed: true
+    });
+    expect(txMock.group.delete).toHaveBeenCalledWith({
+      where: { id: 'group-1' }
+    });
+  });
+
+  it('blocks group destruction when other active members still remain', async () => {
+    const membership = {
+      id: 'gm-admin',
+      groupId: 'group-1',
+      userId: 'admin-1',
+      role: GroupMemberRole.ADMIN,
+      status: GroupMemberStatus.ACTIVE,
+      joinedAt: new Date('2026-02-23T00:00:00.000Z'),
+      createdAt: new Date('2026-02-23T00:00:00.000Z'),
+      updatedAt: new Date('2026-02-23T00:00:00.000Z')
+    };
+
+    const txMock = {
+      groupMember: {
+        findUnique: jest.fn().mockResolvedValue(membership),
+        count: jest.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(2)
+      },
+      group: {
+        delete: jest.fn()
+      }
+    };
+
+    const prismaMock = {
+      $transaction: jest.fn(async (callback: (tx: any) => Promise<any>) => callback(txMock))
+    };
+
+    const service = new GroupsService(prismaMock as any);
+
+    await expect(service.destroyGroup('admin-1', 'group-1')).rejects.toBeInstanceOf(
+      ConflictException
+    );
+    expect(txMock.group.delete).not.toHaveBeenCalled();
   });
 });

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { chores as choresApi, groups as groupsApi, members as membersApi, ApiError } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { resolveIdentityLabel } from '@/lib/identity';
 import type { Chore, ChoresListResponse, GroupMember, GroupSummary } from '@/types/api';
 import ChoreCalendarView from '@/components/chores/ChoreCalendarView';
 import RecurringTemplatesPanel from '@/components/chores/RecurringTemplatesPanel';
@@ -222,7 +223,17 @@ export default function ChoresPage() {
   const memberOptions = [...membersList].sort((left, right) => {
     if (left.userId === user?.id) return -1;
     if (right.userId === user?.id) return 1;
-    return (left.displayName ?? left.userId).localeCompare(right.displayName ?? right.userId);
+    return resolveIdentityLabel({
+      displayName: left.displayName,
+      userId: left.userId,
+      fallbackLabel: 'Member',
+    }).localeCompare(
+      resolveIdentityLabel({
+        displayName: right.displayName,
+        userId: right.userId,
+        fallbackLabel: 'Member',
+      }),
+    );
   });
   const hasMemberDirectory = memberOptions.length > 0;
 
@@ -250,7 +261,11 @@ export default function ChoresPage() {
     (userId: string) => {
       if (userId === user?.id) return 'You';
       const member = membersList.find((m) => m.userId === userId);
-      return member?.displayName ?? userId.slice(0, 8) + '...';
+      return resolveIdentityLabel({
+        displayName: member?.displayName,
+        userId,
+        fallbackLabel: 'Unknown member',
+      });
     },
     [user?.id, membersList],
   );
@@ -710,8 +725,7 @@ export default function ChoresPage() {
                     >
                       {memberOptions.map((member) => (
                         <option key={member.userId} value={member.userId}>
-                          {member.displayName ?? member.userId}
-                          {member.userId === user?.id ? ' (You)' : ''}
+                          {getUserLabel(member.userId)}
                         </option>
                       ))}
                     </select>
@@ -998,8 +1012,7 @@ function ChoreCard({
                   >
                     {membersList.map((member) => (
                       <option key={member.userId} value={member.userId}>
-                        {member.displayName ?? member.userId}
-                        {member.userId === currentUserId ? ' (You)' : ''}
+                        {getUserLabel(member.userId)}
                       </option>
                     ))}
                   </select>

@@ -1,10 +1,12 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException
 } from '@nestjs/common';
 import {
+  GroupMemberRole,
   GroupMemberStatus,
   LedgerEntryType,
   Prisma,
@@ -35,6 +37,34 @@ const DEFAULT_CURRENCY = 'USD';
 interface NormalizedSplit {
   userId: string;
   amountCents: number;
+}
+
+interface CanonicalPaymentPayload {
+  actorUserId: string;
+  payerUserId: string;
+  payeeUserId: string;
+  amountCents: number;
+  currency: string;
+  billId: string | null;
+  note: string | null;
+  paidAtIso: string | null;
+}
+
+interface MemberNetBalanceCents {
+  userId: string;
+  netAmountCents: number;
+}
+
+interface CurrencyBalanceSnapshot {
+  currency: string;
+  memberNetByUserId: Map<string, number>;
+  activeMemberBalances: MemberNetBalanceCents[];
+  inactiveNonZeroBalances: MemberNetBalanceCents[];
+}
+
+export interface MemberNetBalanceSummary {
+  currency: string;
+  netAmount: number;
 }
 
 @Injectable()
@@ -145,7 +175,7 @@ export class FinanceService {
     payload: CreatePaymentDto
   ): Promise<PaymentSummary> {
     return this.prisma.$transaction(async (tx) => {
-      await this.assertActiveMembership(tx, actorUserId, groupId);
+      const membership = await this.assertActiveMembership(tx, actorUserId, groupId);
 
       const payerUserId = payload.payerUserId.trim();
       const payeeUserId = payload.payeeUserId.trim();
@@ -154,6 +184,13 @@ export class FinanceService {
         throw new BadRequestException({
           code: ErrorCode.BadRequest,
           message: 'Payer and payee must be different users.'
+        });
+      }
+
+      if (actorUserId !== payerUserId && membership.role !== GroupMemberRole.ADMIN) {
+        throw new ForbiddenException({
+          code: ErrorCode.Forbidden,
+          message: 'Only the payer or a group admin can record this payment.'
         });
       }
 
@@ -188,6 +225,18 @@ export class FinanceService {
         billId = bill.id;
       }
 
+      const note = payload.note?.trim() || null;
+      const requestedPaidAt = payload.paidAt ?? null;
+      const canonicalPayload = this.buildCanonicalPaymentPayload({
+        actorUserId,
+        payerUserId,
+        payeeUserId,
+        amountCents,
+        currency,
+        billId,
+        note,
+        paidAt: requestedPaidAt
+      });
       const idempotencyKey = payload.idempotencyKey?.trim() || null;
       if (idempotencyKey) {
         const existing = await tx.payment.findUnique({
@@ -200,26 +249,48 @@ export class FinanceService {
         });
 
         if (existing) {
-          return this.mapPaymentSummary(existing);
+          return this.resolveIdempotentPayment(existing, canonicalPayload, idempotencyKey);
         }
       }
 
-      const paidAt = payload.paidAt ?? new Date();
+      const paidAt = requestedPaidAt ?? new Date();
 
-      const payment = await tx.payment.create({
-        data: {
-          groupId,
-          billId,
-          payerUserId,
-          payeeUserId,
-          amount: this.toDecimal(amountCents),
-          currency,
-          note: payload.note?.trim() || null,
-          idempotencyKey,
-          paidAt,
-          createdBy: actorUserId
+      let payment: Payment;
+      try {
+        payment = await tx.payment.create({
+          data: {
+            groupId,
+            billId,
+            payerUserId,
+            payeeUserId,
+            amount: this.toDecimal(amountCents),
+            currency,
+            note,
+            idempotencyKey,
+            paidAt,
+            createdBy: actorUserId
+          }
+        });
+      } catch (error) {
+        if (!idempotencyKey || !this.isUniqueConstraintError(error)) {
+          throw error;
         }
-      });
+
+        const existing = await tx.payment.findUnique({
+          where: {
+            groupId_idempotencyKey: {
+              groupId,
+              idempotencyKey
+            }
+          }
+        });
+
+        if (!existing) {
+          throw error;
+        }
+
+        return this.resolveIdempotentPayment(existing, canonicalPayload, idempotencyKey);
+      }
 
       await tx.ledgerEntry.create({
         data: {
@@ -243,83 +314,34 @@ export class FinanceService {
     return this.prisma.$transaction(async (tx) => {
       await this.assertActiveMembership(tx, userId, groupId);
 
-      const activeMembers = await tx.groupMember.findMany({
-        where: {
-          groupId,
-          status: GroupMemberStatus.ACTIVE
-        },
-        select: { userId: true },
-        orderBy: { joinedAt: 'asc' }
-      });
+      const snapshots = await this.buildCurrencyBalanceSnapshots(tx, groupId);
+      const inactiveMemberBalances = snapshots.flatMap((snapshot) =>
+        snapshot.inactiveNonZeroBalances.map((balance) => ({
+          userId: balance.userId,
+          currency: snapshot.currency,
+          netAmount: this.fromCentsToNumber(balance.netAmountCents)
+        }))
+      );
 
-      const activeUserIds = activeMembers.map((member) => member.userId);
-
-      const entries = await tx.ledgerEntry.findMany({
-        where: { groupId },
-        orderBy: [{ currency: 'asc' }, { occurredAt: 'asc' }, { createdAt: 'asc' }]
-      });
-
-      const currencyMaps = new Map<
-        string,
-        {
-          directed: Map<string, number>;
-          memberNet: Map<string, number>;
-        }
-      >();
-
-      for (const entry of entries) {
-        const currency = entry.currency;
-        let state = currencyMaps.get(currency);
-
-        if (!state) {
-          const memberNet = new Map<string, number>();
-          for (const userIdItem of activeUserIds) {
-            memberNet.set(userIdItem, 0);
+      if (inactiveMemberBalances.length > 0) {
+        throw new ConflictException({
+          code: ErrorCode.Conflict,
+          message:
+            'Current balances cannot be shown because one or more inactive members still have non-zero balances. Reactivate them or settle those balances first.',
+          details: {
+            inactiveMemberBalances
           }
-
-          state = {
-            directed: new Map<string, number>(),
-            memberNet
-          };
-
-          currencyMaps.set(currency, state);
-        }
-
-        const amountCents = this.fromDecimalToCents(entry.amount);
-        if (amountCents === 0) {
-          continue;
-        }
-
-        const forwardKey = this.pairKey(entry.fromUserId, entry.toUserId);
-        state.directed.set(forwardKey, (state.directed.get(forwardKey) ?? 0) + amountCents);
-
-        state.memberNet.set(
-          entry.fromUserId,
-          (state.memberNet.get(entry.fromUserId) ?? 0) - amountCents
-        );
-        state.memberNet.set(
-          entry.toUserId,
-          (state.memberNet.get(entry.toUserId) ?? 0) + amountCents
-        );
+        });
       }
 
-      const balances: CurrencyBalanceSummary[] = Array.from(currencyMaps.entries())
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([currency, state]) => {
-          const settlements = this.computeSettlements(state.directed);
-          const memberBalances = Array.from(state.memberNet.entries())
-            .sort(([left], [right]) => left.localeCompare(right))
-            .map(([memberUserId, amountCents]) => ({
-              userId: memberUserId,
-              netAmount: this.fromCentsToNumber(amountCents)
-            }));
-
-          return {
-            currency,
-            settlements,
-            memberBalances
-          };
-        });
+      const balances: CurrencyBalanceSummary[] = snapshots.map((snapshot) => ({
+        currency: snapshot.currency,
+        settlements: this.computeSettlements(snapshot.activeMemberBalances),
+        memberBalances: snapshot.activeMemberBalances.map((balance) => ({
+          userId: balance.userId,
+          netAmount: this.fromCentsToNumber(balance.netAmountCents)
+        }))
+      }));
 
       return {
         groupId,
@@ -328,44 +350,203 @@ export class FinanceService {
     });
   }
 
-  private computeSettlements(directed: Map<string, number>): SettlementSummary[] {
-    const visited = new Set<string>();
-    const settlements: SettlementSummary[] = [];
+  private buildCanonicalPaymentPayload(input: {
+    actorUserId: string;
+    payerUserId: string;
+    payeeUserId: string;
+    amountCents: number;
+    currency: string;
+    billId: string | null;
+    note: string | null;
+    paidAt: Date | null;
+  }): CanonicalPaymentPayload {
+    return {
+      actorUserId: input.actorUserId,
+      payerUserId: input.payerUserId,
+      payeeUserId: input.payeeUserId,
+      amountCents: input.amountCents,
+      currency: input.currency,
+      billId: input.billId,
+      note: input.note,
+      paidAtIso: input.paidAt?.toISOString() ?? null
+    };
+  }
 
-    for (const [key, amount] of directed.entries()) {
-      if (visited.has(key) || amount <= 0) {
+  private resolveIdempotentPayment(
+    existing: Payment,
+    canonicalPayload: CanonicalPaymentPayload,
+    idempotencyKey: string
+  ): PaymentSummary {
+    if (this.paymentMatchesCanonicalPayload(existing, canonicalPayload)) {
+      return this.mapPaymentSummary(existing);
+    }
+
+    throw new ConflictException({
+      code: ErrorCode.Conflict,
+      message: 'This idempotency key has already been used for a different payment payload.',
+      details: {
+        idempotencyKey,
+        existingPaymentId: existing.id
+      }
+    });
+  }
+
+  private paymentMatchesCanonicalPayload(
+    existing: Payment,
+    canonicalPayload: CanonicalPaymentPayload
+  ): boolean {
+    const samePaidAt =
+      canonicalPayload.paidAtIso === null ||
+      existing.paidAt.toISOString() === canonicalPayload.paidAtIso;
+
+    return (
+      existing.createdBy === canonicalPayload.actorUserId &&
+      existing.payerUserId === canonicalPayload.payerUserId &&
+      existing.payeeUserId === canonicalPayload.payeeUserId &&
+      this.fromDecimalToCents(existing.amount) === canonicalPayload.amountCents &&
+      existing.currency === canonicalPayload.currency &&
+      existing.billId === canonicalPayload.billId &&
+      (existing.note ?? null) === canonicalPayload.note &&
+      samePaidAt
+    );
+  }
+
+  private isUniqueConstraintError(error: unknown): error is Prisma.PrismaClientKnownRequestError {
+    return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+  }
+
+  async getMemberNetBalancesByCurrency(
+    tx: Prisma.TransactionClient,
+    groupId: string,
+    memberUserId: string
+  ): Promise<MemberNetBalanceSummary[]> {
+    const snapshots = await this.buildCurrencyBalanceSnapshots(tx, groupId);
+
+    return snapshots
+      .map((snapshot) => ({
+        currency: snapshot.currency,
+        netAmount: this.fromCentsToNumber(snapshot.memberNetByUserId.get(memberUserId) ?? 0)
+      }))
+      .filter((balance) => balance.netAmount !== 0);
+  }
+
+  private async buildCurrencyBalanceSnapshots(
+    tx: Prisma.TransactionClient,
+    groupId: string
+  ): Promise<CurrencyBalanceSnapshot[]> {
+    const activeMembers = await tx.groupMember.findMany({
+      where: {
+        groupId,
+        status: GroupMemberStatus.ACTIVE
+      },
+      select: { userId: true },
+      orderBy: { joinedAt: 'asc' }
+    });
+    const activeUserIds = activeMembers.map((member) => member.userId);
+    const activeUserIdSet = new Set(activeUserIds);
+
+    const entries = await tx.ledgerEntry.findMany({
+      where: { groupId },
+      orderBy: [{ currency: 'asc' }, { occurredAt: 'asc' }, { createdAt: 'asc' }]
+    });
+
+    const currencyMaps = new Map<string, Map<string, number>>();
+
+    for (const entry of entries) {
+      const currency = entry.currency;
+      let memberNetByUserId = currencyMaps.get(currency);
+
+      if (!memberNetByUserId) {
+        memberNetByUserId = new Map<string, number>();
+        for (const activeUserId of activeUserIds) {
+          memberNetByUserId.set(activeUserId, 0);
+        }
+
+        currencyMaps.set(currency, memberNetByUserId);
+      }
+
+      const amountCents = this.fromDecimalToCents(entry.amount);
+      if (amountCents === 0) {
         continue;
       }
 
-      const [fromUserId, toUserId] = this.fromPairKey(key);
-      const reverseKey = this.pairKey(toUserId, fromUserId);
-      const reverseAmount = directed.get(reverseKey) ?? 0;
-      const net = amount - reverseAmount;
-
-      if (net > 0) {
-        settlements.push({
-          fromUserId,
-          toUserId,
-          amount: this.fromCentsToNumber(net)
-        });
-      } else if (net < 0) {
-        settlements.push({
-          fromUserId: toUserId,
-          toUserId: fromUserId,
-          amount: this.fromCentsToNumber(Math.abs(net))
-        });
-      }
-
-      visited.add(key);
-      visited.add(reverseKey);
+      memberNetByUserId.set(
+        entry.fromUserId,
+        (memberNetByUserId.get(entry.fromUserId) ?? 0) - amountCents
+      );
+      memberNetByUserId.set(
+        entry.toUserId,
+        (memberNetByUserId.get(entry.toUserId) ?? 0) + amountCents
+      );
     }
 
-    return settlements.sort((left, right) => {
-      if (left.fromUserId === right.fromUserId) {
-        return left.toUserId.localeCompare(right.toUserId);
+    return Array.from(currencyMaps.entries())
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([currency, memberNetByUserId]) => ({
+        currency,
+        memberNetByUserId,
+        activeMemberBalances: activeUserIds.map((activeUserId) => ({
+          userId: activeUserId,
+          netAmountCents: memberNetByUserId.get(activeUserId) ?? 0
+        })),
+        inactiveNonZeroBalances: Array.from(memberNetByUserId.entries())
+          .filter(
+            ([memberUserId, amountCents]) => !activeUserIdSet.has(memberUserId) && amountCents !== 0
+          )
+          .sort(([left], [right]) => left.localeCompare(right))
+          .map(([memberUserId, amountCents]) => ({
+            userId: memberUserId,
+            netAmountCents: amountCents
+          }))
+      }));
+  }
+
+  private computeSettlements(memberBalances: MemberNetBalanceCents[]): SettlementSummary[] {
+    const creditors = memberBalances
+      .filter((balance) => balance.netAmountCents > 0)
+      .map((balance) => ({
+        userId: balance.userId,
+        amountCents: balance.netAmountCents
+      }))
+      .sort((left, right) => left.userId.localeCompare(right.userId));
+    const debtors = memberBalances
+      .filter((balance) => balance.netAmountCents < 0)
+      .map((balance) => ({
+        userId: balance.userId,
+        amountCents: Math.abs(balance.netAmountCents)
+      }))
+      .sort((left, right) => left.userId.localeCompare(right.userId));
+    const settlements: SettlementSummary[] = [];
+
+    let creditorIndex = 0;
+    let debtorIndex = 0;
+
+    while (creditorIndex < creditors.length && debtorIndex < debtors.length) {
+      const creditor = creditors[creditorIndex];
+      const debtor = debtors[debtorIndex];
+      const settledAmountCents = Math.min(creditor.amountCents, debtor.amountCents);
+
+      if (settledAmountCents > 0) {
+        settlements.push({
+          fromUserId: debtor.userId,
+          toUserId: creditor.userId,
+          amount: this.fromCentsToNumber(settledAmountCents)
+        });
       }
-      return left.fromUserId.localeCompare(right.fromUserId);
-    });
+
+      creditor.amountCents -= settledAmountCents;
+      debtor.amountCents -= settledAmountCents;
+
+      if (creditor.amountCents === 0) {
+        creditorIndex += 1;
+      }
+
+      if (debtor.amountCents === 0) {
+        debtorIndex += 1;
+      }
+    }
+
+    return settlements;
   }
 
   private normalizeSplits(
@@ -533,7 +714,7 @@ export class FinanceService {
       totalAmount: Number(bill.totalAmount.toString()),
       currency: bill.currency,
       paidByUserId: bill.paidByUserId,
-      splitMethod: bill.splitMethod,
+      splitMethod: 'CUSTOM',
       createdBy: bill.createdBy,
       incurredAt: bill.incurredAt.toISOString(),
       dueDate: bill.dueDate?.toISOString() ?? null,
@@ -568,15 +749,6 @@ export class FinanceService {
       createdAt: payment.createdAt.toISOString(),
       updatedAt: payment.updatedAt.toISOString()
     };
-  }
-
-  private pairKey(fromUserId: string, toUserId: string): string {
-    return `${fromUserId}|${toUserId}`;
-  }
-
-  private fromPairKey(key: string): [string, string] {
-    const [fromUserId, toUserId] = key.split('|');
-    return [fromUserId, toUserId];
   }
 
   private buildBillOrderBy(query: ListBillsQueryDto): Prisma.BillOrderByWithRelationInput[] {

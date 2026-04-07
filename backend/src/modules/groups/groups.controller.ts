@@ -25,13 +25,16 @@ import {
 } from '@nestjs/swagger';
 
 import { ApiSuccessResponse } from '../../common/http/api-success-response.decorator';
+import { resolveAuthIdentityDisplayName } from '../../common/identity/identity-display.util';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SupabaseJwtAuthGuard } from '../auth/guards/supabase-jwt-auth.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/auth-user.interface';
 import { ParseAppIdPipe } from '../../common/http/parse-app-id.pipe';
 import { CreateGroupDto } from './dto/create-group.dto';
 import {
+  GroupDestroyResponseDto,
   GroupDashboardResponseDto,
+  GroupMemberLeaveResponseDto,
   GroupMemberRemoveResponseDto,
   GroupMemberRoleUpdateResponseDto,
   GroupMembersResponseDto,
@@ -45,7 +48,9 @@ import { ListUserGroupsQueryDto } from './dto/list-user-groups.query';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { GroupsService } from './groups.service';
 import type {
+  GroupDestroyResponse,
   GroupDashboardResponse,
+  GroupMemberLeaveResponse,
   GroupMemberRemoveResponse,
   GroupMemberRoleUpdateResponse,
   GroupMembersResponse,
@@ -191,6 +196,19 @@ const MEMBER_REMOVE_EXAMPLE = {
   status: 'INACTIVE',
   removed: true,
   updatedAt: '2026-03-05T16:28:00.000Z'
+} as const;
+
+const MEMBER_LEAVE_EXAMPLE = {
+  groupId: 'cm8z9ab120001mk8z4og1j0e9',
+  userId: '550e8400-e29b-41d4-a716-446655440001',
+  status: 'INACTIVE',
+  left: true,
+  updatedAt: '2026-03-05T16:28:00.000Z'
+} as const;
+
+const GROUP_DESTROY_EXAMPLE = {
+  groupId: 'cm8z9ab120001mk8z4og1j0e9',
+  destroyed: true
 } as const;
 
 @ApiTags('Groups')
@@ -369,6 +387,52 @@ export class GroupsController {
     return this.groupsService.updateMemberRole(user.id, groupId, memberUserId, payload);
   }
 
+  @Post(':groupId/leave')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Leave group as the current active member.' })
+  @ApiSuccessResponse({
+    description:
+      'Marks the caller membership as inactive when they are not the last admin and no blocking chore or finance dependencies remain.',
+    type: GroupMemberLeaveResponseDto,
+    example: MEMBER_LEAVE_EXAMPLE
+  })
+  @ApiBadRequestResponse({ description: 'Invalid group ID format.' })
+  @ApiConflictResponse({
+    description:
+      'Leaving is blocked when the caller is the last active admin, still has blocking chore assignments, or still has unsettled finance balances in the group.'
+  })
+  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
+  leaveGroup(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('groupId', ParseAppIdPipe) groupId: string
+  ): Promise<GroupMemberLeaveResponse> {
+    return this.groupsService.leaveGroup(user.id, groupId);
+  }
+
+  @Delete(':groupId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Destroy group as the sole remaining active admin.' })
+  @ApiSuccessResponse({
+    description:
+      'Deletes the group and all associated records when the caller is the sole remaining active member and an admin.',
+    type: GroupDestroyResponseDto,
+    example: GROUP_DESTROY_EXAMPLE
+  })
+  @ApiBadRequestResponse({ description: 'Invalid group ID format.' })
+  @ApiConflictResponse({
+    description:
+      'Destroying is blocked when other active members still remain in the group.'
+  })
+  @ApiForbiddenResponse({ description: 'Caller is not an active admin of this group.' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
+  destroyGroup(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('groupId', ParseAppIdPipe) groupId: string
+  ): Promise<GroupDestroyResponse> {
+    return this.groupsService.destroyGroup(user.id, groupId);
+  }
+
   @Delete(':groupId/members/:userId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remove member from group (admin only).' })
@@ -381,7 +445,7 @@ export class GroupsController {
   @ApiBadRequestResponse({ description: 'Invalid IDs for group or member.' })
   @ApiConflictResponse({
     description:
-      'Removal is blocked when the member is the last admin or still has assigned pending chore occurrences or recurring chore templates.'
+      'Removal is blocked when the member is the last admin, still has blocking chore assignments, or still has unsettled finance balances in the group.'
   })
   @ApiForbiddenResponse({ description: 'Caller is not an active admin of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
@@ -394,10 +458,6 @@ export class GroupsController {
   }
 
   private resolveDisplayName(user: AuthenticatedUser): string | null {
-    const fullName = user.userMetadata?.full_name;
-    if (typeof fullName === 'string' && fullName.trim()) {
-      return fullName.trim();
-    }
-    return user.email ?? null;
+    return resolveAuthIdentityDisplayName(user);
   }
 }

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { ApiError, choreTemplates as choreTemplatesApi } from "@/lib/api";
+import { resolveIdentityLabel } from "@/lib/identity";
 import type {
   ChoreTemplate,
   ChoreTemplateAssignmentStrategy,
@@ -118,7 +119,12 @@ function buildTemplateSections(templates: ChoreTemplate[]): TemplateSection[] {
 }
 
 function memberOptionLabel(member: GroupMember, currentUserId: string) {
-  return `${member.displayName ?? member.userId}${member.userId === currentUserId ? " (You)" : ""}`;
+  const baseLabel = resolveIdentityLabel({
+    displayName: member.displayName,
+    userId: member.userId,
+    fallbackLabel: "Member",
+  });
+  return `${baseLabel}${member.userId === currentUserId ? " (You)" : ""}`;
 }
 
 export default function RecurringTemplatesPanel({

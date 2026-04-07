@@ -1,6 +1,6 @@
 # Frontend Integration Reference (RoomieManager Backend)
 
-Last updated: 2026-03-05
+Last updated: 2026-04-07
 Owner: Backend team
 Scope: Practical integration guide for frontend engineers and frontend AI agents.
 
@@ -593,7 +593,7 @@ Success response `200`:
 - Returns:
   - `group` (`GroupSummary`, role-aware `joinCode` visibility)
   - `members` (`totalActive`, `adminCount`, `memberCount`)
-  - `chores` (`pendingCount`, `completedCount`, `overdueCount`, `assignedToMePendingCount`)
+  - `chores` (`overdueCount`, `dueTodayCount`, `dueNext7DaysCount`, `assignedToMeDueNext7DaysCount`)
   - `finance` (`billCount`, `paymentCount`, latest bill/payment timestamps)
   - `contract` (`hasDraft`, `publishedVersion`, `updatedAt`)
 
@@ -658,7 +658,7 @@ Success response `200`:
 Common failure responses:
 
 - `400 BAD_REQUEST` when `groupId` is not a valid app ID (`cuid` or UUID), or `userId` is not a valid UUID.
-- `400 BAD_REQUEST` when admin tries to change their own role (use leave-group flow instead).
+- `400 BAD_REQUEST` when admin tries to change their own role (use `POST /api/v1/groups/:groupId/leave` instead).
 - `403 FORBIDDEN` when caller is not admin.
 - `404 NOT_FOUND` when target active member does not exist.
 - `409 CONFLICT` when change would remove the last admin from the group.
@@ -680,10 +680,30 @@ Success response `200`:
 Common failure responses:
 
 - `400 BAD_REQUEST` when `groupId` is not a valid app ID (`cuid` or UUID), or `userId` is not a valid UUID.
-- `400 BAD_REQUEST` when admin tries to remove self via this endpoint (use leave-group flow instead).
+- `400 BAD_REQUEST` when admin tries to remove self via this endpoint (use `POST /api/v1/groups/:groupId/leave` instead).
 - `403 FORBIDDEN` when caller is not admin.
 - `404 NOT_FOUND` when target active member does not exist.
 - `409 CONFLICT` when removal would remove the last admin from the group.
+
+### POST `/api/v1/groups/:groupId/leave`
+
+Purpose:
+
+- Leave a group as the current active member (self-service only; sets membership status to `INACTIVE`).
+
+Headers:
+
+- `Authorization: Bearer <supabase_access_token>`
+
+Success response `200`:
+
+- Returns `{ groupId, userId, status, left, updatedAt }`.
+
+Common failure responses:
+
+- `400 BAD_REQUEST` when `groupId` is not a valid app ID (`cuid` or UUID).
+- `403 FORBIDDEN` when caller is not an active member of the group.
+- `409 CONFLICT` when the caller is the last active admin, still has blocking chore/template dependencies, or still has unsettled finance balances.
 
 ### GET `/api/v1/groups/:groupId/contract`
 

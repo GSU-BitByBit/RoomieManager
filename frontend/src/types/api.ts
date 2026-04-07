@@ -1,8 +1,8 @@
-import type { components } from "../../generated/backend-api.types";
+import type { components } from '../../generated/backend-api.types';
 
 // API response types matching backend response contract
 
-type BackendSchemas = components["schemas"];
+type BackendSchemas = components['schemas'];
 
 export interface ApiMeta {
   requestId: string;
@@ -37,14 +37,7 @@ export type ErrorCode =
   | "SERVICE_UNAVAILABLE";
 
 // Pagination
-export interface PaginationMeta {
-  page: number;
-  pageSize: number;
-  totalItems: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-}
+export type PaginationMeta = BackendSchemas['PaginationMetaDto'];
 
 export interface PaginationQuery {
   page?: number;
@@ -57,6 +50,9 @@ export interface PaginationQuery {
 export interface AuthUser {
   id: string;
   email: string;
+  emailConfirmedAt?: string | null;
+  phone?: string | null;
+  createdAt?: string | null;
 }
 
 export interface AuthSession {
@@ -78,66 +74,36 @@ export interface RegisterResponse {
 
 export interface MeResponse {
   id: string;
-  email: string;
-  role: string;
-  aud: string;
+  email?: string;
+  role?: string;
+  aud?: string;
+  appMetadata?: Record<string, unknown>;
+  userMetadata?: Record<string, unknown>;
 }
 
 // Groups
-export interface GroupSummary {
-  id: string;
-  name: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-  memberRole: "ADMIN" | "MEMBER";
-  memberStatus: string;
-  memberCount: number;
-  joinCode?: string;
-}
+export type GroupSummary = BackendSchemas['GroupSummaryDto'];
 
-export interface GroupsListResponse {
-  groups: GroupSummary[];
-  pagination: PaginationMeta;
-}
+export type GroupsListResponse = BackendSchemas['UserGroupsResponseDto'];
 
-export interface JoinCodeResetResponse {
-  groupId: string;
-  joinCode: string;
-}
+export type JoinCodeResetResponse = BackendSchemas['JoinCodeResetResponseDto'];
 
 // Members
-export interface GroupMember {
-  userId: string;
-  displayName: string | null;
-  role: "ADMIN" | "MEMBER";
-  status: string;
-  joinedAt: string;
-  createdAt: string;
-  updatedAt: string;
-}
+export type GroupMember = BackendSchemas['GroupMemberSummaryDto'];
 
-export interface MembersListResponse {
-  groupId: string;
-  members: GroupMember[];
-  pagination: PaginationMeta;
-}
+export type MembersListResponse = BackendSchemas['GroupMembersResponseDto'];
 
-export interface UpdateMemberRoleResponse {
-  groupId: string;
-  userId: string;
-  role: "ADMIN" | "MEMBER";
-  status: string;
-  updatedAt: string;
-}
+export type UpdateMemberRoleResponse =
+  BackendSchemas['GroupMemberRoleUpdateResponseDto'];
 
-export interface RemoveMemberResponse {
-  groupId: string;
-  userId: string;
-  status: string;
-  removed: boolean;
-  updatedAt: string;
-}
+export type RemoveMemberResponse =
+  BackendSchemas['GroupMemberRemoveResponseDto'];
+
+export type LeaveGroupResponse =
+  BackendSchemas['GroupMemberLeaveResponseDto'];
+
+export type DestroyGroupResponse =
+  BackendSchemas['GroupDestroyResponseDto'];
 
 // Dashboard
 export type DashboardResponse = BackendSchemas["GroupDashboardResponseDto"];
@@ -172,122 +138,36 @@ export type ChoreTemplateParticipant =
   BackendSchemas["ChoreTemplateParticipantSummaryDto"];
 
 // Finance
-export interface BillSplit {
-  id: string;
-  userId: string;
-  amount: string;
-}
+export type BillSplit = BackendSchemas["BillSplitSummaryDto"];
 
-export interface Bill {
-  id: string;
-  groupId: string;
-  title: string;
-  description: string | null;
-  totalAmount: string;
-  currency: string;
-  paidByUserId: string;
-  splitMethod: "EQUAL" | "CUSTOM";
-  createdBy: string;
-  incurredAt: string;
-  dueDate: string | null;
-  createdAt: string;
-  updatedAt: string;
-  splits: BillSplit[];
-}
+export type Bill = BackendSchemas["BillSummaryDto"];
 
-export interface BillsListResponse {
-  groupId: string;
-  bills: Bill[];
-  pagination: PaginationMeta;
-}
+export type BillsListResponse = BackendSchemas["GroupBillsResponseDto"];
 
-export interface Payment {
-  id: string;
-  groupId: string;
-  billId: string | null;
-  payerUserId: string;
-  payeeUserId: string;
-  amount: string;
-  currency: string;
-  note: string | null;
-  paidAt: string;
-  createdBy: string;
-  createdAt: string;
-}
+export type Payment = BackendSchemas["PaymentSummaryDto"];
 
-export interface MemberBalance {
-  userId: string;
-  netAmount: number;
-}
+export type MemberBalance = BackendSchemas["MemberBalanceSummaryDto"];
 
-export interface Settlement {
-  fromUserId: string;
-  toUserId: string;
-  amount: number;
-}
+export type Settlement = BackendSchemas["SettlementSummaryDto"];
 
-export interface CurrencyBalanceSummary {
-  currency: string;
-  memberBalances: MemberBalance[];
-  settlements: Settlement[];
-}
+export type CurrencyBalanceSummary =
+  BackendSchemas["CurrencyBalanceSummaryDto"];
 
-export interface BalancesResponse {
-  groupId: string;
-  balances: CurrencyBalanceSummary[];
-}
+export type BalancesResponse = BackendSchemas["GroupBalancesResponseDto"];
 
 // Contracts
-export interface Contract {
-  id: string;
-  groupId: string;
-  draftContent: string;
-  publishedVersion: number | null;
-  updatedBy: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type Contract = BackendSchemas['ContractSummaryDto'];
 
-export interface ContractResponse {
-  contract: Contract;
-  latestPublishedContent: string | null;
-}
+export type ContractResponse = BackendSchemas['ContractDetailResponseDto'];
 
-export interface ContractVersion {
-  id: string;
-  version: number;
-  content: string;
-  publishedBy: string;
-  createdAt: string;
-}
+export type ContractVersion = BackendSchemas['ContractVersionSummaryDto'];
 
-export interface ContractVersionsResponse {
-  groupId: string;
-  versions: ContractVersion[];
-  pagination: PaginationMeta;
-}
+export type ContractVersionsResponse =
+  BackendSchemas['ContractVersionsResponseDto'];
 
-export interface CreateBillDto {
-  title: string;
-  description?: string;
-  totalAmount: number;
-  currency?: string;
-  paidByUserId: string;
-  splits: { userId: string; amount: number }[];
-  incurredAt?: string;
-  dueDate?: string;
-}
+export type CreateBillDto = BackendSchemas["CreateBillDto"];
 
-export interface CreatePaymentDto {
-  payerUserId: string;
-  payeeUserId: string;
-  amount: number;
-  currency: string;
-  note?: string;
-  paidAt: string;
-  billId?: string;
-  idempotencyKey?: string;
-}
+export type CreatePaymentDto = BackendSchemas["CreatePaymentDto"];
 
 export type CreateChoreDto = BackendSchemas["CreateChoreDto"];
 

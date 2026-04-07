@@ -715,8 +715,7 @@ function OccurrenceDetailModal({
                 >
                   {assigneeOptions.map((member) => (
                     <option key={member.userId} value={member.userId}>
-                      {member.displayName ?? member.userId}
-                      {member.userId === currentUserId ? ' (You)' : ''}
+                      {getUserLabel(member.userId)}
                     </option>
                   ))}
                 </select>

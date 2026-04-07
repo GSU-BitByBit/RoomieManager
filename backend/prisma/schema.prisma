@@ -354,7 +354,6 @@ enum ChoreActivityType {
 }
 
 enum BillSplitMethod {
-  EQUAL
   CUSTOM
 }
 

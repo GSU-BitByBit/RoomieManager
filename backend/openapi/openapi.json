@@ -205,6 +205,7 @@
             "type": "string"
           },
           "dueDate": {
+            "description": "Optional informational due date. It is not currently used for balance math, reminders, or settlement logic.",
             "example": null,
             "format": "date-time",
             "nullable": true,
@@ -228,8 +229,8 @@
             "type": "string"
           },
           "splitMethod": {
+            "description": "Always CUSTOM in the current backend. Equal splitting is a frontend convenience that submits explicit custom split rows.",
             "enum": [
-              "EQUAL",
               "CUSTOM"
             ],
             "example": "CUSTOM",
@@ -697,7 +698,7 @@
             "type": "string"
           },
           "dueDate": {
-            "description": "Optional due date for this bill.",
+            "description": "Optional informational due date for this bill. It is not currently used for balance math, reminders, or settlement logic.",
             "example": "2026-03-15T18:00:00.000Z",
             "format": "date-time",
             "type": "string"
@@ -714,7 +715,7 @@
             "type": "string"
           },
           "splits": {
-            "description": "Split rows. Amounts must sum exactly to totalAmount.",
+            "description": "Explicit custom split rows. Amounts must sum exactly to totalAmount. Equal splitting is a frontend convenience that still submits explicit custom split rows.",
             "items": {
               "$ref": "#/components/schemas/CreateBillSplitDto"
             },
@@ -877,7 +878,7 @@
             "type": "number"
           },
           "billId": {
-            "description": "Optional bill id this payment is linked to.",
+            "description": "Optional related bill id for reference only. Must belong to the same group and use the same currency when provided.",
             "example": "3e4f66fd-7eeb-4c2f-a98e-f94376ea22f5",
             "type": "string"
           },
@@ -887,7 +888,7 @@
             "type": "string"
           },
           "idempotencyKey": {
-            "description": "Optional idempotency key for safely retried payment requests.",
+            "description": "Optional idempotency key for safely retried payment requests. Reusing the same key with a different payment payload will return a conflict.",
             "example": "pay-2026-03-05-group1-user1-user2-20",
             "maxLength": 64,
             "type": "string"
@@ -935,6 +936,7 @@
             "type": "array"
           },
           "settlements": {
+            "description": "Advisory settlement suggestions derived from current net balances.",
             "items": {
               "$ref": "#/components/schemas/SettlementSummaryDto"
             },
@@ -1192,6 +1194,60 @@
           "chores",
           "finance",
           "contract"
+        ],
+        "type": "object"
+      },
+      "GroupDestroyResponseDto": {
+        "properties": {
+          "destroyed": {
+            "example": true,
+            "type": "boolean"
+          },
+          "groupId": {
+            "example": "cm8w9z0abc123def456ghi789",
+            "type": "string"
+          }
+        },
+        "required": [
+          "groupId",
+          "destroyed"
+        ],
+        "type": "object"
+      },
+      "GroupMemberLeaveResponseDto": {
+        "properties": {
+          "groupId": {
+            "example": "cm8w9z0abc123def456ghi789",
+            "type": "string"
+          },
+          "left": {
+            "example": true,
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "example": "INACTIVE",
+            "type": "string"
+          },
+          "updatedAt": {
+            "example": "2026-03-05T16:44:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          }
+        },
+        "required": [
+          "groupId",
+          "userId",
+          "status",
+          "left",
+          "updatedAt"
         ],
         "type": "object"
       },
@@ -2354,6 +2410,78 @@
       }
     },
     "/api/v1/groups/{groupId}": {
+      "delete": {
+        "operationId": "GroupsController_destroyGroup",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupDestroyResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "destroyed": true,
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9"
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Deletes the group and all associated records when the caller is the sole remaining active member and an admin."
+          },
+          "400": {
+            "description": "Invalid group ID format."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active admin of this group."
+          },
+          "409": {
+            "description": "Destroying is blocked when other active members still remain in the group."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Destroy group as the sole remaining active admin.",
+        "tags": [
+          "Groups"
+        ]
+      },
       "get": {
         "operationId": "GroupsController_getGroup",
         "parameters": [
@@ -2433,6 +2561,7 @@
     },
     "/api/v1/groups/{groupId}/balances": {
       "get": {
+        "description": "Balances are derived from the append-only finance ledger per currency. Settlement suggestions are advisory recommendations, not authoritative allocations.",
         "operationId": "FinanceController_getBalances",
         "parameters": [
           {
@@ -2496,7 +2625,7 @@
                 }
               }
             },
-            "description": "Returns current balances for the group."
+            "description": "Returns current balances and advisory settlement suggestions for the group."
           },
           "400": {
             "description": "Invalid group ID format."
@@ -2513,7 +2642,7 @@
             "bearer": []
           }
         ],
-        "summary": "Compute and return net balances (who owes whom) for the group.",
+        "summary": "Compute and return current net balances for the group.",
         "tags": [
           "Finance"
         ]
@@ -2672,6 +2801,7 @@
         ]
       },
       "post": {
+        "description": "Bills are collaborative household ledger records. Split rows are always explicit custom amounts; equal splitting is a frontend convenience that still submits custom split rows. dueDate is informational only.",
         "operationId": "FinanceController_createBill",
         "parameters": [
           {
@@ -2764,7 +2894,7 @@
             "bearer": []
           }
         ],
-        "summary": "Create a bill and split amounts across group members.",
+        "summary": "Create a shared bill with explicit custom split rows.",
         "tags": [
           "Finance"
         ]
@@ -4297,6 +4427,83 @@
         ]
       }
     },
+    "/api/v1/groups/{groupId}/leave": {
+      "post": {
+        "operationId": "GroupsController_leaveGroup",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupMemberLeaveResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "left": true,
+                      "status": "INACTIVE",
+                      "updatedAt": "2026-03-05T16:28:00.000Z",
+                      "userId": "550e8400-e29b-41d4-a716-446655440001"
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Marks the caller membership as inactive when they are not the last admin and no blocking chore or finance dependencies remain."
+          },
+          "400": {
+            "description": "Invalid group ID format."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
+          },
+          "409": {
+            "description": "Leaving is blocked when the caller is the last active admin, still has blocking chore assignments, or still has unsettled finance balances in the group."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Leave group as the current active member.",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
     "/api/v1/groups/{groupId}/members": {
       "get": {
         "operationId": "GroupsController_getGroupMembers",
@@ -4507,7 +4714,7 @@
             "description": "Caller is not an active admin of this group."
           },
           "409": {
-            "description": "Removal is blocked when the member is the last admin or still has assigned pending chore occurrences or recurring chore templates."
+            "description": "Removal is blocked when the member is the last admin, still has blocking chore assignments, or still has unsettled finance balances in the group."
           }
         },
         "security": [
@@ -4615,6 +4822,7 @@
     },
     "/api/v1/groups/{groupId}/payments": {
       "post": {
+        "description": "Payments may be recorded by the payer or a group admin. billId is reference-only metadata and does not allocate settlement to a specific bill.",
         "operationId": "FinanceController_createPayment",
         "parameters": [
           {
@@ -4691,7 +4899,10 @@
             "description": "Missing or invalid bearer token."
           },
           "403": {
-            "description": "Caller is not an active member of this group."
+            "description": "Caller is not an active member of this group or is not allowed to record this payment."
+          },
+          "409": {
+            "description": "Idempotency key was reused for a different canonical payment payload or another finance conflict occurred."
           }
         },
         "security": [
@@ -4699,7 +4910,7 @@
             "bearer": []
           }
         ],
-        "summary": "Record a payment between group members.",
+        "summary": "Record an off-platform payment between group members.",
         "tags": [
           "Finance"
         ]

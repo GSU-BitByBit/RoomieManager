@@ -13,6 +13,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiConflictResponse,
   ApiForbiddenResponse,
   ApiOperation,
   ApiQuery,
@@ -126,7 +127,11 @@ export class FinanceController {
 
   @Post('groups/:groupId/bills')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a bill and split amounts across group members.' })
+  @ApiOperation({
+    summary: 'Create a shared bill with explicit custom split rows.',
+    description:
+      'Bills are collaborative household ledger records. Split rows are always explicit custom amounts; equal splitting is a frontend convenience that still submits custom split rows. dueDate is informational only.'
+  })
   @ApiBody({ type: CreateBillDto })
   @ApiSuccessResponse({
     status: HttpStatus.CREATED,
@@ -172,7 +177,11 @@ export class FinanceController {
 
   @Post('groups/:groupId/payments')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Record a payment between group members.' })
+  @ApiOperation({
+    summary: 'Record an off-platform payment between group members.',
+    description:
+      'Payments may be recorded by the payer or a group admin. billId is reference-only metadata and does not allocate settlement to a specific bill.'
+  })
   @ApiBody({ type: CreatePaymentDto })
   @ApiSuccessResponse({
     status: HttpStatus.CREATED,
@@ -181,7 +190,14 @@ export class FinanceController {
     example: PAYMENT_EXAMPLE
   })
   @ApiBadRequestResponse({ description: 'Invalid group ID or payment payload.' })
-  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
+  @ApiConflictResponse({
+    description:
+      'Idempotency key was reused for a different canonical payment payload or another finance conflict occurred.'
+  })
+  @ApiForbiddenResponse({
+    description:
+      'Caller is not an active member of this group or is not allowed to record this payment.'
+  })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   createPayment(
     @CurrentUser() user: AuthenticatedUser,
@@ -193,9 +209,13 @@ export class FinanceController {
 
   @Get('groups/:groupId/balances')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Compute and return net balances (who owes whom) for the group.' })
+  @ApiOperation({
+    summary: 'Compute and return current net balances for the group.',
+    description:
+      'Balances are derived from the append-only finance ledger per currency. Settlement suggestions are advisory recommendations, not authoritative allocations.'
+  })
   @ApiSuccessResponse({
-    description: 'Returns current balances for the group.',
+    description: 'Returns current balances and advisory settlement suggestions for the group.',
     type: GroupBalancesResponseDto,
     example: GROUP_BALANCES_EXAMPLE
   })

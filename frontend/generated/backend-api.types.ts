@@ -116,7 +116,8 @@ export interface paths {
         get: operations["GroupsController_getGroup"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Destroy group as the sole remaining active admin. */
+        delete: operations["GroupsController_destroyGroup"];
         options?: never;
         head?: never;
         patch?: never;
@@ -129,7 +130,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Compute and return net balances (who owes whom) for the group. */
+        /**
+         * Compute and return current net balances for the group.
+         * @description Balances are derived from the append-only finance ledger per currency. Settlement suggestions are advisory recommendations, not authoritative allocations.
+         */
         get: operations["FinanceController_getBalances"];
         put?: never;
         post?: never;
@@ -149,7 +153,10 @@ export interface paths {
         /** List bills for a group. */
         get: operations["FinanceController_listBills"];
         put?: never;
-        /** Create a bill and split amounts across group members. */
+        /**
+         * Create a shared bill with explicit custom split rows.
+         * @description Bills are collaborative household ledger records. Split rows are always explicit custom amounts; equal splitting is a frontend convenience that still submits custom split rows. dueDate is informational only.
+         */
         post: operations["FinanceController_createBill"];
         delete?: never;
         options?: never;
@@ -364,6 +371,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/groups/{groupId}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Leave group as the current active member. */
+        post: operations["GroupsController_leaveGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/groups/{groupId}/members": {
         parameters: {
             query?: never;
@@ -424,7 +448,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Record a payment between group members. */
+        /**
+         * Record an off-platform payment between group members.
+         * @description Payments may be recorded by the payer or a group admin. billId is reference-only metadata and does not allocate settlement to a specific bill.
+         */
         post: operations["FinanceController_createPayment"];
         delete?: never;
         options?: never;
@@ -582,6 +609,7 @@ export interface components {
             description: string | null;
             /**
              * Format: date-time
+             * @description Optional informational due date. It is not currently used for balance math, reminders, or settlement logic.
              * @example null
              */
             dueDate: string | null;
@@ -597,10 +625,11 @@ export interface components {
             /** @example 550e8400-e29b-41d4-a716-446655440001 */
             paidByUserId: string;
             /**
+             * @description Always CUSTOM in the current backend. Equal splitting is a frontend convenience that submits explicit custom split rows.
              * @example CUSTOM
              * @enum {string}
              */
-            splitMethod: "EQUAL" | "CUSTOM";
+            splitMethod: "CUSTOM";
             splits: components["schemas"]["BillSplitSummaryDto"][];
             /** @example Internet bill - March */
             title: string;
@@ -812,7 +841,7 @@ export interface components {
             description?: string;
             /**
              * Format: date-time
-             * @description Optional due date for this bill.
+             * @description Optional informational due date for this bill. It is not currently used for balance math, reminders, or settlement logic.
              * @example 2026-03-15T18:00:00.000Z
              */
             dueDate?: string;
@@ -827,7 +856,7 @@ export interface components {
              * @example f5c6304d-7f58-4f67-bf80-4de6f388b310
              */
             paidByUserId: string;
-            /** @description Split rows. Amounts must sum exactly to totalAmount. */
+            /** @description Explicit custom split rows. Amounts must sum exactly to totalAmount. Equal splitting is a frontend convenience that still submits explicit custom split rows. */
             splits: components["schemas"]["CreateBillSplitDto"][];
             /**
              * @description Short bill title.
@@ -927,7 +956,7 @@ export interface components {
              */
             amount: number;
             /**
-             * @description Optional bill id this payment is linked to.
+             * @description Optional related bill id for reference only. Must belong to the same group and use the same currency when provided.
              * @example 3e4f66fd-7eeb-4c2f-a98e-f94376ea22f5
              */
             billId?: string;
@@ -937,7 +966,7 @@ export interface components {
              */
             currency?: string;
             /**
-             * @description Optional idempotency key for safely retried payment requests.
+             * @description Optional idempotency key for safely retried payment requests. Reusing the same key with a different payment payload will return a conflict.
              * @example pay-2026-03-05-group1-user1-user2-20
              */
             idempotencyKey?: string;
@@ -967,6 +996,7 @@ export interface components {
             /** @example USD */
             currency: string;
             memberBalances: components["schemas"]["MemberBalanceSummaryDto"][];
+            /** @description Advisory settlement suggestions derived from current net balances. */
             settlements: components["schemas"]["SettlementSummaryDto"][];
         };
         GroupBalancesResponseDto: {
@@ -1057,6 +1087,30 @@ export interface components {
             finance: components["schemas"]["GroupDashboardFinanceSummaryDto"];
             group: components["schemas"]["GroupSummaryDto"];
             members: components["schemas"]["GroupDashboardMembersSummaryDto"];
+        };
+        GroupDestroyResponseDto: {
+            /** @example true */
+            destroyed: boolean;
+            /** @example cm8w9z0abc123def456ghi789 */
+            groupId: string;
+        };
+        GroupMemberLeaveResponseDto: {
+            /** @example cm8w9z0abc123def456ghi789 */
+            groupId: string;
+            /** @example true */
+            left: boolean;
+            /**
+             * @example INACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:44:00.000Z
+             */
+            updatedAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            userId: string;
         };
         GroupMemberRemoveResponseDto: {
             /** @example cm8w9z0abc123def456ghi789 */
@@ -1629,6 +1683,58 @@ export interface operations {
             };
         };
     };
+    GroupsController_destroyGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deletes the group and all associated records when the caller is the sole remaining active member and an admin. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupDestroyResponseDto"];
+                    };
+                };
+            };
+            /** @description Invalid group ID format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an active admin of this group. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Destroying is blocked when other active members still remain in the group. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     FinanceController_getBalances: {
         parameters: {
             query?: never;
@@ -1640,7 +1746,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Returns current balances for the group. */
+            /** @description Returns current balances and advisory settlement suggestions for the group. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2503,6 +2609,58 @@ export interface operations {
             };
         };
     };
+    GroupsController_leaveGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Marks the caller membership as inactive when they are not the last admin and no blocking chore or finance dependencies remain. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupMemberLeaveResponseDto"];
+                    };
+                };
+            };
+            /** @description Invalid group ID format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an active member of this group. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Leaving is blocked when the caller is the last active admin, still has blocking chore assignments, or still has unsettled finance balances in the group. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     GroupsController_getGroupMembers: {
         parameters: {
             query?: {
@@ -2601,7 +2759,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Removal is blocked when the member is the last admin or still has assigned pending chore occurrences or recurring chore templates. */
+            /** @description Removal is blocked when the member is the last admin, still has blocking chore assignments, or still has unsettled finance balances in the group. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2700,8 +2858,15 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Caller is not an active member of this group. */
+            /** @description Caller is not an active member of this group or is not allowed to record this payment. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Idempotency key was reused for a different canonical payment payload or another finance conflict occurred. */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

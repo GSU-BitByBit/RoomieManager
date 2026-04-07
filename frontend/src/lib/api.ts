@@ -1,4 +1,4 @@
-import type { ApiResponse } from '@/types/api';
+import type { ApiResponse, LoginResponse, MeResponse, RegisterResponse } from '@/types/api';
 
 const API_BASE = '/api/v1';
 
@@ -74,7 +74,7 @@ function buildQuery(params: Record<string, unknown>): string {
 
 export const auth = {
   register(email: string, password: string, fullName?: string) {
-    return request<{ user: { id: string; email: string }; session: unknown }>(
+    return request<RegisterResponse>(
       'POST',
       '/auth/register',
       { email, password, fullName },
@@ -83,14 +83,11 @@ export const auth = {
   },
 
   login(email: string, password: string) {
-    return request<{
-      user: { id: string; email: string };
-      session: { accessToken: string; refreshToken: string; expiresIn: number; tokenType: string };
-    }>('POST', '/auth/login', { email, password }, false);
+    return request<LoginResponse>('POST', '/auth/login', { email, password }, false);
   },
 
   me() {
-    return request<{ id: string; email: string; role: string; aud: string }>('GET', '/auth/me');
+    return request<MeResponse>('GET', '/auth/me');
   },
 };
 
@@ -120,6 +117,20 @@ export const groups = {
     return request<import('@/types/api').JoinCodeResetResponse>(
       'POST',
       `/groups/${groupId}/join-code/reset`,
+    );
+  },
+
+  leave(groupId: string) {
+    return request<import('@/types/api').LeaveGroupResponse>(
+      'POST',
+      `/groups/${groupId}/leave`,
+    );
+  },
+
+  destroy(groupId: string) {
+    return request<import('@/types/api').DestroyGroupResponse>(
+      'DELETE',
+      `/groups/${groupId}`,
     );
   },
 

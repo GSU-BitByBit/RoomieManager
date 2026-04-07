@@ -197,3 +197,28 @@ export class GroupMemberRemoveResponseDto {
   @ApiProperty({ example: '2026-03-05T16:44:00.000Z', format: 'date-time' })
   updatedAt!: string;
 }
+
+export class GroupMemberLeaveResponseDto {
+  @ApiProperty({ example: 'cm8w9z0abc123def456ghi789' })
+  groupId!: string;
+
+  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440001' })
+  userId!: string;
+
+  @ApiProperty({ enum: GroupMemberStatus, example: GroupMemberStatus.INACTIVE })
+  status!: GroupMemberStatus;
+
+  @ApiProperty({ example: true })
+  left!: boolean;
+
+  @ApiProperty({ example: '2026-03-05T16:44:00.000Z', format: 'date-time' })
+  updatedAt!: string;
+}
+
+export class GroupDestroyResponseDto {
+  @ApiProperty({ example: 'cm8w9z0abc123def456ghi789' })
+  groupId!: string;
+
+  @ApiProperty({ example: true })
+  destroyed!: boolean;
+}

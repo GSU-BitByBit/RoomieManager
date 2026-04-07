@@ -21,13 +21,16 @@ import { buildPaginationMeta, resolvePagination } from '../../common/http/pagina
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { addUtcDays, toDateOnlyUtc } from '../../common/time/date-only.util';
 import { ChoreGenerationService } from '../chores/chore-generation.service';
+import { FinanceService } from '../finance/finance.service';
 import type { CreateGroupDto } from './dto/create-group.dto';
 import type { JoinGroupDto } from './dto/join-group.dto';
 import { ListGroupMembersQueryDto } from './dto/list-group-members.query';
 import { ListUserGroupsQueryDto } from './dto/list-user-groups.query';
 import type { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import type {
+  GroupDestroyResponse,
   GroupDashboardResponse,
+  GroupMemberLeaveResponse,
   GroupMemberRemoveResponse,
   GroupMemberRoleUpdateResponse,
   GroupMembersResponse,
@@ -41,6 +44,7 @@ const JOIN_CODE_LENGTH = 8;
 const MAX_JOIN_CODE_ATTEMPTS = 12;
 const AUDIT_ACTION_MEMBER_ROLE_UPDATED = 'MEMBER_ROLE_UPDATED';
 const AUDIT_ACTION_MEMBER_REMOVED = 'MEMBER_REMOVED';
+const AUDIT_ACTION_MEMBER_LEFT = 'MEMBER_LEFT';
 const NOOP_CHORE_GENERATION_SERVICE = {
   maintainGroupGenerationHorizon: async () => ({
     groupId: '',
@@ -57,11 +61,32 @@ interface BlockingChoreAssignmentCounts {
   pausedTemplateCount: number;
 }
 
+interface BlockingFinanceBalanceSummary {
+  currency: string;
+  netAmount: number;
+}
+
+interface BlockingRemovalDependencies extends BlockingChoreAssignmentCounts {
+  financeBalances: BlockingFinanceBalanceSummary[];
+}
+
+type MembershipExitAction = 'remove' | 'leave';
+
+interface ActiveGroupCounts {
+  activeAdminCount: number;
+  activeMemberCount: number;
+}
+
+const NOOP_FINANCE_SERVICE = {
+  getMemberNetBalancesByCurrency: async () => []
+} as unknown as FinanceService;
+
 @Injectable()
 export class GroupsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly choreGenerationService: ChoreGenerationService = NOOP_CHORE_GENERATION_SERVICE
+    private readonly choreGenerationService: ChoreGenerationService = NOOP_CHORE_GENERATION_SERVICE,
+    private readonly financeService: FinanceService = NOOP_FINANCE_SERVICE
   ) {}
 
   async createGroup(
@@ -588,7 +613,12 @@ export class GroupsService {
           await this.assertNotLastAdmin(tx, groupId);
         }
 
-        await this.assertNoBlockingChoreAssignments(tx, groupId, memberUserId);
+        await this.assertNoBlockingMembershipExitDependencies(
+          tx,
+          groupId,
+          memberUserId,
+          'remove'
+        );
 
         const updatedMembership = await tx.groupMember.update({
           where: { id: membership.id },
@@ -619,75 +649,196 @@ export class GroupsService {
     );
   }
 
-  private async assertNoBlockingChoreAssignments(
+  async leaveGroup(actorUserId: string, groupId: string): Promise<GroupMemberLeaveResponse> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const membership = await this.assertActiveMembership(tx, actorUserId, groupId);
+
+        if (membership.role === GroupMemberRole.ADMIN) {
+          await this.assertCanAdminLeaveGroup(tx, groupId);
+        }
+
+        await this.assertNoBlockingMembershipExitDependencies(tx, groupId, actorUserId, 'leave');
+
+        const updatedMembership = await tx.groupMember.update({
+          where: { id: membership.id },
+          data: {
+            status: GroupMemberStatus.INACTIVE
+          }
+        });
+
+        await this.recordAuditLog(tx, {
+          groupId,
+          actorUserId,
+          targetUserId: actorUserId,
+          action: AUDIT_ACTION_MEMBER_LEFT,
+          details: {
+            previousRole: membership.role
+          }
+        });
+
+        return {
+          groupId,
+          userId: updatedMembership.userId,
+          status: updatedMembership.status,
+          left: true,
+          updatedAt: updatedMembership.updatedAt.toISOString()
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    );
+  }
+
+  async destroyGroup(actorUserId: string, groupId: string): Promise<GroupDestroyResponse> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        await this.assertAdminMembership(tx, actorUserId, groupId);
+
+        const { activeMemberCount } = await this.getActiveGroupCounts(tx, groupId);
+        if (activeMemberCount > 1) {
+          throw new ConflictException({
+            code: ErrorCode.Conflict,
+            message:
+              'Only the last remaining active member can destroy this group. Remove or have everyone else leave first.'
+          });
+        }
+
+        await tx.group.delete({
+          where: { id: groupId }
+        });
+
+        return {
+          groupId,
+          destroyed: true
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    );
+  }
+
+  private async assertNoBlockingMembershipExitDependencies(
+    tx: Prisma.TransactionClient,
+    groupId: string,
+    memberUserId: string,
+    action: MembershipExitAction
+  ): Promise<void> {
+    const blockingDependencies = await this.getBlockingMembershipExitDependencies(
+      tx,
+      groupId,
+      memberUserId
+    );
+
+    if (
+      blockingDependencies.pendingOccurrenceCount > 0 ||
+      blockingDependencies.activeTemplateCount > 0 ||
+      blockingDependencies.pausedTemplateCount > 0 ||
+      blockingDependencies.financeBalances.length > 0
+    ) {
+      const hasChoreDependencies =
+        blockingDependencies.pendingOccurrenceCount > 0 ||
+        blockingDependencies.activeTemplateCount > 0 ||
+        blockingDependencies.pausedTemplateCount > 0;
+      const hasFinanceDependencies = blockingDependencies.financeBalances.length > 0;
+
+      throw new ConflictException({
+        code: ErrorCode.Conflict,
+        message: this.buildMembershipExitBlockedMessage(
+          action,
+          hasChoreDependencies,
+          hasFinanceDependencies
+        ),
+        details: blockingDependencies
+      });
+    }
+  }
+
+  private async getBlockingMembershipExitDependencies(
     tx: Prisma.TransactionClient,
     groupId: string,
     memberUserId: string
-  ): Promise<void> {
-    const [pendingOccurrenceCount, activeTemplateCount, pausedTemplateCount] = await Promise.all([
-      tx.chore.count({
-        where: {
-          groupId,
-          assignedToUserId: memberUserId,
-          status: ChoreStatus.PENDING
-        }
-      }),
-      tx.choreTemplate.count({
-        where: {
-          groupId,
-          status: ChoreTemplateStatus.ACTIVE,
-          OR: [
-            {
-              assignedToUserId: memberUserId
-            },
-            {
-              participants: {
-                some: {
-                  userId: memberUserId
+  ): Promise<BlockingRemovalDependencies> {
+    const [pendingOccurrenceCount, activeTemplateCount, pausedTemplateCount, financeBalances] =
+      await Promise.all([
+        tx.chore.count({
+          where: {
+            groupId,
+            assignedToUserId: memberUserId,
+            status: ChoreStatus.PENDING
+          }
+        }),
+        tx.choreTemplate.count({
+          where: {
+            groupId,
+            status: ChoreTemplateStatus.ACTIVE,
+            OR: [
+              {
+                assignedToUserId: memberUserId
+              },
+              {
+                participants: {
+                  some: {
+                    userId: memberUserId
+                  }
                 }
               }
-            }
-          ]
-        }
-      }),
-      tx.choreTemplate.count({
-        where: {
-          groupId,
-          status: ChoreTemplateStatus.PAUSED,
-          OR: [
-            {
-              assignedToUserId: memberUserId
-            },
-            {
-              participants: {
-                some: {
-                  userId: memberUserId
+            ]
+          }
+        }),
+        tx.choreTemplate.count({
+          where: {
+            groupId,
+            status: ChoreTemplateStatus.PAUSED,
+            OR: [
+              {
+                assignedToUserId: memberUserId
+              },
+              {
+                participants: {
+                  some: {
+                    userId: memberUserId
+                  }
                 }
               }
-            }
-          ]
-        }
-      })
-    ]);
+            ]
+          }
+        }),
+        this.financeService.getMemberNetBalancesByCurrency(tx, groupId, memberUserId)
+      ]);
 
-    const blockingCounts: BlockingChoreAssignmentCounts = {
+    return {
       pendingOccurrenceCount,
       activeTemplateCount,
-      pausedTemplateCount
+      pausedTemplateCount,
+      financeBalances
     };
+  }
 
-    if (
-      blockingCounts.pendingOccurrenceCount > 0 ||
-      blockingCounts.activeTemplateCount > 0 ||
-      blockingCounts.pausedTemplateCount > 0
-    ) {
-      throw new ConflictException({
-        code: ErrorCode.Conflict,
-        message:
-          'Member cannot be removed while assigned pending chore occurrences or recurring chore templates remain. Reassign them first.',
-        details: blockingCounts
-      });
+  private buildMembershipExitBlockedMessage(
+    action: MembershipExitAction,
+    hasChoreDependencies: boolean,
+    hasFinanceDependencies: boolean
+  ): string {
+    if (action === 'leave') {
+      if (hasChoreDependencies && hasFinanceDependencies) {
+        return 'You cannot leave this group while assigned chore work or unsettled group balances remain. Reassign your chores and settle your balances first.';
+      }
+
+      if (hasChoreDependencies) {
+        return 'You cannot leave this group while assigned pending chore occurrences or recurring chore templates remain. Reassign them first.';
+      }
+
+      return 'You cannot leave this group while you still have unsettled group balances. Settle your balances first.';
     }
+
+    if (hasChoreDependencies && hasFinanceDependencies) {
+      return 'Member cannot be removed while assigned chore work or unsettled group balances remain. Reassign chores and settle balances first.';
+    }
+
+    if (hasChoreDependencies) {
+      return 'Member cannot be removed while assigned pending chore occurrences or recurring chore templates remain. Reassign them first.';
+    }
+
+    return 'Member cannot be removed while they still have unsettled group balances. Settle balances first.';
   }
 
   private async assertActiveMembership(
@@ -750,14 +901,51 @@ export class GroupsService {
     return membership;
   }
 
+  private async getActiveGroupCounts(
+    tx: Prisma.TransactionClient,
+    groupId: string
+  ): Promise<ActiveGroupCounts> {
+    const [activeAdminCount, activeMemberCount] = await Promise.all([
+      tx.groupMember.count({
+        where: {
+          groupId,
+          status: GroupMemberStatus.ACTIVE,
+          role: GroupMemberRole.ADMIN
+        }
+      }),
+      tx.groupMember.count({
+        where: {
+          groupId,
+          status: GroupMemberStatus.ACTIVE
+        }
+      })
+    ]);
+
+    return {
+      activeAdminCount,
+      activeMemberCount
+    };
+  }
+
+  private async assertCanAdminLeaveGroup(
+    tx: Prisma.TransactionClient,
+    groupId: string
+  ): Promise<void> {
+    const { activeAdminCount, activeMemberCount } = await this.getActiveGroupCounts(tx, groupId);
+
+    if (activeAdminCount <= 1) {
+      throw new ConflictException({
+        code: ErrorCode.Conflict,
+        message:
+          activeMemberCount <= 1
+            ? 'You are the last active member in this group. Destroy the group instead of leaving it.'
+            : 'Group must have at least one admin. Promote another member to admin before leaving.'
+      });
+    }
+  }
+
   private async assertNotLastAdmin(tx: Prisma.TransactionClient, groupId: string): Promise<void> {
-    const activeAdminCount = await tx.groupMember.count({
-      where: {
-        groupId,
-        status: GroupMemberStatus.ACTIVE,
-        role: GroupMemberRole.ADMIN
-      }
-    });
+    const { activeAdminCount } = await this.getActiveGroupCounts(tx, groupId);
 
     if (activeAdminCount <= 1) {
       throw new ConflictException({

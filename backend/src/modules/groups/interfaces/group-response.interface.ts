@@ -89,3 +89,16 @@ export interface GroupMemberRemoveResponse {
   removed: boolean;
   updatedAt: string;
 }
+
+export interface GroupMemberLeaveResponse {
+  groupId: string;
+  userId: string;
+  status: GroupMemberStatus;
+  left: boolean;
+  updatedAt: string;
+}
+
+export interface GroupDestroyResponse {
+  groupId: string;
+  destroyed: boolean;
+}

@@ -250,6 +250,22 @@ const CORE_ENDPOINT_CONTRACTS: EndpointContract[] = [
     requiredPathParams: ['groupId']
   },
   {
+    path: '/api/v1/groups/{groupId}/leave',
+    method: 'post',
+    statusCodes: ['200', '400', '401', '403', '409'],
+    requiresAuth: true,
+    requiredPathParams: ['groupId'],
+    requiredDataKeys: ['groupId', 'userId', 'status', 'left', 'updatedAt']
+  },
+  {
+    path: '/api/v1/groups/{groupId}',
+    method: 'delete',
+    statusCodes: ['200', '400', '401', '403', '409'],
+    requiresAuth: true,
+    requiredPathParams: ['groupId'],
+    requiredDataKeys: ['groupId', 'destroyed']
+  },
+  {
     path: '/api/v1/groups/{groupId}/members/{userId}/role',
     method: 'patch',
     statusCodes: ['200', '401'],

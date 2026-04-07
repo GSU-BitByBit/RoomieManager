@@ -125,8 +125,10 @@ export default function AppLayout() {
         <div className="border-t border-sage-100/40 p-4">
           <div className="flex items-center justify-between">
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-charcoal">{user?.email}</p>
-              <p className="text-xs text-slate-400">Signed in</p>
+              <p className="truncate text-sm font-medium text-charcoal">
+                {user?.displayName ?? user?.email ?? 'Signed in'}
+              </p>
+              <p className="truncate text-xs text-slate-400">{user?.email ?? 'Signed in'}</p>
             </div>
             <button
               onClick={handleLogout}

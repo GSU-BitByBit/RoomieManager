@@ -6,8 +6,8 @@ RoomieManager is a roommate management platform. Users register, form household 
 
 The repository is a monorepo with two top-level directories:
 
-- `backend/` — NestJS REST API (the primary codebase; Modules 1-8 implemented)
-- `frontend/` — Frontend app (not yet implemented; contains only `frontend_reference.md`)
+- `backend/` — NestJS REST API
+- `frontend/` — Vite + React + TypeScript frontend app
 
 There is no root `package.json` or monorepo tooling. Each directory is independent.
 
@@ -81,7 +81,11 @@ RoomieManager/
 │   ├── eslint.config.mjs
 │   └── .env.example
 ├── frontend/
-│   └── frontend_reference.md         ← API integration guide for frontend engineers
+│   ├── src/                         ← React pages, components, API client, auth context
+│   ├── generated/                   ← generated TypeScript types from backend OpenAPI
+│   ├── frontend_reference.md        ← API integration guide for frontend engineers
+│   ├── package.json
+│   └── vite.config.ts
 └── Use case diagram and requirements/
     ├── usecase.puml
     └── requirements.txt.txt
@@ -130,12 +134,20 @@ All endpoints are prefixed with `/api/v1`.
 | GET    | `/groups/:groupId`                      | Bearer + Member             | 200         | Get group summary                     |
 | GET    | `/groups/:groupId/dashboard`            | Bearer + Member             | 200         | Get group dashboard aggregates        |
 | GET    | `/groups/:groupId/members`              | Bearer + Member             | 200         | List active members                   |
+| POST   | `/groups/:groupId/leave`                | Bearer + Member             | 200         | Leave group                           |
 | PATCH  | `/groups/:groupId/members/:userId/role` | Bearer + Admin              | 200         | Update member role                    |
 | DELETE | `/groups/:groupId/members/:userId`      | Bearer + Admin              | 200         | Remove member                         |
-| POST   | `/groups/:groupId/chores`               | Bearer + Member             | 201         | Create chore                          |
-| GET    | `/groups/:groupId/chores`               | Bearer + Member             | 200         | List chores (filters supported)       |
-| PATCH  | `/chores/:choreId/assign`               | Bearer + Member/Admin rules | 200         | Assign or unassign chore              |
-| PATCH  | `/chores/:choreId/complete`             | Bearer + Member/Admin rules | 200         | Complete chore                        |
+| POST   | `/groups/:groupId/chores`               | Bearer + Member             | 201         | Create one-off chore occurrence       |
+| GET    | `/groups/:groupId/chores`               | Bearer + Member             | 200         | List chore occurrences                |
+| GET    | `/groups/:groupId/chores/calendar`      | Bearer + Member             | 200         | Get month/range-ready chore calendar  |
+| PATCH  | `/chores/:occurrenceId/assignee`        | Bearer + Admin              | 200         | Reassign chore occurrence             |
+| PATCH  | `/chores/:occurrenceId/complete`        | Bearer + Member/Admin rules | 200         | Complete chore occurrence             |
+| GET    | `/groups/:groupId/chore-templates`      | Bearer + Member             | 200         | List recurring chore templates        |
+| POST   | `/groups/:groupId/chore-templates`      | Bearer + Admin              | 201         | Create recurring chore template       |
+| PATCH  | `/groups/:groupId/chore-templates/:templateId` | Bearer + Admin         | 200         | Update recurring chore template       |
+| POST   | `/groups/:groupId/chore-templates/:templateId/pause` | Bearer + Admin     | 200         | Pause recurring chore template        |
+| POST   | `/groups/:groupId/chore-templates/:templateId/resume` | Bearer + Admin    | 200         | Resume recurring chore template       |
+| POST   | `/groups/:groupId/chore-templates/:templateId/archive` | Bearer + Admin  | 200         | Archive recurring chore template      |
 | POST   | `/groups/:groupId/bills`                | Bearer + Member             | 201         | Create bill with member splits        |
 | GET    | `/groups/:groupId/bills`                | Bearer + Member             | 200         | List group bills                      |
 | POST   | `/groups/:groupId/payments`             | Bearer + Member             | 201         | Record payment between members        |
@@ -147,7 +159,7 @@ All endpoints are prefixed with `/api/v1`.
 
 Path ID validation:
 
-- `:groupId` and `:choreId` accept valid app IDs (`cuid` or UUID).
+- `:groupId`, `:occurrenceId`, and `:templateId` accept valid app IDs (`cuid` or UUID).
 - `:userId` accepts UUID.
 - Invalid IDs return `400 BAD_REQUEST`.
 
@@ -245,7 +257,7 @@ Required GitHub secrets: `SUPABASE_DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON
 
 - Group creator automatically becomes `ADMIN`.
 - Only admins can: reset join codes, update roles, remove members, edit contract drafts, publish contract versions.
-- Admins cannot demote/remove themselves (use leave-group flow).
+- Admins cannot demote/remove themselves via admin endpoints; self-service leave-group is the supported path.
 - The last admin cannot be demoted or removed (`409 CONFLICT`).
 - Rejoining a group after removal always resets role to `MEMBER`.
 - Admin mutations use `Serializable` transaction isolation to prevent race conditions.

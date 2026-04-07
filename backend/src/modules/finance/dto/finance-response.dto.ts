@@ -1,4 +1,3 @@
-import { BillSplitMethod } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
 
 import { PaginationMetaDto } from '../../../common/http/dto/pagination-meta.dto';
@@ -39,8 +38,13 @@ export class BillSummaryDto {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440001' })
   paidByUserId!: string;
 
-  @ApiProperty({ enum: BillSplitMethod, example: BillSplitMethod.CUSTOM })
-  splitMethod!: BillSplitMethod;
+  @ApiProperty({
+    enum: ['CUSTOM'],
+    example: 'CUSTOM',
+    description:
+      'Always CUSTOM in the current backend. Equal splitting is a frontend convenience that submits explicit custom split rows.'
+  })
+  splitMethod!: 'CUSTOM';
 
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440001' })
   createdBy!: string;
@@ -48,7 +52,14 @@ export class BillSummaryDto {
   @ApiProperty({ example: '2026-03-05T16:50:00.000Z', format: 'date-time' })
   incurredAt!: string;
 
-  @ApiProperty({ type: String, example: null, format: 'date-time', nullable: true })
+  @ApiProperty({
+    type: String,
+    example: null,
+    format: 'date-time',
+    nullable: true,
+    description:
+      'Optional informational due date. It is not currently used for balance math, reminders, or settlement logic.'
+  })
   dueDate!: string | null;
 
   @ApiProperty({ example: '2026-03-05T16:50:00.000Z', format: 'date-time' })
@@ -136,7 +147,10 @@ export class CurrencyBalanceSummaryDto {
   @ApiProperty({ example: 'USD' })
   currency!: string;
 
-  @ApiProperty({ type: () => [SettlementSummaryDto] })
+  @ApiProperty({
+    type: () => [SettlementSummaryDto],
+    description: 'Advisory settlement suggestions derived from current net balances.'
+  })
   settlements!: SettlementSummaryDto[];
 
   @ApiProperty({ type: () => [MemberBalanceSummaryDto] })
