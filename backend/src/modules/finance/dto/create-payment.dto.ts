@@ -1,6 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsDate, IsNumber, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import {
+  IsDate,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  Matches,
+  Min,
+  MinLength
+} from 'class-validator';
+
+const ISO_CURRENCY_CODE_PATTERN = /^[A-Z]{3}$/;
+const APP_ID_PATTERN =
+  /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|c[a-z0-9]{8,})$/i;
 
 export class CreatePaymentDto {
   @ApiProperty({
@@ -8,8 +22,7 @@ export class CreatePaymentDto {
     description: 'User id of the member sending payment.'
   })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @MinLength(1)
+  @IsUUID()
   payerUserId!: string;
 
   @ApiProperty({
@@ -17,8 +30,7 @@ export class CreatePaymentDto {
     description: 'User id of the member receiving payment.'
   })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @MinLength(1)
+  @IsUUID()
   payeeUserId!: string;
 
   @ApiProperty({
@@ -39,16 +51,22 @@ export class CreatePaymentDto {
   @IsString()
   @MinLength(3)
   @MaxLength(3)
+  @Matches(ISO_CURRENCY_CODE_PATTERN, {
+    message: 'currency must be a valid three-letter ISO currency code.'
+  })
   currency?: string;
 
   @ApiPropertyOptional({
     example: '3e4f66fd-7eeb-4c2f-a98e-f94376ea22f5',
-    description: 'Optional bill id this payment is linked to.'
+    description:
+      'Optional related bill id for reference only. Must belong to the same group and use the same currency when provided.'
   })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsOptional()
   @IsString()
-  @MinLength(1)
+  @Matches(APP_ID_PATTERN, {
+    message: 'billId must be a valid uuid or cuid.'
+  })
   billId?: string;
 
   @ApiPropertyOptional({
@@ -65,7 +83,8 @@ export class CreatePaymentDto {
   @ApiPropertyOptional({
     example: 'pay-2026-03-05-group1-user1-user2-20',
     maxLength: 64,
-    description: 'Optional idempotency key for safely retried payment requests.'
+    description:
+      'Optional idempotency key for safely retried payment requests. Reusing the same key with a different payment payload will return a conflict.'
   })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsOptional()

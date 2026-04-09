@@ -2,16 +2,21 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayMinSize,
+  ArrayUnique,
   IsArray,
   IsDate,
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
+  Matches,
   Min,
   MinLength,
   ValidateNested
 } from 'class-validator';
+
+const ISO_CURRENCY_CODE_PATTERN = /^[A-Z]{3}$/;
 
 export class CreateBillSplitDto {
   @ApiProperty({
@@ -19,8 +24,7 @@ export class CreateBillSplitDto {
     description: 'User id for this split row.'
   })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @MinLength(1)
+  @IsUUID()
   userId!: string;
 
   @ApiProperty({
@@ -75,6 +79,9 @@ export class CreateBillDto {
   @IsString()
   @MinLength(3)
   @MaxLength(3)
+  @Matches(ISO_CURRENCY_CODE_PATTERN, {
+    message: 'currency must be a valid three-letter ISO currency code.'
+  })
   currency?: string;
 
   @ApiProperty({
@@ -82,8 +89,7 @@ export class CreateBillDto {
     description: 'User id of the member who paid this bill.'
   })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @MinLength(1)
+  @IsUUID()
   paidByUserId!: string;
 
   @ApiPropertyOptional({
@@ -97,7 +103,8 @@ export class CreateBillDto {
 
   @ApiPropertyOptional({
     example: '2026-03-15T18:00:00.000Z',
-    description: 'Optional due date for this bill.'
+    description:
+      'Optional informational due date for this bill. It is not currently used for balance math, reminders, or settlement logic.'
   })
   @Transform(({ value }) => (value ? new Date(value) : value))
   @IsOptional()
@@ -106,10 +113,12 @@ export class CreateBillDto {
 
   @ApiProperty({
     type: () => [CreateBillSplitDto],
-    description: 'Split rows. Amounts must sum exactly to totalAmount.'
+    description:
+      'Explicit custom split rows. Amounts must sum exactly to totalAmount. Equal splitting is a frontend convenience that still submits explicit custom split rows.'
   })
   @IsArray()
   @ArrayMinSize(1)
+  @ArrayUnique((split: CreateBillSplitDto) => split.userId)
   @ValidateNested({ each: true })
   @Type(() => CreateBillSplitDto)
   splits!: CreateBillSplitDto[];

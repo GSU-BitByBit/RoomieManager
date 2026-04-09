@@ -73,10 +73,10 @@ describe('Response envelope contracts (e2e)', () => {
         memberCount: 0
       },
       chores: {
-        pendingCount: 0,
-        completedCount: 0,
         overdueCount: 0,
-        assignedToMePendingCount: 0
+        dueTodayCount: 0,
+        dueNext7DaysCount: 0,
+        assignedToMeDueNext7DaysCount: 0
       },
       finance: {
         billCount: 0,

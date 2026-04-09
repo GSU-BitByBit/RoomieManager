@@ -1,12 +1,688 @@
 {
   "components": {
     "schemas": {
+      "ApiMetaDto": {
+        "properties": {
+          "requestId": {
+            "example": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+            "type": "string"
+          },
+          "timestamp": {
+            "example": "2026-03-05T16:06:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "timestamp"
+        ],
+        "type": "object"
+      },
+      "ApiSuccessEnvelopeDto": {
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/ApiMetaDto"
+          },
+          "success": {
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "meta"
+        ],
+        "type": "object"
+      },
+      "AuthenticatedUserDto": {
+        "properties": {
+          "appMetadata": {
+            "additionalProperties": true,
+            "example": {
+              "provider": "email"
+            },
+            "type": "object"
+          },
+          "aud": {
+            "example": "authenticated",
+            "type": "string"
+          },
+          "email": {
+            "example": "alex@example.com",
+            "type": "string"
+          },
+          "id": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          },
+          "role": {
+            "example": "authenticated",
+            "type": "string"
+          },
+          "userMetadata": {
+            "additionalProperties": true,
+            "example": {},
+            "type": "object"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "AuthResultDto": {
+        "properties": {
+          "session": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuthSessionDto"
+              }
+            ],
+            "nullable": true
+          },
+          "user": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuthUserProfileDto"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "user",
+          "session"
+        ],
+        "type": "object"
+      },
+      "AuthSessionDto": {
+        "properties": {
+          "accessToken": {
+            "example": "<jwt-access-token>",
+            "type": "string"
+          },
+          "expiresIn": {
+            "example": 3600,
+            "type": "number"
+          },
+          "refreshToken": {
+            "example": "<refresh-token>",
+            "type": "string"
+          },
+          "tokenType": {
+            "example": "bearer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "expiresIn",
+          "tokenType"
+        ],
+        "type": "object"
+      },
+      "AuthUserProfileDto": {
+        "properties": {
+          "createdAt": {
+            "example": "2026-03-05T16:10:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "email": {
+            "example": "alex@example.com",
+            "type": "string"
+          },
+          "emailConfirmedAt": {
+            "example": "2026-03-05T16:11:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          },
+          "phone": {
+            "example": null,
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "BillSplitSummaryDto": {
+        "properties": {
+          "amount": {
+            "example": 25.5,
+            "type": "number"
+          },
+          "createdAt": {
+            "example": "2026-03-05T16:50:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "example": "cm8wc5rr9000imk6z2jmlf4x4",
+            "type": "string"
+          },
+          "userId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "amount",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "BillSummaryDto": {
+        "properties": {
+          "createdAt": {
+            "example": "2026-03-05T16:50:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          },
+          "currency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "description": {
+            "example": "Monthly ISP payment",
+            "nullable": true,
+            "type": "string"
+          },
+          "dueDate": {
+            "description": "Optional informational due date. It is not currently used for balance math, reminders, or settlement logic.",
+            "example": null,
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "groupId": {
+            "example": "cm8z9ab120001mk8z4og1j0e9",
+            "type": "string"
+          },
+          "id": {
+            "example": "cm8wc5rr7000hmk6zx4qedcib",
+            "type": "string"
+          },
+          "incurredAt": {
+            "example": "2026-03-05T16:50:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "paidByUserId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          },
+          "splitMethod": {
+            "description": "Always CUSTOM in the current backend. Equal splitting is a frontend convenience that submits explicit custom split rows.",
+            "enum": [
+              "CUSTOM"
+            ],
+            "example": "CUSTOM",
+            "type": "string"
+          },
+          "splits": {
+            "items": {
+              "$ref": "#/components/schemas/BillSplitSummaryDto"
+            },
+            "type": "array"
+          },
+          "title": {
+            "example": "Internet bill - March",
+            "type": "string"
+          },
+          "totalAmount": {
+            "example": 76.5,
+            "type": "number"
+          },
+          "updatedAt": {
+            "example": "2026-03-05T16:50:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "title",
+          "description",
+          "totalAmount",
+          "currency",
+          "paidByUserId",
+          "splitMethod",
+          "createdBy",
+          "incurredAt",
+          "dueDate",
+          "createdAt",
+          "updatedAt",
+          "splits"
+        ],
+        "type": "object"
+      },
+      "ChoreCalendarOccurrenceDto": {
+        "properties": {
+          "assigneeUserId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          },
+          "completedAt": {
+            "example": "2026-03-05T16:34:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "completedByUserId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "example": "Take out kitchen and bathroom trash before 9pm.",
+            "nullable": true,
+            "type": "string"
+          },
+          "dueOn": {
+            "example": "2026-03-06",
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "example": "cm8wa8qgk0004mk6z9s29u0ro",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "example": "PENDING",
+            "type": "string"
+          },
+          "templateId": {
+            "example": "cm8wa8qgk0004mk6z9s29u0rt",
+            "nullable": true,
+            "type": "string"
+          },
+          "title": {
+            "example": "Take out trash",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "templateId",
+          "title",
+          "description",
+          "dueOn",
+          "assigneeUserId",
+          "status",
+          "completedAt",
+          "completedByUserId"
+        ],
+        "type": "object"
+      },
       "ChoreStatus": {
         "enum": [
           "PENDING",
-          "COMPLETED"
+          "COMPLETED",
+          "CANCELLED"
         ],
         "type": "string"
+      },
+      "ChoreSummaryDto": {
+        "properties": {
+          "assigneeUserId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          },
+          "completedAt": {
+            "example": "2026-03-05T16:34:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "completedByUserId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "example": "2026-03-05T16:31:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          },
+          "description": {
+            "example": "Take out kitchen and bathroom trash before 9pm.",
+            "nullable": true,
+            "type": "string"
+          },
+          "dueOn": {
+            "example": "2026-03-06",
+            "format": "date",
+            "type": "string"
+          },
+          "groupId": {
+            "example": "cm8z9ab120001mk8z4og1j0e9",
+            "type": "string"
+          },
+          "id": {
+            "example": "cm8wa8qgk0004mk6z9s29u0ro",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "example": "PENDING",
+            "type": "string"
+          },
+          "templateId": {
+            "example": "cm8wa8qgk0004mk6z9s29u0rt",
+            "nullable": true,
+            "type": "string"
+          },
+          "title": {
+            "example": "Take out trash",
+            "type": "string"
+          },
+          "updatedAt": {
+            "example": "2026-03-05T16:31:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "templateId",
+          "title",
+          "description",
+          "status",
+          "dueOn",
+          "assigneeUserId",
+          "createdBy",
+          "completedByUserId",
+          "completedAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ChoreTemplateAssignmentStrategy": {
+        "description": "Updated assignment mode for future occurrences.",
+        "enum": [
+          "FIXED",
+          "ROUND_ROBIN"
+        ],
+        "type": "string"
+      },
+      "ChoreTemplateParticipantSummaryDto": {
+        "properties": {
+          "sortOrder": {
+            "example": 0,
+            "minimum": 0,
+            "type": "number"
+          },
+          "userId": {
+            "example": "550e8400-e29b-41d4-a716-446655440002",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "sortOrder"
+        ],
+        "type": "object"
+      },
+      "ChoreTemplateSummaryDto": {
+        "properties": {
+          "assigneeUserId": {
+            "example": "550e8400-e29b-41d4-a716-446655440002",
+            "nullable": true,
+            "type": "string"
+          },
+          "assignmentStrategy": {
+            "enum": [
+              "FIXED",
+              "ROUND_ROBIN"
+            ],
+            "example": "FIXED",
+            "type": "string"
+          },
+          "createdAt": {
+            "example": "2026-03-05T16:31:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          },
+          "description": {
+            "example": "Kitchen and bathroom bins.",
+            "nullable": true,
+            "type": "string"
+          },
+          "endsOn": {
+            "example": "2026-06-29",
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "generatedThroughOn": {
+            "example": "2026-05-04",
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "groupId": {
+            "example": "cm8z9ab120001mk8z4og1j0e9",
+            "type": "string"
+          },
+          "id": {
+            "example": "cm8wa8qgk0004mk6z9s29u0rt",
+            "type": "string"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/ChoreTemplateParticipantSummaryDto"
+            },
+            "type": "array"
+          },
+          "repeatEveryDays": {
+            "example": 7,
+            "minimum": 1,
+            "type": "number"
+          },
+          "startsOn": {
+            "example": "2026-03-09",
+            "format": "date",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "ARCHIVED"
+            ],
+            "example": "ACTIVE",
+            "type": "string"
+          },
+          "title": {
+            "example": "Take out trash",
+            "type": "string"
+          },
+          "updatedAt": {
+            "example": "2026-03-05T16:31:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedBy": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "title",
+          "description",
+          "status",
+          "assignmentStrategy",
+          "startsOn",
+          "endsOn",
+          "repeatEveryDays",
+          "assigneeUserId",
+          "participants",
+          "createdBy",
+          "updatedBy",
+          "generatedThroughOn",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ContractDetailResponseDto": {
+        "properties": {
+          "contract": {
+            "$ref": "#/components/schemas/ContractSummaryDto"
+          },
+          "latestPublishedContent": {
+            "example": "Published roommate contract v2.",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "contract",
+          "latestPublishedContent"
+        ],
+        "type": "object"
+      },
+      "ContractSummaryDto": {
+        "properties": {
+          "createdAt": {
+            "example": "2026-03-05T16:40:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "draftContent": {
+            "example": "Draft roommate contract content.",
+            "type": "string"
+          },
+          "groupId": {
+            "example": "cm8z9ab120001mk8z4og1j0e9",
+            "type": "string"
+          },
+          "id": {
+            "example": "cm8wb6r8u000emk6zubf6s23n",
+            "type": "string"
+          },
+          "publishedVersion": {
+            "example": 2,
+            "nullable": true,
+            "type": "number"
+          },
+          "updatedAt": {
+            "example": "2026-03-05T16:43:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedBy": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "draftContent",
+          "publishedVersion",
+          "updatedBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ContractVersionsResponseDto": {
+        "properties": {
+          "groupId": {
+            "example": "cm8w9z0abc123def456ghi789",
+            "type": "string"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/ContractVersionSummaryDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "groupId",
+          "versions",
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "ContractVersionSummaryDto": {
+        "properties": {
+          "content": {
+            "example": "Published roommate contract v3.",
+            "type": "string"
+          },
+          "createdAt": {
+            "example": "2026-03-05T16:45:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "example": "cm8wb8l66000fmk6z5nwnk1j5",
+            "type": "string"
+          },
+          "publishedBy": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          },
+          "version": {
+            "example": 3,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "content",
+          "publishedBy",
+          "createdAt"
+        ],
+        "type": "object"
       },
       "CreateBillDto": {
         "properties": {
@@ -22,7 +698,7 @@
             "type": "string"
           },
           "dueDate": {
-            "description": "Optional due date for this bill.",
+            "description": "Optional informational due date for this bill. It is not currently used for balance math, reminders, or settlement logic.",
             "example": "2026-03-15T18:00:00.000Z",
             "format": "date-time",
             "type": "string"
@@ -39,7 +715,7 @@
             "type": "string"
           },
           "splits": {
-            "description": "Split rows. Amounts must sum exactly to totalAmount.",
+            "description": "Explicit custom split rows. Amounts must sum exactly to totalAmount. Equal splitting is a frontend convenience that still submits explicit custom split rows.",
             "items": {
               "$ref": "#/components/schemas/CreateBillSplitDto"
             },
@@ -88,7 +764,7 @@
       "CreateChoreDto": {
         "properties": {
           "assigneeUserId": {
-            "description": "Optional user ID to assign the chore to at creation time",
+            "description": "Required active group member who will own this one-off chore.",
             "example": "user-uuid",
             "type": "string"
           },
@@ -97,10 +773,10 @@
             "maxLength": 1000,
             "type": "string"
           },
-          "dueDate": {
-            "description": "Optional ISO-8601 due date for the chore",
-            "example": "2026-03-10T21:00:00.000Z",
-            "format": "date-time",
+          "dueOn": {
+            "description": "Required date-only due slot for the chore (YYYY-MM-DD).",
+            "example": "2026-03-10",
+            "format": "date",
             "type": "string"
           },
           "title": {
@@ -112,7 +788,70 @@
           }
         },
         "required": [
-          "title"
+          "title",
+          "dueOn",
+          "assigneeUserId"
+        ],
+        "type": "object"
+      },
+      "CreateChoreTemplateDto": {
+        "properties": {
+          "assigneeUserId": {
+            "description": "Required when assignmentStrategy is FIXED.",
+            "example": "user-uuid",
+            "type": "string"
+          },
+          "assignmentStrategy": {
+            "$ref": "#/components/schemas/ChoreTemplateAssignmentStrategy"
+          },
+          "description": {
+            "example": "Kitchen and bathroom bins.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "endsOn": {
+            "description": "Optional inclusive final due occurrence date (YYYY-MM-DD).",
+            "example": "2026-06-29",
+            "format": "date",
+            "type": "string"
+          },
+          "participantUserIds": {
+            "description": "Required when assignmentStrategy is ROUND_ROBIN. Order determines rotation order.",
+            "example": [
+              "user-uuid-1",
+              "user-uuid-2",
+              "user-uuid-3"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "repeatEveryDays": {
+            "description": "Positive day interval between due occurrences.",
+            "example": 7,
+            "minimum": 1,
+            "type": "number"
+          },
+          "startsOn": {
+            "description": "First due occurrence date (YYYY-MM-DD).",
+            "example": "2026-04-06",
+            "format": "date",
+            "type": "string"
+          },
+          "title": {
+            "description": "Template title for a recurring interval-based chore.",
+            "example": "Take out trash",
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "assignmentStrategy",
+          "startsOn",
+          "repeatEveryDays"
         ],
         "type": "object"
       },
@@ -139,7 +878,7 @@
             "type": "number"
           },
           "billId": {
-            "description": "Optional bill id this payment is linked to.",
+            "description": "Optional related bill id for reference only. Must belong to the same group and use the same currency when provided.",
             "example": "3e4f66fd-7eeb-4c2f-a98e-f94376ea22f5",
             "type": "string"
           },
@@ -149,7 +888,7 @@
             "type": "string"
           },
           "idempotencyKey": {
-            "description": "Optional idempotency key for safely retried payment requests.",
+            "description": "Optional idempotency key for safely retried payment requests. Reusing the same key with a different payment payload will return a conflict.",
             "example": "pay-2026-03-05-group1-user1-user2-20",
             "maxLength": 64,
             "type": "string"
@@ -184,6 +923,371 @@
         ],
         "type": "object"
       },
+      "CurrencyBalanceSummaryDto": {
+        "properties": {
+          "currency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "memberBalances": {
+            "items": {
+              "$ref": "#/components/schemas/MemberBalanceSummaryDto"
+            },
+            "type": "array"
+          },
+          "settlements": {
+            "description": "Advisory settlement suggestions derived from current net balances.",
+            "items": {
+              "$ref": "#/components/schemas/SettlementSummaryDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "currency",
+          "settlements",
+          "memberBalances"
+        ],
+        "type": "object"
+      },
+      "GroupBalancesResponseDto": {
+        "properties": {
+          "balances": {
+            "items": {
+              "$ref": "#/components/schemas/CurrencyBalanceSummaryDto"
+            },
+            "type": "array"
+          },
+          "groupId": {
+            "example": "cm8z9ab120001mk8z4og1j0e9",
+            "type": "string"
+          }
+        },
+        "required": [
+          "groupId",
+          "balances"
+        ],
+        "type": "object"
+      },
+      "GroupBillsResponseDto": {
+        "properties": {
+          "bills": {
+            "items": {
+              "$ref": "#/components/schemas/BillSummaryDto"
+            },
+            "type": "array"
+          },
+          "groupId": {
+            "example": "cm8w9z0abc123def456ghi789",
+            "type": "string"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "groupId",
+          "bills",
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "GroupChoreCalendarResponseDto": {
+        "properties": {
+          "end": {
+            "example": "2026-04-26",
+            "format": "date",
+            "type": "string"
+          },
+          "groupId": {
+            "example": "cm8w9z0abc123def456ghi789",
+            "type": "string"
+          },
+          "occurrences": {
+            "items": {
+              "$ref": "#/components/schemas/ChoreCalendarOccurrenceDto"
+            },
+            "type": "array"
+          },
+          "start": {
+            "example": "2026-03-01",
+            "format": "date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "groupId",
+          "start",
+          "end",
+          "occurrences"
+        ],
+        "type": "object"
+      },
+      "GroupChoresResponseDto": {
+        "properties": {
+          "chores": {
+            "items": {
+              "$ref": "#/components/schemas/ChoreSummaryDto"
+            },
+            "type": "array"
+          },
+          "groupId": {
+            "example": "cm8w9z0abc123def456ghi789",
+            "type": "string"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "groupId",
+          "chores",
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "GroupChoreTemplatesResponseDto": {
+        "properties": {
+          "groupId": {
+            "example": "cm8z9ab120001mk8z4og1j0e9",
+            "type": "string"
+          },
+          "templates": {
+            "items": {
+              "$ref": "#/components/schemas/ChoreTemplateSummaryDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "groupId",
+          "templates"
+        ],
+        "type": "object"
+      },
+      "GroupDashboardChoresSummaryDto": {
+        "properties": {
+          "assignedToMeDueNext7DaysCount": {
+            "example": 2,
+            "type": "number"
+          },
+          "dueNext7DaysCount": {
+            "example": 5,
+            "type": "number"
+          },
+          "dueTodayCount": {
+            "example": 2,
+            "type": "number"
+          },
+          "overdueCount": {
+            "example": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "overdueCount",
+          "dueTodayCount",
+          "dueNext7DaysCount",
+          "assignedToMeDueNext7DaysCount"
+        ],
+        "type": "object"
+      },
+      "GroupDashboardContractSummaryDto": {
+        "properties": {
+          "hasDraft": {
+            "example": true,
+            "type": "boolean"
+          },
+          "publishedVersion": {
+            "example": 2,
+            "nullable": true,
+            "type": "number"
+          },
+          "updatedAt": {
+            "example": "2026-03-05T11:00:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "hasDraft",
+          "publishedVersion",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "GroupDashboardFinanceSummaryDto": {
+        "properties": {
+          "billCount": {
+            "example": 5,
+            "type": "number"
+          },
+          "latestBillIncurredAt": {
+            "example": "2026-03-05T12:00:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "latestPaymentPaidAt": {
+            "example": "2026-03-05T13:00:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "paymentCount": {
+            "example": 7,
+            "type": "number"
+          }
+        },
+        "required": [
+          "billCount",
+          "paymentCount",
+          "latestBillIncurredAt",
+          "latestPaymentPaidAt"
+        ],
+        "type": "object"
+      },
+      "GroupDashboardMembersSummaryDto": {
+        "properties": {
+          "adminCount": {
+            "example": 1,
+            "type": "number"
+          },
+          "memberCount": {
+            "example": 2,
+            "type": "number"
+          },
+          "totalActive": {
+            "example": 3,
+            "type": "number"
+          }
+        },
+        "required": [
+          "totalActive",
+          "adminCount",
+          "memberCount"
+        ],
+        "type": "object"
+      },
+      "GroupDashboardResponseDto": {
+        "properties": {
+          "chores": {
+            "$ref": "#/components/schemas/GroupDashboardChoresSummaryDto"
+          },
+          "contract": {
+            "$ref": "#/components/schemas/GroupDashboardContractSummaryDto"
+          },
+          "finance": {
+            "$ref": "#/components/schemas/GroupDashboardFinanceSummaryDto"
+          },
+          "group": {
+            "$ref": "#/components/schemas/GroupSummaryDto"
+          },
+          "members": {
+            "$ref": "#/components/schemas/GroupDashboardMembersSummaryDto"
+          }
+        },
+        "required": [
+          "group",
+          "members",
+          "chores",
+          "finance",
+          "contract"
+        ],
+        "type": "object"
+      },
+      "GroupDestroyResponseDto": {
+        "properties": {
+          "destroyed": {
+            "example": true,
+            "type": "boolean"
+          },
+          "groupId": {
+            "example": "cm8w9z0abc123def456ghi789",
+            "type": "string"
+          }
+        },
+        "required": [
+          "groupId",
+          "destroyed"
+        ],
+        "type": "object"
+      },
+      "GroupMemberLeaveResponseDto": {
+        "properties": {
+          "groupId": {
+            "example": "cm8w9z0abc123def456ghi789",
+            "type": "string"
+          },
+          "left": {
+            "example": true,
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "example": "INACTIVE",
+            "type": "string"
+          },
+          "updatedAt": {
+            "example": "2026-03-05T16:44:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          }
+        },
+        "required": [
+          "groupId",
+          "userId",
+          "status",
+          "left",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "GroupMemberRemoveResponseDto": {
+        "properties": {
+          "groupId": {
+            "example": "cm8w9z0abc123def456ghi789",
+            "type": "string"
+          },
+          "removed": {
+            "example": true,
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "example": "INACTIVE",
+            "type": "string"
+          },
+          "updatedAt": {
+            "example": "2026-03-05T16:44:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          }
+        },
+        "required": [
+          "groupId",
+          "userId",
+          "status",
+          "removed",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
       "GroupMemberRole": {
         "description": "Target role for the member",
         "enum": [
@@ -191,6 +1295,202 @@
           "MEMBER"
         ],
         "type": "string"
+      },
+      "GroupMemberRoleUpdateResponseDto": {
+        "properties": {
+          "groupId": {
+            "example": "cm8w9z0abc123def456ghi789",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "ADMIN",
+              "MEMBER"
+            ],
+            "example": "ADMIN",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "example": "ACTIVE",
+            "type": "string"
+          },
+          "updatedAt": {
+            "example": "2026-03-05T16:44:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          }
+        },
+        "required": [
+          "groupId",
+          "userId",
+          "role",
+          "status",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "GroupMembersResponseDto": {
+        "properties": {
+          "groupId": {
+            "example": "cm8w9z0abc123def456ghi789",
+            "type": "string"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/GroupMemberSummaryDto"
+            },
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "groupId",
+          "members",
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "GroupMemberSummaryDto": {
+        "properties": {
+          "createdAt": {
+            "example": "2026-03-05T14:40:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "displayName": {
+            "example": "Alex Smith",
+            "nullable": true,
+            "type": "string"
+          },
+          "joinedAt": {
+            "example": "2026-03-05T14:40:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "ADMIN",
+              "MEMBER"
+            ],
+            "example": "ADMIN",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "example": "ACTIVE",
+            "type": "string"
+          },
+          "updatedAt": {
+            "example": "2026-03-05T14:40:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "displayName",
+          "role",
+          "status",
+          "joinedAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "GroupSummaryDto": {
+        "properties": {
+          "createdAt": {
+            "example": "2026-03-05T16:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          },
+          "id": {
+            "example": "cm8z9ab120001mk8z4og1j0e9",
+            "type": "string"
+          },
+          "joinCode": {
+            "example": "ABCD1234",
+            "type": "string"
+          },
+          "memberCount": {
+            "example": 3,
+            "type": "number"
+          },
+          "memberRole": {
+            "enum": [
+              "ADMIN",
+              "MEMBER"
+            ],
+            "example": "ADMIN",
+            "type": "string"
+          },
+          "memberStatus": {
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "example": "ACTIVE",
+            "type": "string"
+          },
+          "name": {
+            "example": "Apartment 12A",
+            "type": "string"
+          },
+          "updatedAt": {
+            "example": "2026-03-05T16:05:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "memberRole",
+          "memberStatus",
+          "memberCount"
+        ],
+        "type": "object"
+      },
+      "JoinCodeResetResponseDto": {
+        "properties": {
+          "groupId": {
+            "example": "cm8z9ab120001mk8z4og1j0e9",
+            "type": "string"
+          },
+          "joinCode": {
+            "example": "QWER5678",
+            "type": "string"
+          }
+        },
+        "required": [
+          "groupId",
+          "joinCode"
+        ],
+        "type": "object"
       },
       "JoinGroupDto": {
         "properties": {
@@ -226,6 +1526,143 @@
         ],
         "type": "object"
       },
+      "MemberBalanceSummaryDto": {
+        "properties": {
+          "netAmount": {
+            "example": 12.75,
+            "type": "number"
+          },
+          "userId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "netAmount"
+        ],
+        "type": "object"
+      },
+      "PaginationMetaDto": {
+        "properties": {
+          "hasNextPage": {
+            "example": false,
+            "type": "boolean"
+          },
+          "hasPreviousPage": {
+            "example": false,
+            "type": "boolean"
+          },
+          "page": {
+            "example": 1,
+            "minimum": 1,
+            "type": "number"
+          },
+          "pageSize": {
+            "example": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "number"
+          },
+          "totalItems": {
+            "example": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalPages": {
+            "example": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "hasNextPage",
+          "hasPreviousPage"
+        ],
+        "type": "object"
+      },
+      "PaymentSummaryDto": {
+        "properties": {
+          "amount": {
+            "example": 25.5,
+            "type": "number"
+          },
+          "billId": {
+            "example": "cm8wc5rr7000hmk6zx4qedcib",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "example": "2026-03-05T16:52:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "example": "550e8400-e29b-41d4-a716-446655440002",
+            "type": "string"
+          },
+          "currency": {
+            "example": "USD",
+            "type": "string"
+          },
+          "groupId": {
+            "example": "cm8z9ab120001mk8z4og1j0e9",
+            "type": "string"
+          },
+          "id": {
+            "example": "cm8wd2v9w000lmk6zq2q4s7ty",
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "example": "pay-2026-03-05-001",
+            "nullable": true,
+            "type": "string"
+          },
+          "note": {
+            "example": "Paid via Venmo",
+            "nullable": true,
+            "type": "string"
+          },
+          "paidAt": {
+            "example": "2026-03-05T16:52:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "payeeUserId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          },
+          "payerUserId": {
+            "example": "550e8400-e29b-41d4-a716-446655440002",
+            "type": "string"
+          },
+          "updatedAt": {
+            "example": "2026-03-05T16:52:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "billId",
+          "payerUserId",
+          "payeeUserId",
+          "amount",
+          "currency",
+          "note",
+          "idempotencyKey",
+          "paidAt",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
       "RegisterDto": {
         "properties": {
           "email": {
@@ -249,11 +1686,94 @@
         ],
         "type": "object"
       },
+      "SettlementSummaryDto": {
+        "properties": {
+          "amount": {
+            "example": 12.75,
+            "type": "number"
+          },
+          "fromUserId": {
+            "example": "550e8400-e29b-41d4-a716-446655440002",
+            "type": "string"
+          },
+          "toUserId": {
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fromUserId",
+          "toUserId",
+          "amount"
+        ],
+        "type": "object"
+      },
       "UpdateChoreAssigneeDto": {
         "properties": {
           "assigneeUserId": {
-            "description": "User ID of the new assignee. Omit or set to null/undefined to unassign the chore completely.",
+            "description": "User ID of the active group member who should own this chore.",
             "example": "user-uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assigneeUserId"
+        ],
+        "type": "object"
+      },
+      "UpdateChoreTemplateDto": {
+        "properties": {
+          "assigneeUserId": {
+            "description": "Updated fixed assignee. Only valid for FIXED templates.",
+            "example": "user-uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "assignmentStrategy": {
+            "$ref": "#/components/schemas/ChoreTemplateAssignmentStrategy"
+          },
+          "description": {
+            "example": "Kitchen and bathroom bins.",
+            "maxLength": 1000,
+            "nullable": true,
+            "type": "string"
+          },
+          "endsOn": {
+            "description": "Updated inclusive end date (YYYY-MM-DD). Set null to clear.",
+            "example": "2026-06-29",
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "participantUserIds": {
+            "description": "Updated ordered round-robin participant user IDs.",
+            "example": [
+              "user-uuid-1",
+              "user-uuid-2",
+              "user-uuid-3"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "repeatEveryDays": {
+            "description": "Updated day interval between due occurrences.",
+            "example": 14,
+            "minimum": 1,
+            "type": "number"
+          },
+          "startsOn": {
+            "description": "Updated first due occurrence date (YYYY-MM-DD).",
+            "example": "2026-04-06",
+            "format": "date",
+            "type": "string"
+          },
+          "title": {
+            "description": "Updated title for the recurring template.",
+            "example": "Take out trash",
+            "maxLength": 120,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -280,6 +1800,24 @@
         },
         "required": [
           "role"
+        ],
+        "type": "object"
+      },
+      "UserGroupsResponseDto": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/GroupSummaryDto"
+            },
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "groups",
+          "pagination"
         ],
         "type": "object"
       }
@@ -320,6 +1858,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuthResultDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "session": {
@@ -337,8 +1891,8 @@
                       }
                     },
                     "meta": {
-                      "requestId": "b45f50f1-3442-4db5-b7f3-ed25d4f66f1b",
-                      "timestamp": "2026-03-05T16:11:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -363,6 +1917,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuthenticatedUserDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "appMetadata": {
@@ -375,8 +1945,8 @@
                       "userMetadata": {}
                     },
                     "meta": {
-                      "requestId": "d0545267-fbe2-4f3c-9154-5ef5ef3837a8",
-                      "timestamp": "2026-03-05T16:12:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -419,6 +1989,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuthResultDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "session": null,
@@ -431,8 +2017,8 @@
                       }
                     },
                     "meta": {
-                      "requestId": "2c8d9d89-7ee3-4abb-82af-32de3da6e5b8",
-                      "timestamp": "2026-03-05T16:10:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -448,13 +2034,13 @@
         ]
       }
     },
-    "/api/v1/chores/{choreId}/assign": {
+    "/api/v1/chores/{occurrenceId}/assignee": {
       "patch": {
-        "operationId": "ChoresController_updateChoreAssignee",
+        "operationId": "ChoresController_updateOccurrenceAssignee",
         "parameters": [
           {
             "in": "path",
-            "name": "choreId",
+            "name": "occurrenceId",
             "required": true,
             "schema": {
               "type": "string"
@@ -476,39 +2062,57 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ChoreSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
-                      "assignedToUserId": "550e8400-e29b-41d4-a716-446655440002",
+                      "assigneeUserId": "550e8400-e29b-41d4-a716-446655440002",
                       "completedAt": null,
+                      "completedByUserId": null,
                       "createdAt": "2026-03-05T16:31:00.000Z",
                       "createdBy": "550e8400-e29b-41d4-a716-446655440001",
                       "description": null,
-                      "dueDate": "2026-03-06T10:00:00.000Z",
+                      "dueOn": "2026-03-06",
                       "groupId": "cm8z9ab120001mk8z4og1j0e9",
                       "id": "cm8wa8qgk0004mk6z9s29u0ro",
                       "status": "PENDING",
+                      "templateId": null,
                       "title": "Take out trash",
                       "updatedAt": "2026-03-05T16:33:00.000Z"
                     },
                     "meta": {
-                      "requestId": "813c795b-8503-4e7d-a05d-c7f5595a00e4",
-                      "timestamp": "2026-03-05T16:33:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
                 }
               }
             },
-            "description": "Returns updated chore state."
+            "description": "Returns updated occurrence state."
           },
           "400": {
-            "description": "Invalid chore ID or payload."
+            "description": "Invalid occurrence ID or payload."
           },
           "401": {
             "description": "Missing or invalid bearer token."
           },
           "403": {
-            "description": "Caller is not an active member of this chore group."
+            "description": "Caller is not an active member of this occurrence group."
           }
         },
         "security": [
@@ -516,19 +2120,19 @@
             "bearer": []
           }
         ],
-        "summary": "Assign or unassign a chore.",
+        "summary": "Reassign a chore occurrence to a different active group member.",
         "tags": [
           "Chores"
         ]
       }
     },
-    "/api/v1/chores/{choreId}/complete": {
+    "/api/v1/chores/{occurrenceId}/complete": {
       "patch": {
-        "operationId": "ChoresController_completeChore",
+        "operationId": "ChoresController_completeOccurrence",
         "parameters": [
           {
             "in": "path",
-            "name": "choreId",
+            "name": "occurrenceId",
             "required": true,
             "schema": {
               "type": "string"
@@ -540,39 +2144,57 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ChoreSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
-                      "assignedToUserId": "550e8400-e29b-41d4-a716-446655440002",
+                      "assigneeUserId": "550e8400-e29b-41d4-a716-446655440002",
                       "completedAt": "2026-03-05T16:34:00.000Z",
+                      "completedByUserId": "550e8400-e29b-41d4-a716-446655440002",
                       "createdAt": "2026-03-05T16:31:00.000Z",
                       "createdBy": "550e8400-e29b-41d4-a716-446655440001",
                       "description": null,
-                      "dueDate": "2026-03-06T10:00:00.000Z",
+                      "dueOn": "2026-03-06",
                       "groupId": "cm8z9ab120001mk8z4og1j0e9",
                       "id": "cm8wa8qgk0004mk6z9s29u0ro",
                       "status": "COMPLETED",
+                      "templateId": null,
                       "title": "Take out trash",
                       "updatedAt": "2026-03-05T16:34:00.000Z"
                     },
                     "meta": {
-                      "requestId": "f8f6506f-74fe-4ca3-80de-d58b2965de4c",
-                      "timestamp": "2026-03-05T16:34:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
                 }
               }
             },
-            "description": "Returns updated chore state."
+            "description": "Returns updated occurrence state."
           },
           "400": {
-            "description": "Invalid chore ID."
+            "description": "Invalid occurrence ID."
           },
           "401": {
             "description": "Missing or invalid bearer token."
           },
           "403": {
-            "description": "Caller is not an active member of this chore group."
+            "description": "Caller is not an active member of this occurrence group."
           }
         },
         "security": [
@@ -580,7 +2202,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark a chore as completed.",
+        "summary": "Mark a chore occurrence as completed.",
         "tags": [
           "Chores"
         ]
@@ -647,6 +2269,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/UserGroupsResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "groups": [
@@ -717,6 +2355,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "createdAt": "2026-03-05T16:20:00.000Z",
@@ -730,8 +2384,8 @@
                       "updatedAt": "2026-03-05T16:20:00.000Z"
                     },
                     "meta": {
-                      "requestId": "db30ad98-b6c2-412e-95ed-14ccf65711d6",
-                      "timestamp": "2026-03-05T16:20:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -756,6 +2410,78 @@
       }
     },
     "/api/v1/groups/{groupId}": {
+      "delete": {
+        "operationId": "GroupsController_destroyGroup",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupDestroyResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "destroyed": true,
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9"
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Deletes the group and all associated records when the caller is the sole remaining active member and an admin."
+          },
+          "400": {
+            "description": "Invalid group ID format."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active admin of this group."
+          },
+          "409": {
+            "description": "Destroying is blocked when other active members still remain in the group."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Destroy group as the sole remaining active admin.",
+        "tags": [
+          "Groups"
+        ]
+      },
       "get": {
         "operationId": "GroupsController_getGroup",
         "parameters": [
@@ -773,6 +2499,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "createdAt": "2026-03-05T16:20:00.000Z",
@@ -786,8 +2528,8 @@
                       "updatedAt": "2026-03-05T16:25:00.000Z"
                     },
                     "meta": {
-                      "requestId": "d06c632e-6fd4-4f4d-b500-18e7ef0f0548",
-                      "timestamp": "2026-03-05T16:25:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -819,6 +2561,7 @@
     },
     "/api/v1/groups/{groupId}/balances": {
       "get": {
+        "description": "Balances are derived from the append-only finance ledger per currency. Settlement suggestions are advisory recommendations, not authoritative allocations.",
         "operationId": "FinanceController_getBalances",
         "parameters": [
           {
@@ -835,6 +2578,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupBalancesResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "balances": [
@@ -844,10 +2603,6 @@
                             {
                               "netAmount": 12.75,
                               "userId": "550e8400-e29b-41d4-a716-446655440001"
-                            },
-                            {
-                              "netAmount": -12.75,
-                              "userId": "550e8400-e29b-41d4-a716-446655440002"
                             }
                           ],
                           "settlements": [
@@ -862,15 +2617,15 @@
                       "groupId": "cm8z9ab120001mk8z4og1j0e9"
                     },
                     "meta": {
-                      "requestId": "3c922b0b-76f6-4f3b-81e6-40ca9286e4d8",
-                      "timestamp": "2026-03-05T16:53:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
                 }
               }
             },
-            "description": "Returns current balances for the group."
+            "description": "Returns current balances and advisory settlement suggestions for the group."
           },
           "400": {
             "description": "Invalid group ID format."
@@ -887,7 +2642,7 @@
             "bearer": []
           }
         ],
-        "summary": "Compute and return net balances (who owes whom) for the group.",
+        "summary": "Compute and return current net balances for the group.",
         "tags": [
           "Finance"
         ]
@@ -961,31 +2716,47 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupBillsResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "bills": [
                         {
-                          "createdAt": "2026-03-05T14:45:00.000Z",
+                          "createdAt": "2026-03-05T16:50:00.000Z",
                           "createdBy": "550e8400-e29b-41d4-a716-446655440001",
                           "currency": "USD",
                           "description": "Monthly ISP payment",
                           "dueDate": null,
-                          "groupId": "cm8w9z0abc123def456ghi789",
+                          "groupId": "cm8z9ab120001mk8z4og1j0e9",
                           "id": "cm8wc5rr7000hmk6zx4qedcib",
-                          "incurredAt": "2026-03-05T14:45:00.000Z",
+                          "incurredAt": "2026-03-05T16:50:00.000Z",
                           "paidByUserId": "550e8400-e29b-41d4-a716-446655440001",
                           "splitMethod": "CUSTOM",
                           "splits": [
                             {
                               "amount": 25.5,
-                              "createdAt": "2026-03-05T14:45:00.000Z",
+                              "createdAt": "2026-03-05T16:50:00.000Z",
                               "id": "cm8wc5rr9000imk6z2jmlf4x4",
                               "userId": "550e8400-e29b-41d4-a716-446655440001"
                             }
                           ],
                           "title": "Internet bill - March",
                           "totalAmount": 76.5,
-                          "updatedAt": "2026-03-05T14:45:00.000Z"
+                          "updatedAt": "2026-03-05T16:50:00.000Z"
                         }
                       ],
                       "groupId": "cm8w9z0abc123def456ghi789",
@@ -999,8 +2770,8 @@
                       }
                     },
                     "meta": {
-                      "requestId": "25d65b90-2cb4-451d-a2ce-65f27a223944",
-                      "timestamp": "2026-03-05T14:46:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -1030,6 +2801,7 @@
         ]
       },
       "post": {
+        "description": "Bills are collaborative household ledger records. Split rows are always explicit custom amounts; equal splitting is a frontend convenience that still submits custom split rows. dueDate is informational only.",
         "operationId": "FinanceController_createBill",
         "parameters": [
           {
@@ -1056,6 +2828,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/BillSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "createdAt": "2026-03-05T16:50:00.000Z",
@@ -1074,18 +2862,6 @@
                           "createdAt": "2026-03-05T16:50:00.000Z",
                           "id": "cm8wc5rr9000imk6z2jmlf4x4",
                           "userId": "550e8400-e29b-41d4-a716-446655440001"
-                        },
-                        {
-                          "amount": 25.5,
-                          "createdAt": "2026-03-05T16:50:00.000Z",
-                          "id": "cm8wc5rr9000jmk6z2jmlf4x5",
-                          "userId": "550e8400-e29b-41d4-a716-446655440002"
-                        },
-                        {
-                          "amount": 25.5,
-                          "createdAt": "2026-03-05T16:50:00.000Z",
-                          "id": "cm8wc5rr9000kmk6z2jmlf4x6",
-                          "userId": "550e8400-e29b-41d4-a716-446655440003"
                         }
                       ],
                       "title": "Internet bill - March",
@@ -1093,8 +2869,8 @@
                       "updatedAt": "2026-03-05T16:50:00.000Z"
                     },
                     "meta": {
-                      "requestId": "1954b16e-f29d-4d35-b5c9-8d1ec542944e",
-                      "timestamp": "2026-03-05T16:50:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -1118,9 +2894,610 @@
             "bearer": []
           }
         ],
-        "summary": "Create a bill and split amounts across group members.",
+        "summary": "Create a shared bill with explicit custom split rows.",
         "tags": [
           "Finance"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/chore-templates": {
+      "get": {
+        "operationId": "ChoreTemplatesController_listGroupTemplates",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupChoreTemplatesResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "templates": [
+                        {
+                          "assigneeUserId": "550e8400-e29b-41d4-a716-446655440002",
+                          "assignmentStrategy": "FIXED",
+                          "createdAt": "2026-03-05T16:31:00.000Z",
+                          "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                          "description": "Kitchen and bathroom bins.",
+                          "endsOn": null,
+                          "generatedThroughOn": "2026-05-04",
+                          "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                          "id": "cm8wa8qgk0004mk6z9s29u0rt",
+                          "participants": [],
+                          "repeatEveryDays": 7,
+                          "startsOn": "2026-03-09",
+                          "status": "ACTIVE",
+                          "title": "Take out trash",
+                          "updatedAt": "2026-03-05T16:31:00.000Z",
+                          "updatedBy": "550e8400-e29b-41d4-a716-446655440001"
+                        },
+                        {
+                          "assigneeUserId": null,
+                          "assignmentStrategy": "ROUND_ROBIN",
+                          "createdAt": "2026-03-05T16:31:00.000Z",
+                          "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                          "description": "Rotate the weekly bathroom deep clean.",
+                          "endsOn": null,
+                          "generatedThroughOn": "2026-05-05",
+                          "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                          "id": "cm8wa8qgk0004mk6z9s29u0ru",
+                          "participants": [
+                            {
+                              "sortOrder": 0,
+                              "userId": "550e8400-e29b-41d4-a716-446655440002"
+                            },
+                            {
+                              "sortOrder": 1,
+                              "userId": "550e8400-e29b-41d4-a716-446655440003"
+                            }
+                          ],
+                          "repeatEveryDays": 7,
+                          "startsOn": "2026-03-10",
+                          "status": "ACTIVE",
+                          "title": "Bathroom reset",
+                          "updatedAt": "2026-03-05T16:31:00.000Z",
+                          "updatedBy": "550e8400-e29b-41d4-a716-446655440001"
+                        }
+                      ]
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Returns recurring chore templates for the group."
+          },
+          "400": {
+            "description": "Invalid group ID."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List recurring chore templates for a group.",
+        "tags": [
+          "Chore Templates"
+        ]
+      },
+      "post": {
+        "operationId": "ChoreTemplatesController_createTemplate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChoreTemplateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ChoreTemplateSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "assigneeUserId": "550e8400-e29b-41d4-a716-446655440002",
+                      "assignmentStrategy": "FIXED",
+                      "createdAt": "2026-03-05T16:31:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "description": "Kitchen and bathroom bins.",
+                      "endsOn": null,
+                      "generatedThroughOn": "2026-05-04",
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "id": "cm8wa8qgk0004mk6z9s29u0rt",
+                      "participants": [],
+                      "repeatEveryDays": 7,
+                      "startsOn": "2026-03-09",
+                      "status": "ACTIVE",
+                      "title": "Take out trash",
+                      "updatedAt": "2026-03-05T16:31:00.000Z",
+                      "updatedBy": "550e8400-e29b-41d4-a716-446655440001"
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Recurring chore template created successfully."
+          },
+          "400": {
+            "description": "Invalid group ID or template payload."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Only admins can manage recurring chore templates."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create an active recurring chore template.",
+        "tags": [
+          "Chore Templates"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/chore-templates/{templateId}": {
+      "patch": {
+        "operationId": "ChoreTemplatesController_updateTemplate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "templateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChoreTemplateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ChoreTemplateSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "assigneeUserId": null,
+                      "assignmentStrategy": "ROUND_ROBIN",
+                      "createdAt": "2026-03-05T16:31:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "description": "Rotate the weekly bathroom deep clean.",
+                      "endsOn": null,
+                      "generatedThroughOn": "2026-05-05",
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "id": "cm8wa8qgk0004mk6z9s29u0ru",
+                      "participants": [
+                        {
+                          "sortOrder": 0,
+                          "userId": "550e8400-e29b-41d4-a716-446655440002"
+                        },
+                        {
+                          "sortOrder": 1,
+                          "userId": "550e8400-e29b-41d4-a716-446655440003"
+                        }
+                      ],
+                      "repeatEveryDays": 7,
+                      "startsOn": "2026-03-10",
+                      "status": "ACTIVE",
+                      "title": "Take out trash and recycling",
+                      "updatedAt": "2026-03-12T09:15:00.000Z",
+                      "updatedBy": "550e8400-e29b-41d4-a716-446655440001"
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Recurring chore template updated successfully."
+          },
+          "400": {
+            "description": "Invalid IDs or template payload."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Only admins can manage recurring chore templates."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a recurring chore template.",
+        "tags": [
+          "Chore Templates"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/chore-templates/{templateId}/archive": {
+      "post": {
+        "operationId": "ChoreTemplatesController_archiveTemplate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "templateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ChoreTemplateSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "assigneeUserId": "550e8400-e29b-41d4-a716-446655440002",
+                      "assignmentStrategy": "FIXED",
+                      "createdAt": "2026-03-05T16:31:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "description": "Kitchen and bathroom bins.",
+                      "endsOn": null,
+                      "generatedThroughOn": "2026-05-04",
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "id": "cm8wa8qgk0004mk6z9s29u0rt",
+                      "participants": [],
+                      "repeatEveryDays": 7,
+                      "startsOn": "2026-03-09",
+                      "status": "ARCHIVED",
+                      "title": "Take out trash",
+                      "updatedAt": "2026-03-12T09:15:00.000Z",
+                      "updatedBy": "550e8400-e29b-41d4-a716-446655440001"
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Recurring chore template archived successfully."
+          },
+          "400": {
+            "description": "Invalid IDs."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Only admins can manage recurring chore templates."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a recurring chore template and cancel future pending occurrences.",
+        "tags": [
+          "Chore Templates"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/chore-templates/{templateId}/pause": {
+      "post": {
+        "operationId": "ChoreTemplatesController_pauseTemplate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "templateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ChoreTemplateSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "assigneeUserId": "550e8400-e29b-41d4-a716-446655440002",
+                      "assignmentStrategy": "FIXED",
+                      "createdAt": "2026-03-05T16:31:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "description": "Kitchen and bathroom bins.",
+                      "endsOn": null,
+                      "generatedThroughOn": "2026-05-04",
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "id": "cm8wa8qgk0004mk6z9s29u0rt",
+                      "participants": [],
+                      "repeatEveryDays": 7,
+                      "startsOn": "2026-03-09",
+                      "status": "PAUSED",
+                      "title": "Take out trash",
+                      "updatedAt": "2026-03-12T09:15:00.000Z",
+                      "updatedBy": "550e8400-e29b-41d4-a716-446655440001"
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Recurring chore template paused successfully."
+          },
+          "400": {
+            "description": "Invalid IDs."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Only admins can manage recurring chore templates."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pause a recurring chore template and cancel future pending occurrences.",
+        "tags": [
+          "Chore Templates"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/chore-templates/{templateId}/resume": {
+      "post": {
+        "operationId": "ChoreTemplatesController_resumeTemplate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "templateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ChoreTemplateSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "assigneeUserId": "550e8400-e29b-41d4-a716-446655440002",
+                      "assignmentStrategy": "FIXED",
+                      "createdAt": "2026-03-05T16:31:00.000Z",
+                      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+                      "description": "Kitchen and bathroom bins.",
+                      "endsOn": null,
+                      "generatedThroughOn": "2026-05-04",
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "id": "cm8wa8qgk0004mk6z9s29u0rt",
+                      "participants": [],
+                      "repeatEveryDays": 7,
+                      "startsOn": "2026-03-09",
+                      "status": "ACTIVE",
+                      "title": "Take out trash",
+                      "updatedAt": "2026-03-12T09:15:00.000Z",
+                      "updatedBy": "550e8400-e29b-41d4-a716-446655440001"
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Recurring chore template resumed successfully."
+          },
+          "400": {
+            "description": "Invalid IDs."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Only admins can manage recurring chore templates."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Resume a recurring chore template and regenerate future occurrences.",
+        "tags": [
+          "Chore Templates"
         ]
       }
     },
@@ -1160,7 +3537,7 @@
             }
           },
           {
-            "description": "Optional filter by status (PENDING or COMPLETED)",
+            "description": "Optional filter by occurrence status.",
             "in": "query",
             "name": "status",
             "required": false,
@@ -1179,22 +3556,22 @@
             }
           },
           {
-            "description": "Optional lower bound for due date (inclusive)",
+            "description": "Optional lower bound for dueOn (inclusive, YYYY-MM-DD).",
             "in": "query",
-            "name": "dueAfter",
+            "name": "dueOnFrom",
             "required": false,
             "schema": {
-              "example": "2026-03-10T00:00:00.000Z",
+              "example": "2026-03-10",
               "type": "string"
             }
           },
           {
-            "description": "Optional upper bound for due date (inclusive)",
+            "description": "Optional upper bound for dueOn (inclusive, YYYY-MM-DD).",
             "in": "query",
-            "name": "dueBefore",
+            "name": "dueOnTo",
             "required": false,
             "schema": {
-              "example": "2026-03-20T00:00:00.000Z",
+              "example": "2026-03-20",
               "type": "string"
             }
           },
@@ -1205,7 +3582,7 @@
             "required": false,
             "schema": {
               "enum": [
-                "dueDate",
+                "dueOn",
                 "createdAt",
                 "updatedAt",
                 "status"
@@ -1232,21 +3609,39 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupChoresResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "chores": [
                         {
-                          "assignedToUserId": "550e8400-e29b-41d4-a716-446655440001",
+                          "assigneeUserId": "550e8400-e29b-41d4-a716-446655440001",
                           "completedAt": null,
-                          "createdAt": "2026-03-05T14:42:00.000Z",
+                          "completedByUserId": null,
+                          "createdAt": "2026-03-05T16:31:00.000Z",
                           "createdBy": "550e8400-e29b-41d4-a716-446655440001",
                           "description": null,
-                          "dueDate": "2026-03-06T10:00:00.000Z",
-                          "groupId": "cm8w9z0abc123def456ghi789",
+                          "dueOn": "2026-03-06",
+                          "groupId": "cm8z9ab120001mk8z4og1j0e9",
                           "id": "cm8wa8qgk0004mk6z9s29u0ro",
                           "status": "PENDING",
+                          "templateId": null,
                           "title": "Take out trash",
-                          "updatedAt": "2026-03-05T14:42:00.000Z"
+                          "updatedAt": "2026-03-05T16:31:00.000Z"
                         }
                       ],
                       "groupId": "cm8w9z0abc123def456ghi789",
@@ -1260,8 +3655,8 @@
                       }
                     },
                     "meta": {
-                      "requestId": "ac63a2cd-2f6f-4be8-86fc-0d8c91e2e1b7",
-                      "timestamp": "2026-03-05T14:43:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -1285,7 +3680,7 @@
             "bearer": []
           }
         ],
-        "summary": "List chores for a group with optional filters.",
+        "summary": "List chore occurrences for a group with optional filters.",
         "tags": [
           "Chores"
         ]
@@ -1317,30 +3712,48 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ChoreSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
-                      "assignedToUserId": "550e8400-e29b-41d4-a716-446655440001",
+                      "assigneeUserId": "550e8400-e29b-41d4-a716-446655440001",
                       "completedAt": null,
+                      "completedByUserId": null,
                       "createdAt": "2026-03-05T16:31:00.000Z",
                       "createdBy": "550e8400-e29b-41d4-a716-446655440001",
                       "description": null,
-                      "dueDate": "2026-03-06T10:00:00.000Z",
+                      "dueOn": "2026-03-06",
                       "groupId": "cm8z9ab120001mk8z4og1j0e9",
                       "id": "cm8wa8qgk0004mk6z9s29u0ro",
                       "status": "PENDING",
+                      "templateId": null,
                       "title": "Take out trash",
                       "updatedAt": "2026-03-05T16:31:00.000Z"
                     },
                     "meta": {
-                      "requestId": "769f7398-182f-4408-a972-c6de9159d7a2",
-                      "timestamp": "2026-03-05T16:31:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
                 }
               }
             },
-            "description": "Chore created successfully."
+            "description": "One-off chore occurrence created successfully."
           },
           "400": {
             "description": "Invalid group ID or chore payload."
@@ -1357,7 +3770,112 @@
             "bearer": []
           }
         ],
-        "summary": "Create a new chore within a group.",
+        "summary": "Create a one-off chore occurrence within a group.",
+        "tags": [
+          "Chores"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/chores/calendar": {
+      "get": {
+        "operationId": "ChoresController_getGroupChoreCalendar",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive calendar start date (YYYY-MM-DD).",
+            "in": "query",
+            "name": "start",
+            "required": true,
+            "schema": {
+              "example": "2026-03-01",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive calendar end date (YYYY-MM-DD). Must be on or after start and no more than 56 days later.",
+            "in": "query",
+            "name": "end",
+            "required": true,
+            "schema": {
+              "example": "2026-04-26",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupChoreCalendarResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "end": "2026-04-26",
+                      "groupId": "cm8w9z0abc123def456ghi789",
+                      "occurrences": [
+                        {
+                          "assigneeUserId": "550e8400-e29b-41d4-a716-446655440001",
+                          "completedAt": null,
+                          "completedByUserId": null,
+                          "description": null,
+                          "dueOn": "2026-03-06",
+                          "id": "cm8wa8qgk0004mk6z9s29u0ro",
+                          "status": "PENDING",
+                          "templateId": "cm8wa8qgk0004mk6z9s29u0rt",
+                          "title": "Take out trash"
+                        }
+                      ],
+                      "start": "2026-03-01"
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Returns a flat, dueOn-sorted occurrence list for the requested calendar range."
+          },
+          "400": {
+            "description": "Invalid group ID or invalid calendar date range."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Return a flat, calendar-friendly occurrence list for a required bounded date range.",
         "tags": [
           "Chores"
         ]
@@ -1381,6 +3899,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ContractDetailResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "contract": {
@@ -1395,8 +3929,8 @@
                       "latestPublishedContent": "Published roommate contract v2."
                     },
                     "meta": {
-                      "requestId": "ee28f5cd-268a-4701-b70d-f52304989bd8",
-                      "timestamp": "2026-03-05T16:43:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -1452,6 +3986,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ContractSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "createdAt": "2026-03-05T16:40:00.000Z",
@@ -1463,8 +4013,8 @@
                       "updatedBy": "550e8400-e29b-41d4-a716-446655440001"
                     },
                     "meta": {
-                      "requestId": "be530f89-77bb-40e0-afd7-059b68ca3833",
-                      "timestamp": "2026-03-05T16:44:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -1512,6 +4062,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ContractVersionSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "content": "Published roommate contract v3.",
@@ -1521,8 +4087,8 @@
                       "version": 3
                     },
                     "meta": {
-                      "requestId": "dbbc2891-4de3-4b65-ad4d-26a4952309e8",
-                      "timestamp": "2026-03-05T16:45:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -1619,6 +4185,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ContractVersionsResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "groupId": "cm8w9z0abc123def456ghi789",
@@ -1632,8 +4214,8 @@
                       },
                       "versions": [
                         {
-                          "content": "Rent due by 5th. Quiet hours after 10PM.",
-                          "createdAt": "2026-03-05T14:44:00.000Z",
+                          "content": "Published roommate contract v3.",
+                          "createdAt": "2026-03-05T16:45:00.000Z",
                           "id": "cm8wb8l66000fmk6z5nwnk1j5",
                           "publishedBy": "550e8400-e29b-41d4-a716-446655440001",
                           "version": 3
@@ -1641,8 +4223,8 @@
                       ]
                     },
                     "meta": {
-                      "requestId": "8f9c8a41-26b8-4e53-a35e-64f4db76d79e",
-                      "timestamp": "2026-03-05T14:45:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -1690,13 +4272,29 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupDashboardResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "chores": {
-                        "assignedToMePendingCount": 2,
-                        "completedCount": 8,
-                        "overdueCount": 1,
-                        "pendingCount": 4
+                        "assignedToMeDueNext7DaysCount": 2,
+                        "dueNext7DaysCount": 5,
+                        "dueTodayCount": 2,
+                        "overdueCount": 1
                       },
                       "contract": {
                         "hasDraft": true,
@@ -1752,7 +4350,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get frontend dashboard aggregates for a group (member/admin counts, chore counters, finance counters, contract status).",
+        "summary": "Get frontend dashboard aggregates for a group (member/admin counts, actionable chore windows, finance counters, contract status).",
         "tags": [
           "Groups"
         ]
@@ -1776,14 +4374,30 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/JoinCodeResetResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "groupId": "cm8z9ab120001mk8z4og1j0e9",
                       "joinCode": "QWER5678"
                     },
                     "meta": {
-                      "requestId": "5b442e66-a7eb-4d07-9f75-a8016c5ffaf8",
-                      "timestamp": "2026-03-05T16:24:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -1808,6 +4422,83 @@
           }
         ],
         "summary": "Reset group join code (admin only).",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/api/v1/groups/{groupId}/leave": {
+      "post": {
+        "operationId": "GroupsController_leaveGroup",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupMemberLeaveResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "groupId": "cm8z9ab120001mk8z4og1j0e9",
+                      "left": true,
+                      "status": "INACTIVE",
+                      "updatedAt": "2026-03-05T16:28:00.000Z",
+                      "userId": "550e8400-e29b-41d4-a716-446655440001"
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Marks the caller membership as inactive when they are not the last admin and no blocking chore or finance dependencies remain."
+          },
+          "400": {
+            "description": "Invalid group ID format."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Caller is not an active member of this group."
+          },
+          "409": {
+            "description": "Leaving is blocked when the caller is the last active admin, still has blocking chore assignments, or still has unsettled finance balances in the group."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Leave group as the current active member.",
         "tags": [
           "Groups"
         ]
@@ -1881,12 +4572,29 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupMembersResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "groupId": "cm8w9z0abc123def456ghi789",
                       "members": [
                         {
                           "createdAt": "2026-03-05T14:40:00.000Z",
+                          "displayName": "Alex Smith",
                           "joinedAt": "2026-03-05T14:40:00.000Z",
                           "role": "ADMIN",
                           "status": "ACTIVE",
@@ -1904,8 +4612,8 @@
                       }
                     },
                     "meta": {
-                      "requestId": "f073d9ed-7d9f-4902-a8ee-bfca8de3e4ff",
-                      "timestamp": "2026-03-05T14:41:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -1961,6 +4669,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupMemberRemoveResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "groupId": "cm8z9ab120001mk8z4og1j0e9",
@@ -1970,15 +4694,15 @@
                       "userId": "550e8400-e29b-41d4-a716-446655440002"
                     },
                     "meta": {
-                      "requestId": "7443f4d5-fdfd-4dd5-a6f8-f846ec0ca6a3",
-                      "timestamp": "2026-03-05T16:28:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
                 }
               }
             },
-            "description": "Marks target member as inactive and returns result."
+            "description": "Marks target member as inactive and returns result when no blocking chore dependencies remain."
           },
           "400": {
             "description": "Invalid IDs for group or member."
@@ -1988,6 +4712,9 @@
           },
           "403": {
             "description": "Caller is not an active admin of this group."
+          },
+          "409": {
+            "description": "Removal is blocked when the member is the last admin, still has blocking chore assignments, or still has unsettled finance balances in the group."
           }
         },
         "security": [
@@ -2037,6 +4764,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupMemberRoleUpdateResponseDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "groupId": "cm8z9ab120001mk8z4og1j0e9",
@@ -2046,8 +4789,8 @@
                       "userId": "550e8400-e29b-41d4-a716-446655440002"
                     },
                     "meta": {
-                      "requestId": "4e454951-7f8e-4f36-bc65-066a5882f966",
-                      "timestamp": "2026-03-05T16:27:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -2079,6 +4822,7 @@
     },
     "/api/v1/groups/{groupId}/payments": {
       "post": {
+        "description": "Payments may be recorded by the payer or a group admin. billId is reference-only metadata and does not allocate settlement to a specific bill.",
         "operationId": "FinanceController_createPayment",
         "parameters": [
           {
@@ -2105,6 +4849,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PaymentSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "amount": 25.5,
@@ -2122,8 +4882,8 @@
                       "updatedAt": "2026-03-05T16:52:00.000Z"
                     },
                     "meta": {
-                      "requestId": "a4189eb8-47f7-41cb-af57-df7f93f468d0",
-                      "timestamp": "2026-03-05T16:52:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }
@@ -2139,7 +4899,10 @@
             "description": "Missing or invalid bearer token."
           },
           "403": {
-            "description": "Caller is not an active member of this group."
+            "description": "Caller is not an active member of this group or is not allowed to record this payment."
+          },
+          "409": {
+            "description": "Idempotency key was reused for a different canonical payment payload or another finance conflict occurred."
           }
         },
         "security": [
@@ -2147,7 +4910,7 @@
             "bearer": []
           }
         ],
-        "summary": "Record a payment between group members.",
+        "summary": "Record an off-platform payment between group members.",
         "tags": [
           "Finance"
         ]
@@ -2172,6 +4935,22 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupSummaryDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
                   "example": {
                     "data": {
                       "createdAt": "2026-03-05T16:20:00.000Z",
@@ -2184,8 +4963,8 @@
                       "updatedAt": "2026-03-05T16:23:00.000Z"
                     },
                     "meta": {
-                      "requestId": "1a2f802f-226f-4997-a0cd-6a8b2ec5e7fa",
-                      "timestamp": "2026-03-05T16:23:00.000Z"
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
                     },
                     "success": true
                   }

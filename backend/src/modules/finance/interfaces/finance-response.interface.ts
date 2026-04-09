@@ -1,5 +1,3 @@
-import type { BillSplitMethod } from '@prisma/client';
-
 import type { PaginationMeta } from '../../../common/http/pagination';
 
 export interface BillSplitSummary {
@@ -17,7 +15,7 @@ export interface BillSummary {
   totalAmount: number;
   currency: string;
   paidByUserId: string;
-  splitMethod: BillSplitMethod;
+  splitMethod: 'CUSTOM';
   createdBy: string;
   incurredAt: string;
   dueDate?: string | null;

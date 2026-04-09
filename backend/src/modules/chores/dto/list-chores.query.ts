@@ -8,15 +8,16 @@ import {
   SORT_ORDER_VALUES,
   type SortOrder
 } from '../../../common/http/dto/pagination-query.dto';
+import { transformDateOnlyValue } from '../../../common/time/date-only.util';
 
-const CHORE_SORT_BY_VALUES = ['dueDate', 'createdAt', 'updatedAt', 'status'] as const;
+const CHORE_SORT_BY_VALUES = ['dueOn', 'createdAt', 'updatedAt', 'status'] as const;
 export type ChoreSortBy = (typeof CHORE_SORT_BY_VALUES)[number];
 
 export class ListChoresQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
     enum: ChoreStatus,
     enumName: 'ChoreStatus',
-    description: 'Optional filter by status (PENDING or COMPLETED)'
+    description: 'Optional filter by occurrence status.'
   })
   @IsOptional()
   @IsEnum(ChoreStatus)
@@ -31,31 +32,31 @@ export class ListChoresQueryDto extends PaginationQueryDto {
   assigneeUserId?: string;
 
   @ApiPropertyOptional({
-    example: '2026-03-10T00:00:00.000Z',
-    description: 'Optional lower bound for due date (inclusive)'
+    example: '2026-03-10',
+    description: 'Optional lower bound for dueOn (inclusive, YYYY-MM-DD).'
   })
-  @Transform(({ value }) => (value ? new Date(value) : value))
+  @Transform(({ value }) => transformDateOnlyValue(value))
   @IsOptional()
   @IsDate()
-  dueAfter?: Date;
+  dueOnFrom?: Date;
 
   @ApiPropertyOptional({
-    example: '2026-03-20T00:00:00.000Z',
-    description: 'Optional upper bound for due date (inclusive)'
+    example: '2026-03-20',
+    description: 'Optional upper bound for dueOn (inclusive, YYYY-MM-DD).'
   })
-  @Transform(({ value }) => (value ? new Date(value) : value))
+  @Transform(({ value }) => transformDateOnlyValue(value))
   @IsOptional()
   @IsDate()
-  dueBefore?: Date;
+  dueOnTo?: Date;
 
   @ApiPropertyOptional({
     enum: CHORE_SORT_BY_VALUES,
     description: 'Optional sort field for chore listing.',
-    default: 'dueDate'
+    default: 'dueOn'
   })
   @IsOptional()
   @IsIn(CHORE_SORT_BY_VALUES)
-  sortBy: ChoreSortBy = 'dueDate';
+  sortBy: ChoreSortBy = 'dueOn';
 
   @ApiPropertyOptional({
     enum: SORT_ORDER_VALUES,

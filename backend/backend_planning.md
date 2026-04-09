@@ -132,8 +132,8 @@ Architecture decision:
 - Module 5 (Chore Management) is implemented and validated:
   - `POST /api/v1/groups/:groupId/chores` (returns `201`)
   - `GET /api/v1/groups/:groupId/chores`
-  - `PATCH /api/v1/chores/:choreId/assign`
-  - `PATCH /api/v1/chores/:choreId/complete`
+  - `PATCH /api/v1/chores/:occurrenceId/assignee`
+  - `PATCH /api/v1/chores/:occurrenceId/complete`
 - Module 7 (Contract Management) is implemented and validated:
   - `GET /api/v1/groups/:groupId/contract`
   - `PUT /api/v1/groups/:groupId/contract`
@@ -546,7 +546,7 @@ Frontend support impact:
 Scope:
 
 - Create chores.
-- Assign chores.
+- Reassign chore occurrences.
 - Mark chores complete.
 - List/filter chores by group, assignee, status, due date.
 
@@ -554,8 +554,8 @@ Core endpoints:
 
 - `POST /api/v1/groups/:groupId/chores`
 - `GET /api/v1/groups/:groupId/chores`
-- `PATCH /api/v1/chores/:choreId/assign`
-- `PATCH /api/v1/chores/:choreId/complete`
+- `PATCH /api/v1/chores/:occurrenceId/assignee`
+- `PATCH /api/v1/chores/:occurrenceId/complete`
 
 Data entities:
 
@@ -698,7 +698,7 @@ Core workflows to test:
 
 - Register -> Login -> Create Group -> Join Member.
 - Admin role changes and member removal.
-- Chore create/assign/complete.
+- Chore occurrence create/reassign/complete.
 - Bill create/split -> Payment record -> Balance accuracy.
 - Contract edit/publish/view with role restrictions.
 

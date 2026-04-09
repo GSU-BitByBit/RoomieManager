@@ -1,0 +1,21 @@
+[Unit]
+Description=RoomieManager Backend API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/srv/roomiemanager/backend
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/roomiemanager/backend.env
+ExecStart=/usr/bin/node dist/src/main.js
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+KillSignal=SIGINT
+SyslogIdentifier=roomiemanager-backend
+
+[Install]
+WantedBy=multi-user.target

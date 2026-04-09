@@ -1,4 +1,9 @@
-import { INestApplication, UnauthorizedException, ValidationPipe } from '@nestjs/common';
+import {
+  ConflictException,
+  INestApplication,
+  UnauthorizedException,
+  ValidationPipe
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 
@@ -119,10 +124,10 @@ describe('Groups endpoints (e2e)', () => {
         memberCount: 1
       },
       chores: {
-        pendingCount: 3,
-        completedCount: 5,
         overdueCount: 1,
-        assignedToMePendingCount: 2
+        dueTodayCount: 1,
+        dueNext7DaysCount: 4,
+        assignedToMeDueNext7DaysCount: 2
       },
       finance: {
         billCount: 4,
@@ -149,6 +154,17 @@ describe('Groups endpoints (e2e)', () => {
       status: 'INACTIVE',
       removed: true,
       updatedAt: '2026-02-23T00:30:00.000Z'
+    })),
+    leaveGroup: jest.fn(async () => ({
+      groupId: 'group-1',
+      userId: 'user-1',
+      status: 'INACTIVE',
+      left: true,
+      updatedAt: '2026-02-23T00:35:00.000Z'
+    })),
+    destroyGroup: jest.fn(async () => ({
+      groupId: 'group-1',
+      destroyed: true
     }))
   };
 
@@ -232,7 +248,8 @@ describe('Groups endpoints (e2e)', () => {
         pageSize: 20,
         sortBy: 'updatedAt',
         sortOrder: 'desc'
-      })
+      }),
+      'Alex'
     );
   });
 
@@ -259,7 +276,8 @@ describe('Groups endpoints (e2e)', () => {
     expect(response.body.data.joinCode).toBe('ABCD1234');
     expect(groupsServiceMock.createGroup).toHaveBeenCalledWith(
       'user-1',
-      expect.objectContaining({ name: 'Apartment 12A' })
+      expect.objectContaining({ name: 'Apartment 12A' }),
+      'Alex'
     );
   });
 
@@ -285,7 +303,8 @@ describe('Groups endpoints (e2e)', () => {
     expect(response.body.data.memberRole).toBe('MEMBER');
     expect(groupsServiceMock.joinGroup).toHaveBeenCalledWith(
       'user-1',
-      expect.objectContaining({ joinCode: 'ABCD1234' })
+      expect.objectContaining({ joinCode: 'ABCD1234' }),
+      'Alex'
     );
   });
 
@@ -327,7 +346,7 @@ describe('Groups endpoints (e2e)', () => {
 
     expect(response.body.success).toBe(true);
     expect(response.body.data.id).toBe(groupId);
-    expect(groupsServiceMock.getGroup).toHaveBeenCalledWith('user-1', groupId);
+    expect(groupsServiceMock.getGroup).toHaveBeenCalledWith('user-1', groupId, 'Alex');
   });
 
   it('GET /api/v1/groups/:groupId/members returns members', async () => {
@@ -349,7 +368,8 @@ describe('Groups endpoints (e2e)', () => {
         pageSize: 20,
         sortBy: 'role',
         sortOrder: 'asc'
-      })
+      }),
+      'Alex'
     );
   });
 
@@ -364,10 +384,19 @@ describe('Groups endpoints (e2e)', () => {
     expect(response.body.success).toBe(true);
     expect(response.body.data.group.id).toBe('group-1');
     expect(response.body.data.members.totalActive).toBe(2);
-    expect(response.body.data.chores.pendingCount).toBe(3);
+    expect(response.body.data.chores).toEqual({
+      overdueCount: 1,
+      dueTodayCount: 1,
+      dueNext7DaysCount: 4,
+      assignedToMeDueNext7DaysCount: 2
+    });
     expect(response.body.data.finance.billCount).toBe(4);
     expect(response.body.data.contract.publishedVersion).toBe(2);
-    expect(groupsServiceMock.getGroupDashboard).toHaveBeenCalledWith('user-1', groupId);
+    expect(groupsServiceMock.getGroupDashboard).toHaveBeenCalledWith(
+      'user-1',
+      groupId,
+      'Alex'
+    );
   });
 
   it('GET /api/v1/groups/:groupId/dashboard rejects non-app-id groupId', async () => {
@@ -440,6 +469,157 @@ describe('Groups endpoints (e2e)', () => {
     expect(response.body.success).toBe(true);
     expect(response.body.data.removed).toBe(true);
     expect(groupsServiceMock.removeMember).toHaveBeenCalledWith('user-1', groupId, userId);
+  });
+
+  it('POST /api/v1/groups/:groupId/leave marks the current member inactive', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+
+    const response = await request(app!.getHttpServer())
+      .post(`/api/v1/groups/${groupId}/leave`)
+      .set('Authorization', 'Bearer valid-token')
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toEqual({
+      groupId: 'group-1',
+      userId: 'user-1',
+      status: 'INACTIVE',
+      left: true,
+      updatedAt: '2026-02-23T00:35:00.000Z'
+    });
+    expect(groupsServiceMock.leaveGroup).toHaveBeenCalledWith('user-1', groupId);
+  });
+
+  it('POST /api/v1/groups/:groupId/leave returns explicit conflict details when blockers remain', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+
+    groupsServiceMock.leaveGroup.mockRejectedValueOnce(
+      new ConflictException({
+        code: 'CONFLICT',
+        message:
+          'You cannot leave this group while assigned pending chore occurrences or recurring chore templates remain. Reassign them first.',
+        details: {
+          pendingOccurrenceCount: 1,
+          activeTemplateCount: 0,
+          pausedTemplateCount: 0,
+          financeBalances: []
+        }
+      })
+    );
+
+    const response = await request(app!.getHttpServer())
+      .post(`/api/v1/groups/${groupId}/leave`)
+      .set('Authorization', 'Bearer valid-token')
+      .expect(409);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.error.code).toBe('CONFLICT');
+    expect(response.body.error.details).toEqual({
+      pendingOccurrenceCount: 1,
+      activeTemplateCount: 0,
+      pausedTemplateCount: 0,
+      financeBalances: []
+    });
+  });
+
+  it('DELETE /api/v1/groups/:groupId destroys the group for the sole remaining admin', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+
+    const response = await request(app!.getHttpServer())
+      .delete(`/api/v1/groups/${groupId}`)
+      .set('Authorization', 'Bearer valid-token')
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toEqual({
+      groupId: 'group-1',
+      destroyed: true
+    });
+    expect(groupsServiceMock.destroyGroup).toHaveBeenCalledWith('user-1', groupId);
+  });
+
+  it('DELETE /api/v1/groups/:groupId returns conflict when other active members remain', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+
+    groupsServiceMock.destroyGroup.mockRejectedValueOnce(
+      new ConflictException({
+        code: 'CONFLICT',
+        message:
+          'Only the last remaining active member can destroy this group. Remove or have everyone else leave first.'
+      })
+    );
+
+    const response = await request(app!.getHttpServer())
+      .delete(`/api/v1/groups/${groupId}`)
+      .set('Authorization', 'Bearer valid-token')
+      .expect(409);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.error.code).toBe('CONFLICT');
+  });
+
+  it('DELETE /api/v1/groups/:groupId/members/:userId returns explicit conflict details for blocking chore dependencies', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+    const userId = '550e8400-e29b-41d4-a716-446655440001';
+
+    groupsServiceMock.removeMember.mockRejectedValueOnce(
+      new ConflictException({
+        code: 'CONFLICT',
+        message:
+          'Member cannot be removed while assigned pending chore occurrences or recurring chore templates remain. Reassign them first.',
+        details: {
+          pendingOccurrenceCount: 2,
+          activeTemplateCount: 1,
+          pausedTemplateCount: 0
+        }
+      })
+    );
+
+    const response = await request(app!.getHttpServer())
+      .delete(`/api/v1/groups/${groupId}/members/${userId}`)
+      .set('Authorization', 'Bearer valid-token')
+      .expect(409);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.error.code).toBe('CONFLICT');
+    expect(response.body.error.details).toEqual({
+      pendingOccurrenceCount: 2,
+      activeTemplateCount: 1,
+      pausedTemplateCount: 0
+    });
+  });
+
+  it('DELETE /api/v1/groups/:groupId/members/:userId returns explicit conflict details for unsettled finance balances', async () => {
+    const groupId = '550e8400-e29b-41d4-a716-446655440000';
+    const userId = '550e8400-e29b-41d4-a716-446655440001';
+
+    groupsServiceMock.removeMember.mockRejectedValueOnce(
+      new ConflictException({
+        code: 'CONFLICT',
+        message:
+          'Member cannot be removed while they still have unsettled group balances. Settle balances first.',
+        details: {
+          pendingOccurrenceCount: 0,
+          activeTemplateCount: 0,
+          pausedTemplateCount: 0,
+          financeBalances: [{ currency: 'USD', netAmount: -12.5 }]
+        }
+      })
+    );
+
+    const response = await request(app!.getHttpServer())
+      .delete(`/api/v1/groups/${groupId}/members/${userId}`)
+      .set('Authorization', 'Bearer valid-token')
+      .expect(409);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.error.code).toBe('CONFLICT');
+    expect(response.body.error.details).toEqual({
+      pendingOccurrenceCount: 0,
+      activeTemplateCount: 0,
+      pausedTemplateCount: 0,
+      financeBalances: [{ currency: 'USD', netAmount: -12.5 }]
+    });
   });
 
   it('rejects non-UUID groupId with 400', async () => {

@@ -26,10 +26,10 @@ export interface GroupDashboardMembersSummary {
 }
 
 export interface GroupDashboardChoresSummary {
-  pendingCount: number;
-  completedCount: number;
   overdueCount: number;
-  assignedToMePendingCount: number;
+  dueTodayCount: number;
+  dueNext7DaysCount: number;
+  assignedToMeDueNext7DaysCount: number;
 }
 
 export interface GroupDashboardFinanceSummary {
@@ -60,6 +60,7 @@ export interface JoinCodeResetResponse {
 
 export interface GroupMemberSummary {
   userId: string;
+  displayName: string | null;
   role: GroupMemberRole;
   status: GroupMemberStatus;
   joinedAt: string;
@@ -87,4 +88,17 @@ export interface GroupMemberRemoveResponse {
   status: GroupMemberStatus;
   removed: boolean;
   updatedAt: string;
+}
+
+export interface GroupMemberLeaveResponse {
+  groupId: string;
+  userId: string;
+  status: GroupMemberStatus;
+  left: boolean;
+  updatedAt: string;
+}
+
+export interface GroupDestroyResponse {
+  groupId: string;
+  destroyed: boolean;
 }

@@ -53,7 +53,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/chores/{choreId}/assign": {
+    "/api/v1/chores/{occurrenceId}/assignee": {
         parameters: {
             query?: never;
             header?: never;
@@ -66,11 +66,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Assign or unassign a chore. */
-        patch: operations["ChoresController_updateChoreAssignee"];
+        /** Reassign a chore occurrence to a different active group member. */
+        patch: operations["ChoresController_updateOccurrenceAssignee"];
         trace?: never;
     };
-    "/api/v1/chores/{choreId}/complete": {
+    "/api/v1/chores/{occurrenceId}/complete": {
         parameters: {
             query?: never;
             header?: never;
@@ -83,8 +83,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Mark a chore as completed. */
-        patch: operations["ChoresController_completeChore"];
+        /** Mark a chore occurrence as completed. */
+        patch: operations["ChoresController_completeOccurrence"];
         trace?: never;
     };
     "/api/v1/groups": {
@@ -116,7 +116,8 @@ export interface paths {
         get: operations["GroupsController_getGroup"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Destroy group as the sole remaining active admin. */
+        delete: operations["GroupsController_destroyGroup"];
         options?: never;
         head?: never;
         patch?: never;
@@ -129,7 +130,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Compute and return net balances (who owes whom) for the group. */
+        /**
+         * Compute and return current net balances for the group.
+         * @description Balances are derived from the append-only finance ledger per currency. Settlement suggestions are advisory recommendations, not authoritative allocations.
+         */
         get: operations["FinanceController_getBalances"];
         put?: never;
         post?: never;
@@ -149,8 +153,97 @@ export interface paths {
         /** List bills for a group. */
         get: operations["FinanceController_listBills"];
         put?: never;
-        /** Create a bill and split amounts across group members. */
+        /**
+         * Create a shared bill with explicit custom split rows.
+         * @description Bills are collaborative household ledger records. Split rows are always explicit custom amounts; equal splitting is a frontend convenience that still submits custom split rows. dueDate is informational only.
+         */
         post: operations["FinanceController_createBill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{groupId}/chore-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List recurring chore templates for a group. */
+        get: operations["ChoreTemplatesController_listGroupTemplates"];
+        put?: never;
+        /** Create an active recurring chore template. */
+        post: operations["ChoreTemplatesController_createTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{groupId}/chore-templates/{templateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a recurring chore template. */
+        patch: operations["ChoreTemplatesController_updateTemplate"];
+        trace?: never;
+    };
+    "/api/v1/groups/{groupId}/chore-templates/{templateId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive a recurring chore template and cancel future pending occurrences. */
+        post: operations["ChoreTemplatesController_archiveTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{groupId}/chore-templates/{templateId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause a recurring chore template and cancel future pending occurrences. */
+        post: operations["ChoreTemplatesController_pauseTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{groupId}/chore-templates/{templateId}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume a recurring chore template and regenerate future occurrences. */
+        post: operations["ChoreTemplatesController_resumeTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -164,11 +257,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List chores for a group with optional filters. */
+        /** List chore occurrences for a group with optional filters. */
         get: operations["ChoresController_listGroupChores"];
         put?: never;
-        /** Create a new chore within a group. */
+        /** Create a one-off chore occurrence within a group. */
         post: operations["ChoresController_createChore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{groupId}/chores/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return a flat, calendar-friendly occurrence list for a required bounded date range. */
+        get: operations["ChoresController_getGroupChoreCalendar"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -234,7 +344,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get frontend dashboard aggregates for a group (member/admin counts, chore counters, finance counters, contract status). */
+        /** Get frontend dashboard aggregates for a group (member/admin counts, actionable chore windows, finance counters, contract status). */
         get: operations["GroupsController_getGroupDashboard"];
         put?: never;
         post?: never;
@@ -255,6 +365,23 @@ export interface paths {
         put?: never;
         /** Reset group join code (admin only). */
         post: operations["GroupsController_resetJoinCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{groupId}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Leave group as the current active member. */
+        post: operations["GroupsController_leaveGroup"];
         delete?: never;
         options?: never;
         head?: never;
@@ -321,7 +448,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Record a payment between group members. */
+        /**
+         * Record an off-platform payment between group members.
+         * @description Payments may be recorded by the payer or a group admin. billId is reference-only metadata and does not allocate settlement to a specific bill.
+         */
         post: operations["FinanceController_createPayment"];
         delete?: never;
         options?: never;
@@ -384,8 +514,320 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ApiMetaDto: {
+            /** @example ad86d8f4-8f30-4383-9534-dbc56f5aa1af */
+            requestId: string;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:06:00.000Z
+             */
+            timestamp: string;
+        };
+        ApiSuccessEnvelopeDto: {
+            meta: components["schemas"]["ApiMetaDto"];
+            /** @example true */
+            success: boolean;
+        };
+        AuthenticatedUserDto: {
+            /**
+             * @example {
+             *       "provider": "email"
+             *     }
+             */
+            appMetadata?: {
+                [key: string]: unknown;
+            };
+            /** @example authenticated */
+            aud?: string;
+            /** @example alex@example.com */
+            email?: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            id: string;
+            /** @example authenticated */
+            role?: string;
+            /** @example {} */
+            userMetadata?: {
+                [key: string]: unknown;
+            };
+        };
+        AuthResultDto: {
+            session: components["schemas"]["AuthSessionDto"] | null;
+            user: components["schemas"]["AuthUserProfileDto"] | null;
+        };
+        AuthSessionDto: {
+            /** @example <jwt-access-token> */
+            accessToken: string;
+            /** @example 3600 */
+            expiresIn: number;
+            /** @example <refresh-token> */
+            refreshToken: string;
+            /** @example bearer */
+            tokenType: string;
+        };
+        AuthUserProfileDto: {
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:10:00.000Z
+             */
+            createdAt?: string | null;
+            /** @example alex@example.com */
+            email?: string;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:11:00.000Z
+             */
+            emailConfirmedAt?: string | null;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            id: string;
+            /** @example null */
+            phone?: string | null;
+        };
+        BillSplitSummaryDto: {
+            /** @example 25.5 */
+            amount: number;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:50:00.000Z
+             */
+            createdAt: string;
+            /** @example cm8wc5rr9000imk6z2jmlf4x4 */
+            id: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            userId: string;
+        };
+        BillSummaryDto: {
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:50:00.000Z
+             */
+            createdAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            createdBy: string;
+            /** @example USD */
+            currency: string;
+            /** @example Monthly ISP payment */
+            description: string | null;
+            /**
+             * Format: date-time
+             * @description Optional informational due date. It is not currently used for balance math, reminders, or settlement logic.
+             * @example null
+             */
+            dueDate: string | null;
+            /** @example cm8z9ab120001mk8z4og1j0e9 */
+            groupId: string;
+            /** @example cm8wc5rr7000hmk6zx4qedcib */
+            id: string;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:50:00.000Z
+             */
+            incurredAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            paidByUserId: string;
+            /**
+             * @description Always CUSTOM in the current backend. Equal splitting is a frontend convenience that submits explicit custom split rows.
+             * @example CUSTOM
+             * @enum {string}
+             */
+            splitMethod: "CUSTOM";
+            splits: components["schemas"]["BillSplitSummaryDto"][];
+            /** @example Internet bill - March */
+            title: string;
+            /** @example 76.5 */
+            totalAmount: number;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:50:00.000Z
+             */
+            updatedAt: string;
+        };
+        ChoreCalendarOccurrenceDto: {
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            assigneeUserId: string;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:34:00.000Z
+             */
+            completedAt: string | null;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            completedByUserId: string | null;
+            /** @example Take out kitchen and bathroom trash before 9pm. */
+            description: string | null;
+            /**
+             * Format: date
+             * @example 2026-03-06
+             */
+            dueOn: string;
+            /** @example cm8wa8qgk0004mk6z9s29u0ro */
+            id: string;
+            /**
+             * @example PENDING
+             * @enum {string}
+             */
+            status: "PENDING" | "COMPLETED" | "CANCELLED";
+            /** @example cm8wa8qgk0004mk6z9s29u0rt */
+            templateId: string | null;
+            /** @example Take out trash */
+            title: string;
+        };
         /** @enum {string} */
-        ChoreStatus: "PENDING" | "COMPLETED";
+        ChoreStatus: "PENDING" | "COMPLETED" | "CANCELLED";
+        ChoreSummaryDto: {
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            assigneeUserId: string;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:34:00.000Z
+             */
+            completedAt: string | null;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            completedByUserId: string | null;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:31:00.000Z
+             */
+            createdAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            createdBy: string;
+            /** @example Take out kitchen and bathroom trash before 9pm. */
+            description: string | null;
+            /**
+             * Format: date
+             * @example 2026-03-06
+             */
+            dueOn: string;
+            /** @example cm8z9ab120001mk8z4og1j0e9 */
+            groupId: string;
+            /** @example cm8wa8qgk0004mk6z9s29u0ro */
+            id: string;
+            /**
+             * @example PENDING
+             * @enum {string}
+             */
+            status: "PENDING" | "COMPLETED" | "CANCELLED";
+            /** @example cm8wa8qgk0004mk6z9s29u0rt */
+            templateId: string | null;
+            /** @example Take out trash */
+            title: string;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:31:00.000Z
+             */
+            updatedAt: string;
+        };
+        /**
+         * @description Updated assignment mode for future occurrences.
+         * @enum {string}
+         */
+        ChoreTemplateAssignmentStrategy: "FIXED" | "ROUND_ROBIN";
+        ChoreTemplateParticipantSummaryDto: {
+            /** @example 0 */
+            sortOrder: number;
+            /** @example 550e8400-e29b-41d4-a716-446655440002 */
+            userId: string;
+        };
+        ChoreTemplateSummaryDto: {
+            /** @example 550e8400-e29b-41d4-a716-446655440002 */
+            assigneeUserId: string | null;
+            /**
+             * @example FIXED
+             * @enum {string}
+             */
+            assignmentStrategy: "FIXED" | "ROUND_ROBIN";
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:31:00.000Z
+             */
+            createdAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            createdBy: string;
+            /** @example Kitchen and bathroom bins. */
+            description: string | null;
+            /**
+             * Format: date
+             * @example 2026-06-29
+             */
+            endsOn: string | null;
+            /**
+             * Format: date
+             * @example 2026-05-04
+             */
+            generatedThroughOn: string | null;
+            /** @example cm8z9ab120001mk8z4og1j0e9 */
+            groupId: string;
+            /** @example cm8wa8qgk0004mk6z9s29u0rt */
+            id: string;
+            participants: components["schemas"]["ChoreTemplateParticipantSummaryDto"][];
+            /** @example 7 */
+            repeatEveryDays: number;
+            /**
+             * Format: date
+             * @example 2026-03-09
+             */
+            startsOn: string;
+            /**
+             * @example ACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "PAUSED" | "ARCHIVED";
+            /** @example Take out trash */
+            title: string;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:31:00.000Z
+             */
+            updatedAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            updatedBy: string | null;
+        };
+        ContractDetailResponseDto: {
+            contract: components["schemas"]["ContractSummaryDto"];
+            /** @example Published roommate contract v2. */
+            latestPublishedContent: string | null;
+        };
+        ContractSummaryDto: {
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:40:00.000Z
+             */
+            createdAt: string;
+            /** @example Draft roommate contract content. */
+            draftContent: string;
+            /** @example cm8z9ab120001mk8z4og1j0e9 */
+            groupId: string;
+            /** @example cm8wb6r8u000emk6zubf6s23n */
+            id: string;
+            /** @example 2 */
+            publishedVersion: number | null;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:43:00.000Z
+             */
+            updatedAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            updatedBy: string | null;
+        };
+        ContractVersionsResponseDto: {
+            /** @example cm8w9z0abc123def456ghi789 */
+            groupId: string;
+            pagination: components["schemas"]["PaginationMetaDto"];
+            versions: components["schemas"]["ContractVersionSummaryDto"][];
+        };
+        ContractVersionSummaryDto: {
+            /** @example Published roommate contract v3. */
+            content: string;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:45:00.000Z
+             */
+            createdAt: string;
+            /** @example cm8wb8l66000fmk6z5nwnk1j5 */
+            id: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            publishedBy: string;
+            /** @example 3 */
+            version: number;
+        };
         CreateBillDto: {
             /**
              * @description Three-letter ISO currency code. Defaults to USD.
@@ -399,7 +841,7 @@ export interface components {
             description?: string;
             /**
              * Format: date-time
-             * @description Optional due date for this bill.
+             * @description Optional informational due date for this bill. It is not currently used for balance math, reminders, or settlement logic.
              * @example 2026-03-15T18:00:00.000Z
              */
             dueDate?: string;
@@ -414,7 +856,7 @@ export interface components {
              * @example f5c6304d-7f58-4f67-bf80-4de6f388b310
              */
             paidByUserId: string;
-            /** @description Split rows. Amounts must sum exactly to totalAmount. */
+            /** @description Explicit custom split rows. Amounts must sum exactly to totalAmount. Equal splitting is a frontend convenience that still submits explicit custom split rows. */
             splits: components["schemas"]["CreateBillSplitDto"][];
             /**
              * @description Short bill title.
@@ -441,20 +883,61 @@ export interface components {
         };
         CreateChoreDto: {
             /**
-             * @description Optional user ID to assign the chore to at creation time
+             * @description Required active group member who will own this one-off chore.
              * @example user-uuid
              */
-            assigneeUserId?: string;
+            assigneeUserId: string;
             /** @example Take out kitchen and bathroom trash before 9pm. */
             description?: string;
             /**
-             * Format: date-time
-             * @description Optional ISO-8601 due date for the chore
-             * @example 2026-03-10T21:00:00.000Z
+             * Format: date
+             * @description Required date-only due slot for the chore (YYYY-MM-DD).
+             * @example 2026-03-10
              */
-            dueDate?: string;
+            dueOn: string;
             /**
              * @description Short, human-readable chore title
+             * @example Take out trash
+             */
+            title: string;
+        };
+        CreateChoreTemplateDto: {
+            /**
+             * @description Required when assignmentStrategy is FIXED.
+             * @example user-uuid
+             */
+            assigneeUserId?: string;
+            assignmentStrategy: components["schemas"]["ChoreTemplateAssignmentStrategy"];
+            /** @example Kitchen and bathroom bins. */
+            description?: string;
+            /**
+             * Format: date
+             * @description Optional inclusive final due occurrence date (YYYY-MM-DD).
+             * @example 2026-06-29
+             */
+            endsOn?: string;
+            /**
+             * @description Required when assignmentStrategy is ROUND_ROBIN. Order determines rotation order.
+             * @example [
+             *       "user-uuid-1",
+             *       "user-uuid-2",
+             *       "user-uuid-3"
+             *     ]
+             */
+            participantUserIds?: string[];
+            /**
+             * @description Positive day interval between due occurrences.
+             * @example 7
+             */
+            repeatEveryDays: number;
+            /**
+             * Format: date
+             * @description First due occurrence date (YYYY-MM-DD).
+             * @example 2026-04-06
+             */
+            startsOn: string;
+            /**
+             * @description Template title for a recurring interval-based chore.
              * @example Take out trash
              */
             title: string;
@@ -473,7 +956,7 @@ export interface components {
              */
             amount: number;
             /**
-             * @description Optional bill id this payment is linked to.
+             * @description Optional related bill id for reference only. Must belong to the same group and use the same currency when provided.
              * @example 3e4f66fd-7eeb-4c2f-a98e-f94376ea22f5
              */
             billId?: string;
@@ -483,7 +966,7 @@ export interface components {
              */
             currency?: string;
             /**
-             * @description Optional idempotency key for safely retried payment requests.
+             * @description Optional idempotency key for safely retried payment requests. Reusing the same key with a different payment payload will return a conflict.
              * @example pay-2026-03-05-group1-user1-user2-20
              */
             idempotencyKey?: string;
@@ -509,11 +992,245 @@ export interface components {
              */
             payerUserId: string;
         };
+        CurrencyBalanceSummaryDto: {
+            /** @example USD */
+            currency: string;
+            memberBalances: components["schemas"]["MemberBalanceSummaryDto"][];
+            /** @description Advisory settlement suggestions derived from current net balances. */
+            settlements: components["schemas"]["SettlementSummaryDto"][];
+        };
+        GroupBalancesResponseDto: {
+            balances: components["schemas"]["CurrencyBalanceSummaryDto"][];
+            /** @example cm8z9ab120001mk8z4og1j0e9 */
+            groupId: string;
+        };
+        GroupBillsResponseDto: {
+            bills: components["schemas"]["BillSummaryDto"][];
+            /** @example cm8w9z0abc123def456ghi789 */
+            groupId: string;
+            pagination: components["schemas"]["PaginationMetaDto"];
+        };
+        GroupChoreCalendarResponseDto: {
+            /**
+             * Format: date
+             * @example 2026-04-26
+             */
+            end: string;
+            /** @example cm8w9z0abc123def456ghi789 */
+            groupId: string;
+            occurrences: components["schemas"]["ChoreCalendarOccurrenceDto"][];
+            /**
+             * Format: date
+             * @example 2026-03-01
+             */
+            start: string;
+        };
+        GroupChoresResponseDto: {
+            chores: components["schemas"]["ChoreSummaryDto"][];
+            /** @example cm8w9z0abc123def456ghi789 */
+            groupId: string;
+            pagination: components["schemas"]["PaginationMetaDto"];
+        };
+        GroupChoreTemplatesResponseDto: {
+            /** @example cm8z9ab120001mk8z4og1j0e9 */
+            groupId: string;
+            templates: components["schemas"]["ChoreTemplateSummaryDto"][];
+        };
+        GroupDashboardChoresSummaryDto: {
+            /** @example 2 */
+            assignedToMeDueNext7DaysCount: number;
+            /** @example 5 */
+            dueNext7DaysCount: number;
+            /** @example 2 */
+            dueTodayCount: number;
+            /** @example 1 */
+            overdueCount: number;
+        };
+        GroupDashboardContractSummaryDto: {
+            /** @example true */
+            hasDraft: boolean;
+            /** @example 2 */
+            publishedVersion: number | null;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T11:00:00.000Z
+             */
+            updatedAt: string | null;
+        };
+        GroupDashboardFinanceSummaryDto: {
+            /** @example 5 */
+            billCount: number;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T12:00:00.000Z
+             */
+            latestBillIncurredAt: string | null;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T13:00:00.000Z
+             */
+            latestPaymentPaidAt: string | null;
+            /** @example 7 */
+            paymentCount: number;
+        };
+        GroupDashboardMembersSummaryDto: {
+            /** @example 1 */
+            adminCount: number;
+            /** @example 2 */
+            memberCount: number;
+            /** @example 3 */
+            totalActive: number;
+        };
+        GroupDashboardResponseDto: {
+            chores: components["schemas"]["GroupDashboardChoresSummaryDto"];
+            contract: components["schemas"]["GroupDashboardContractSummaryDto"];
+            finance: components["schemas"]["GroupDashboardFinanceSummaryDto"];
+            group: components["schemas"]["GroupSummaryDto"];
+            members: components["schemas"]["GroupDashboardMembersSummaryDto"];
+        };
+        GroupDestroyResponseDto: {
+            /** @example true */
+            destroyed: boolean;
+            /** @example cm8w9z0abc123def456ghi789 */
+            groupId: string;
+        };
+        GroupMemberLeaveResponseDto: {
+            /** @example cm8w9z0abc123def456ghi789 */
+            groupId: string;
+            /** @example true */
+            left: boolean;
+            /**
+             * @example INACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:44:00.000Z
+             */
+            updatedAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            userId: string;
+        };
+        GroupMemberRemoveResponseDto: {
+            /** @example cm8w9z0abc123def456ghi789 */
+            groupId: string;
+            /** @example true */
+            removed: boolean;
+            /**
+             * @example INACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:44:00.000Z
+             */
+            updatedAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            userId: string;
+        };
         /**
          * @description Target role for the member
          * @enum {string}
          */
         GroupMemberRole: "ADMIN" | "MEMBER";
+        GroupMemberRoleUpdateResponseDto: {
+            /** @example cm8w9z0abc123def456ghi789 */
+            groupId: string;
+            /**
+             * @example ADMIN
+             * @enum {string}
+             */
+            role: "ADMIN" | "MEMBER";
+            /**
+             * @example ACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:44:00.000Z
+             */
+            updatedAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            userId: string;
+        };
+        GroupMembersResponseDto: {
+            /** @example cm8w9z0abc123def456ghi789 */
+            groupId: string;
+            members: components["schemas"]["GroupMemberSummaryDto"][];
+            pagination: components["schemas"]["PaginationMetaDto"];
+        };
+        GroupMemberSummaryDto: {
+            /**
+             * Format: date-time
+             * @example 2026-03-05T14:40:00.000Z
+             */
+            createdAt: string;
+            /** @example Alex Smith */
+            displayName: string | null;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T14:40:00.000Z
+             */
+            joinedAt: string;
+            /**
+             * @example ADMIN
+             * @enum {string}
+             */
+            role: "ADMIN" | "MEMBER";
+            /**
+             * @example ACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
+            /**
+             * Format: date-time
+             * @example 2026-03-05T14:40:00.000Z
+             */
+            updatedAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            userId: string;
+        };
+        GroupSummaryDto: {
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:00:00.000Z
+             */
+            createdAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            createdBy: string;
+            /** @example cm8z9ab120001mk8z4og1j0e9 */
+            id: string;
+            /** @example ABCD1234 */
+            joinCode?: string;
+            /** @example 3 */
+            memberCount: number;
+            /**
+             * @example ADMIN
+             * @enum {string}
+             */
+            memberRole: "ADMIN" | "MEMBER";
+            /**
+             * @example ACTIVE
+             * @enum {string}
+             */
+            memberStatus: "ACTIVE" | "INACTIVE";
+            /** @example Apartment 12A */
+            name: string;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:05:00.000Z
+             */
+            updatedAt: string;
+        };
+        JoinCodeResetResponseDto: {
+            /** @example cm8z9ab120001mk8z4og1j0e9 */
+            groupId: string;
+            /** @example QWER5678 */
+            joinCode: string;
+        };
         JoinGroupDto: {
             /**
              * @description Join code generated by group admin
@@ -527,6 +1244,63 @@ export interface components {
             /** @example StrongPass123! */
             password: string;
         };
+        MemberBalanceSummaryDto: {
+            /** @example 12.75 */
+            netAmount: number;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            userId: string;
+        };
+        PaginationMetaDto: {
+            /** @example false */
+            hasNextPage: boolean;
+            /** @example false */
+            hasPreviousPage: boolean;
+            /** @example 1 */
+            page: number;
+            /** @example 20 */
+            pageSize: number;
+            /** @example 1 */
+            totalItems: number;
+            /** @example 1 */
+            totalPages: number;
+        };
+        PaymentSummaryDto: {
+            /** @example 25.5 */
+            amount: number;
+            /** @example cm8wc5rr7000hmk6zx4qedcib */
+            billId: string | null;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:52:00.000Z
+             */
+            createdAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440002 */
+            createdBy: string;
+            /** @example USD */
+            currency: string;
+            /** @example cm8z9ab120001mk8z4og1j0e9 */
+            groupId: string;
+            /** @example cm8wd2v9w000lmk6zq2q4s7ty */
+            id: string;
+            /** @example pay-2026-03-05-001 */
+            idempotencyKey: string | null;
+            /** @example Paid via Venmo */
+            note: string | null;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:52:00.000Z
+             */
+            paidAt: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            payeeUserId: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440002 */
+            payerUserId: string;
+            /**
+             * Format: date-time
+             * @example 2026-03-05T16:52:00.000Z
+             */
+            updatedAt: string;
+        };
         RegisterDto: {
             /** @example alex@example.com */
             email: string;
@@ -535,12 +1309,61 @@ export interface components {
             /** @example StrongPass123! */
             password: string;
         };
+        SettlementSummaryDto: {
+            /** @example 12.75 */
+            amount: number;
+            /** @example 550e8400-e29b-41d4-a716-446655440002 */
+            fromUserId: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440001 */
+            toUserId: string;
+        };
         UpdateChoreAssigneeDto: {
             /**
-             * @description User ID of the new assignee. Omit or set to null/undefined to unassign the chore completely.
+             * @description User ID of the active group member who should own this chore.
              * @example user-uuid
              */
-            assigneeUserId?: string;
+            assigneeUserId: string;
+        };
+        UpdateChoreTemplateDto: {
+            /**
+             * @description Updated fixed assignee. Only valid for FIXED templates.
+             * @example user-uuid
+             */
+            assigneeUserId?: string | null;
+            assignmentStrategy?: components["schemas"]["ChoreTemplateAssignmentStrategy"];
+            /** @example Kitchen and bathroom bins. */
+            description?: string | null;
+            /**
+             * Format: date
+             * @description Updated inclusive end date (YYYY-MM-DD). Set null to clear.
+             * @example 2026-06-29
+             */
+            endsOn?: string | null;
+            /**
+             * @description Updated ordered round-robin participant user IDs.
+             * @example [
+             *       "user-uuid-1",
+             *       "user-uuid-2",
+             *       "user-uuid-3"
+             *     ]
+             */
+            participantUserIds?: string[];
+            /**
+             * @description Updated day interval between due occurrences.
+             * @example 14
+             */
+            repeatEveryDays?: number;
+            /**
+             * Format: date
+             * @description Updated first due occurrence date (YYYY-MM-DD).
+             * @example 2026-04-06
+             */
+            startsOn?: string;
+            /**
+             * @description Updated title for the recurring template.
+             * @example Take out trash
+             */
+            title?: string;
         };
         UpdateContractDraftDto: {
             /** @description New draft content for the group contract. */
@@ -548,6 +1371,10 @@ export interface components {
         };
         UpdateMemberRoleDto: {
             role: components["schemas"]["GroupMemberRole"];
+        };
+        UserGroupsResponseDto: {
+            groups: components["schemas"]["GroupSummaryDto"][];
+            pagination: components["schemas"]["PaginationMetaDto"];
         };
     };
     responses: never;
@@ -577,7 +1404,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["AuthResultDto"];
+                    };
                 };
             };
         };
@@ -597,7 +1426,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["AuthenticatedUserDto"];
+                    };
                 };
             };
             /** @description Missing or invalid bearer token. */
@@ -628,17 +1459,19 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["AuthResultDto"];
+                    };
                 };
             };
         };
     };
-    ChoresController_updateChoreAssignee: {
+    ChoresController_updateOccurrenceAssignee: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                choreId: string;
+                occurrenceId: string;
             };
             cookie?: never;
         };
@@ -648,16 +1481,18 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Returns updated chore state. */
+            /** @description Returns updated occurrence state. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["ChoreSummaryDto"];
+                    };
                 };
             };
-            /** @description Invalid chore ID or payload. */
+            /** @description Invalid occurrence ID or payload. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -671,7 +1506,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Caller is not an active member of this chore group. */
+            /** @description Caller is not an active member of this occurrence group. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -680,27 +1515,29 @@ export interface operations {
             };
         };
     };
-    ChoresController_completeChore: {
+    ChoresController_completeOccurrence: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                choreId: string;
+                occurrenceId: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Returns updated chore state. */
+            /** @description Returns updated occurrence state. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["ChoreSummaryDto"];
+                    };
                 };
             };
-            /** @description Invalid chore ID. */
+            /** @description Invalid occurrence ID. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -714,7 +1551,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Caller is not an active member of this chore group. */
+            /** @description Caller is not an active member of this occurrence group. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -747,7 +1584,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["UserGroupsResponseDto"];
+                    };
                 };
             };
             /** @description Invalid pagination/sort query values. */
@@ -785,7 +1624,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupSummaryDto"];
+                    };
                 };
             };
             /** @description Missing or invalid bearer token. */
@@ -814,7 +1655,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupSummaryDto"];
+                    };
                 };
             };
             /** @description Invalid group ID format. */
@@ -840,6 +1683,58 @@ export interface operations {
             };
         };
     };
+    GroupsController_destroyGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deletes the group and all associated records when the caller is the sole remaining active member and an admin. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupDestroyResponseDto"];
+                    };
+                };
+            };
+            /** @description Invalid group ID format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an active admin of this group. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Destroying is blocked when other active members still remain in the group. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     FinanceController_getBalances: {
         parameters: {
             query?: never;
@@ -851,13 +1746,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Returns current balances for the group. */
+            /** @description Returns current balances and advisory settlement suggestions for the group. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupBalancesResponseDto"];
+                    };
                 };
             };
             /** @description Invalid group ID format. */
@@ -909,7 +1806,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupBillsResponseDto"];
+                    };
                 };
             };
             /** @description Invalid group ID or invalid pagination/sort query values. */
@@ -956,7 +1855,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["BillSummaryDto"];
+                    };
                 };
             };
             /** @description Invalid group ID or bill payload. */
@@ -982,24 +1883,306 @@ export interface operations {
             };
         };
     };
+    ChoreTemplatesController_listGroupTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Returns recurring chore templates for the group. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupChoreTemplatesResponseDto"];
+                    };
+                };
+            };
+            /** @description Invalid group ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an active member of this group. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChoreTemplatesController_createTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateChoreTemplateDto"];
+            };
+        };
+        responses: {
+            /** @description Recurring chore template created successfully. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["ChoreTemplateSummaryDto"];
+                    };
+                };
+            };
+            /** @description Invalid group ID or template payload. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Only admins can manage recurring chore templates. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChoreTemplatesController_updateTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateChoreTemplateDto"];
+            };
+        };
+        responses: {
+            /** @description Recurring chore template updated successfully. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["ChoreTemplateSummaryDto"];
+                    };
+                };
+            };
+            /** @description Invalid IDs or template payload. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Only admins can manage recurring chore templates. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChoreTemplatesController_archiveTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recurring chore template archived successfully. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["ChoreTemplateSummaryDto"];
+                    };
+                };
+            };
+            /** @description Invalid IDs. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Only admins can manage recurring chore templates. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChoreTemplatesController_pauseTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recurring chore template paused successfully. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["ChoreTemplateSummaryDto"];
+                    };
+                };
+            };
+            /** @description Invalid IDs. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Only admins can manage recurring chore templates. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChoreTemplatesController_resumeTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recurring chore template resumed successfully. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["ChoreTemplateSummaryDto"];
+                    };
+                };
+            };
+            /** @description Invalid IDs. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Only admins can manage recurring chore templates. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ChoresController_listGroupChores: {
         parameters: {
             query?: {
                 /** @description Optional filter by assignee user ID */
                 assigneeUserId?: string;
-                /** @description Optional lower bound for due date (inclusive) */
-                dueAfter?: string;
-                /** @description Optional upper bound for due date (inclusive) */
-                dueBefore?: string;
+                /** @description Optional lower bound for dueOn (inclusive, YYYY-MM-DD). */
+                dueOnFrom?: string;
+                /** @description Optional upper bound for dueOn (inclusive, YYYY-MM-DD). */
+                dueOnTo?: string;
                 /** @description 1-based page number. */
                 page?: number;
                 /** @description Maximum number of items per page. */
                 pageSize?: number;
                 /** @description Optional sort field for chore listing. */
-                sortBy?: "dueDate" | "createdAt" | "updatedAt" | "status";
+                sortBy?: "dueOn" | "createdAt" | "updatedAt" | "status";
                 /** @description Sort order applied to the selected field. */
                 sortOrder?: "asc" | "desc";
-                /** @description Optional filter by status (PENDING or COMPLETED) */
+                /** @description Optional filter by occurrence status. */
                 status?: components["schemas"]["ChoreStatus"];
             };
             header?: never;
@@ -1016,7 +2199,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupChoresResponseDto"];
+                    };
                 };
             };
             /** @description Invalid group ID or invalid filter/pagination/sort query values. */
@@ -1057,16 +2242,68 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Chore created successfully. */
+            /** @description One-off chore occurrence created successfully. */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["ChoreSummaryDto"];
+                    };
                 };
             };
             /** @description Invalid group ID or chore payload. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an active member of this group. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChoresController_getGroupChoreCalendar: {
+        parameters: {
+            query: {
+                /** @description Inclusive calendar end date (YYYY-MM-DD). Must be on or after start and no more than 56 days later. */
+                end: string;
+                /** @description Inclusive calendar start date (YYYY-MM-DD). */
+                start: string;
+            };
+            header?: never;
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Returns a flat, dueOn-sorted occurrence list for the requested calendar range. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupChoreCalendarResponseDto"];
+                    };
+                };
+            };
+            /** @description Invalid group ID or invalid calendar date range. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1106,7 +2343,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["ContractDetailResponseDto"];
+                    };
                 };
             };
             /** @description Invalid group ID format. */
@@ -1153,7 +2392,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["ContractSummaryDto"];
+                    };
                 };
             };
             /** @description Invalid group ID or contract draft payload. */
@@ -1196,7 +2437,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["ContractVersionSummaryDto"];
+                    };
                 };
             };
             /** @description Invalid group ID or empty draft content. */
@@ -1248,7 +2491,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["ContractVersionsResponseDto"];
+                    };
                 };
             };
             /** @description Invalid group ID or invalid pagination/sort query values. */
@@ -1291,7 +2536,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupDashboardResponseDto"];
+                    };
                 };
             };
             /** @description Invalid group ID format. */
@@ -1334,7 +2581,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["JoinCodeResetResponseDto"];
+                    };
                 };
             };
             /** @description Invalid group ID format. */
@@ -1353,6 +2602,58 @@ export interface operations {
             };
             /** @description Caller is not an active admin of this group. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GroupsController_leaveGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Marks the caller membership as inactive when they are not the last admin and no blocking chore or finance dependencies remain. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupMemberLeaveResponseDto"];
+                    };
+                };
+            };
+            /** @description Invalid group ID format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not an active member of this group. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Leaving is blocked when the caller is the last active admin, still has blocking chore assignments, or still has unsettled finance balances in the group. */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1386,7 +2687,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupMembersResponseDto"];
+                    };
                 };
             };
             /** @description Invalid group ID or invalid pagination/sort query values. */
@@ -1424,13 +2727,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Marks target member as inactive and returns result. */
+            /** @description Marks target member as inactive and returns result when no blocking chore dependencies remain. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupMemberRemoveResponseDto"];
+                    };
                 };
             };
             /** @description Invalid IDs for group or member. */
@@ -1449,6 +2754,13 @@ export interface operations {
             };
             /** @description Caller is not an active admin of this group. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Removal is blocked when the member is the last admin, still has blocking chore assignments, or still has unsettled finance balances in the group. */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1478,7 +2790,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupMemberRoleUpdateResponseDto"];
+                    };
                 };
             };
             /** @description Invalid IDs or invalid role payload. */
@@ -1525,7 +2839,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["PaymentSummaryDto"];
+                    };
                 };
             };
             /** @description Invalid group ID or payment payload. */
@@ -1542,8 +2858,15 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Caller is not an active member of this group. */
+            /** @description Caller is not an active member of this group or is not allowed to record this payment. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Idempotency key was reused for a different canonical payment payload or another finance conflict occurred. */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1570,7 +2893,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApiSuccessEnvelopeDto"] & {
+                        data: components["schemas"]["GroupSummaryDto"];
+                    };
                 };
             };
             /** @description Invalid join code format or code does not exist. */
