@@ -3,6 +3,7 @@ import { validateEnv } from '../../src/config/env.schema';
 describe('env schema', () => {
   const baseEnv = {
     NODE_ENV: 'test',
+    HOST: '127.0.0.1',
     PORT: '3000',
     API_PREFIX: 'api/v1',
     DATABASE_URL:
@@ -16,6 +17,7 @@ describe('env schema', () => {
     expect(result.DATABASE_URL).toBe(baseEnv.DATABASE_URL);
     expect(result.PORT).toBe(3000);
     expect(result.NODE_ENV).toBe('test');
+    expect(result.HOST).toBe('127.0.0.1');
     expect(result.LOG_LEVEL).toBe('info');
     expect(result.API_PREFIX).toBe('api/v1');
     expect(result.CORS_ORIGINS).toBe('http://localhost:5173');
@@ -24,6 +26,7 @@ describe('env schema', () => {
   it('applies defaults for optional fields', () => {
     const result = validateEnv({ DATABASE_URL: baseEnv.DATABASE_URL });
     expect(result.NODE_ENV).toBe('development');
+    expect(result.HOST).toBe('127.0.0.1');
     expect(result.PORT).toBe(3000);
     expect(result.LOG_LEVEL).toBe('info');
     expect(result.API_PREFIX).toBe('api/v1');

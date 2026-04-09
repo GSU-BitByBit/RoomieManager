@@ -1,6 +1,7 @@
 import type { ApiResponse, LoginResponse, MeResponse, RegisterResponse } from '@/types/api';
 
-const API_BASE = '/api/v1';
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL?.trim();
+const API_BASE = (configuredApiBase || '/api/v1').replace(/\/$/, '');
 
 export class ApiError extends Error {
   code: string;

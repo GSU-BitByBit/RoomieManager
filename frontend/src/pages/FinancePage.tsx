@@ -696,8 +696,11 @@ function CreateBillModal({
 
                 <div className="space-y-4">
                   <div>
-                    <label className="label">Title</label>
+                    <label htmlFor="create-bill-title" className="label">
+                      Title
+                    </label>
                     <input
+                      id="create-bill-title"
                       className="input"
                       placeholder="e.g. Grocery shopping"
                       value={title}
@@ -708,8 +711,11 @@ function CreateBillModal({
                   </div>
 
                   <div>
-                    <label className="label">Description</label>
+                    <label htmlFor="create-bill-description" className="label">
+                      Description
+                    </label>
                     <input
+                      id="create-bill-description"
                       className="input"
                       placeholder="Additional notes (optional)"
                       value={description}
@@ -719,8 +725,11 @@ function CreateBillModal({
 
                   <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
                     <div>
-                      <label className="label">Amount</label>
+                      <label htmlFor="create-bill-amount" className="label">
+                        Amount
+                      </label>
                       <input
+                        id="create-bill-amount"
                         type="number"
                         step="0.01"
                         min="0.01"
@@ -732,8 +741,11 @@ function CreateBillModal({
                       />
                     </div>
                     <div>
-                      <label className="label">Currency</label>
+                      <label htmlFor="create-bill-currency" className="label">
+                        Currency
+                      </label>
                       <select
+                        id="create-bill-currency"
                         className="input"
                         value={currency}
                         onChange={(e) => setCurrency(e.target.value)}
@@ -748,8 +760,11 @@ function CreateBillModal({
                   </div>
 
                   <div>
-                    <label className="label">Paid By</label>
+                    <label htmlFor="create-bill-paid-by" className="label">
+                      Paid By
+                    </label>
                     <select
+                      id="create-bill-paid-by"
                       className="input"
                       value={paidByUserId}
                       onChange={(e) => setPaidByUserId(e.target.value)}
@@ -764,8 +779,11 @@ function CreateBillModal({
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="label">Incurred On</label>
+                      <label htmlFor="create-bill-incurred-on" className="label">
+                        Incurred On
+                      </label>
                       <input
+                        id="create-bill-incurred-on"
                         type="date"
                         className="input"
                         value={incurredOn}
@@ -774,8 +792,11 @@ function CreateBillModal({
                       />
                     </div>
                     <div>
-                      <label className="label">Due Date</label>
+                      <label htmlFor="create-bill-due-date" className="label">
+                        Due Date
+                      </label>
                       <input
+                        id="create-bill-due-date"
                         type="date"
                         className="input"
                         value={dueDate}
@@ -904,6 +925,7 @@ function CreateBillModal({
                             row?.included &&
                             row.amount.trim().length > 0 &&
                             (amountCents === null || amountCents < 0);
+                          const shareAmountInputId = `create-bill-share-amount-${member.userId}`;
 
                           return (
                             <div
@@ -945,8 +967,11 @@ function CreateBillModal({
                               {row?.included && (
                                 <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_110px] sm:items-end">
                                   <div>
-                                    <label className="label">Share Amount</label>
+                                    <label htmlFor={shareAmountInputId} className="label">
+                                      Share Amount
+                                    </label>
                                     <input
+                                      id={shareAmountInputId}
                                       type="number"
                                       step="0.01"
                                       min="0"
@@ -1142,8 +1167,11 @@ function CreatePaymentModal({
           </div>
 
           <div>
-            <label className="label">From (Payer)</label>
+            <label htmlFor="create-payment-payer" className="label">
+              From (Payer)
+            </label>
             <select
+              id="create-payment-payer"
               className="input"
               value={payerUserId}
               onChange={(e) => setPayerUserId(e.target.value)}
@@ -1163,8 +1191,11 @@ function CreatePaymentModal({
           </div>
 
           <div>
-            <label className="label">To (Payee)</label>
+            <label htmlFor="create-payment-payee" className="label">
+              To (Payee)
+            </label>
             <select
+              id="create-payment-payee"
               className="input"
               value={payeeUserId}
               onChange={(e) => setPayeeUserId(e.target.value)}
@@ -1180,8 +1211,11 @@ function CreatePaymentModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Amount</label>
+              <label htmlFor="create-payment-amount" className="label">
+                Amount
+              </label>
               <input
+                id="create-payment-amount"
                 type="number"
                 step="0.01"
                 min="0.01"
@@ -1193,8 +1227,11 @@ function CreatePaymentModal({
               />
             </div>
             <div>
-              <label className="label">Currency</label>
+              <label htmlFor="create-payment-currency" className="label">
+                Currency
+              </label>
               <select
+                id="create-payment-currency"
                 className="input"
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
@@ -1210,8 +1247,11 @@ function CreatePaymentModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Paid On</label>
+              <label htmlFor="create-payment-paid-on" className="label">
+                Paid On
+              </label>
               <input
+                id="create-payment-paid-on"
                 type="date"
                 className="input"
                 value={paidOn}
@@ -1220,8 +1260,11 @@ function CreatePaymentModal({
               />
             </div>
             <div>
-              <label className="label">Related Bill (optional)</label>
+              <label htmlFor="create-payment-related-bill" className="label">
+                Related Bill (optional)
+              </label>
               <select
+                id="create-payment-related-bill"
                 className="input"
                 value={relatedBillId}
                 onChange={(e) => setRelatedBillId(e.target.value)}
@@ -1241,8 +1284,11 @@ function CreatePaymentModal({
           </div>
 
           <div>
-            <label className="label">Note (optional)</label>
+            <label htmlFor="create-payment-note" className="label">
+              Note (optional)
+            </label>
             <input
+              id="create-payment-note"
               className="input"
               placeholder="e.g. Rent payment"
               value={note}

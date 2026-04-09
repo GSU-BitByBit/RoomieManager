@@ -1,9 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
+import type { KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Users, ArrowRight, Copy, Check, LogIn, Home, X, Sparkles } from 'lucide-react';
 
 import { groups as groupsApi, ApiError } from '@/lib/api';
 import type { GroupSummary } from '@/types/api';
+
+function upsertGroupSummary(existingGroups: GroupSummary[], nextGroup: GroupSummary) {
+  return [nextGroup, ...existingGroups.filter((group) => group.id !== nextGroup.id)];
+}
 
 export default function GroupsPage() {
   const navigate = useNavigate();
@@ -51,7 +56,7 @@ export default function GroupsPage() {
 
     try {
       const group = await groupsApi.create(newGroupName.trim());
-      setGroupsList((prev) => [group, ...prev]);
+      setGroupsList((prev) => upsertGroupSummary(prev, group));
       setNewGroupName('');
       setShowCreate(false);
     } catch (err) {
@@ -76,7 +81,7 @@ export default function GroupsPage() {
 
     try {
       const group = await groupsApi.join(joinCode.trim());
-      setGroupsList((prev) => [group, ...prev]);
+      setGroupsList((prev) => upsertGroupSummary(prev, group));
       setJoinCode('');
       setShowJoin(false);
     } catch (err) {
@@ -94,6 +99,13 @@ export default function GroupsPage() {
     await navigator.clipboard.writeText(code);
     setCopiedId(groupId);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>, groupId: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      navigate(`/groups/${groupId}`);
+    }
   };
 
   if (loading) {
@@ -239,11 +251,13 @@ export default function GroupsPage() {
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {groupsList.map((group) => (
-            <button
+            <div
               key={group.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               className="group/card card cursor-pointer p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sage-100/30"
               onClick={() => navigate(`/groups/${group.id}`)}
+              onKeyDown={(event) => handleCardKeyDown(event, group.id)}
             >
               <div className="mb-3 flex items-start justify-between">
                 <div className="min-w-0 flex-1">
@@ -287,7 +301,7 @@ export default function GroupsPage() {
                   </button>
                 </div>
               )}
-            </button>
+            </div>
           ))}
         </div>
       )}

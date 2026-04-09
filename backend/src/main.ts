@@ -33,6 +33,7 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 
   const configService = app.get(ConfigService<EnvConfig, true>);
+  const host = configService.get('HOST', { infer: true });
   const port = configService.get('PORT', { infer: true });
   const apiPrefix = normalizeApiPrefix(configService.get('API_PREFIX', { infer: true }));
 
@@ -69,8 +70,8 @@ async function bootstrap(): Promise<void> {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(port);
-  Logger.log(`Backend listening on port ${port}`, 'Bootstrap');
+  await app.listen(port, host);
+  Logger.log(`Backend listening on http://${host}:${port}/${apiPrefix}`, 'Bootstrap');
 }
 
 void bootstrap();
