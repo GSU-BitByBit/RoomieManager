@@ -1,0 +1,6 @@
+.DS_Store
+.vite/
+*.tsbuildinfo
+backend/user1
+output/
+package-lock.json
