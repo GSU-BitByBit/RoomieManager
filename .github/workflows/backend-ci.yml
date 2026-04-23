@@ -172,6 +172,8 @@ jobs:
       OCI_USER: ${{ secrets.OCI_DEPLOY_USER }}
       OCI_SSH_KEY: ${{ secrets.OCI_DEPLOY_SSH_KEY }}
       OCI_IMAGE_REF: ${{ needs.build_image.outputs.image_tag_sha }}
+      GHCR_USERNAME: ${{ github.actor }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       BACKEND_PUBLIC_HEALTHCHECK_URL: https://api.roomiemanager.site/api/v1/health/ready
 
     steps:
@@ -184,6 +186,8 @@ jobs:
           test -n "$OCI_USER"
           test -n "$OCI_SSH_KEY"
           test -n "$OCI_IMAGE_REF"
+          test -n "$GHCR_USERNAME"
+          test -n "$GHCR_TOKEN"
 
       - name: Configure SSH
         run: |
@@ -208,6 +212,12 @@ jobs:
             else \
               printf '\nROOMIEMANAGER_IMAGE=%s\n' '$OCI_IMAGE_REF' | sudo tee -a /etc/roomiemanager/compose.env >/dev/null; \
             fi"
+
+      - name: Authenticate OCI Docker runtime to GHCR
+        run: |
+          printf '%s\n' "$GHCR_TOKEN" | \
+            ssh -i ~/.ssh/oci_deploy_key "$OCI_USER@$OCI_HOST" \
+              "docker login ghcr.io -u '$GHCR_USERNAME' --password-stdin"
 
       - name: Roll out backend on OCI
         run: |
