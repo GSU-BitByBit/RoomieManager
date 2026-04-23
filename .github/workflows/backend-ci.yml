@@ -148,7 +148,7 @@ jobs:
           images: ${{ steps.image_vars.outputs.image_repo }}
           tags: |
             type=raw,value=main
-            type=sha,prefix=sha-
+            type=sha,prefix=sha-,format=long
 
       - name: Build and push backend image
         uses: docker/build-push-action@v6
