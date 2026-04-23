@@ -49,7 +49,7 @@ export interface PaginationQuery {
 // Auth
 export interface AuthUser {
   id: string;
-  email: string;
+  email?: string;
   emailConfirmedAt?: string | null;
   phone?: string | null;
   createdAt?: string | null;
@@ -71,6 +71,23 @@ export interface RegisterResponse {
   user: AuthUser;
   session: AuthSession | null;
 }
+
+export interface EmailActionExchangeResponse {
+  user: AuthUser | null;
+  session: AuthSession | null;
+}
+
+export interface AuthMessageResponse {
+  message: string;
+}
+
+export type AuthEmailActionType =
+  | 'email'
+  | 'signup'
+  | 'recovery'
+  | 'magiclink'
+  | 'invite'
+  | 'email_change';
 
 export interface MeResponse {
   id: string;

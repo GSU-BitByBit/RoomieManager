@@ -59,6 +59,11 @@ export class AuthResultDto {
   session!: AuthSessionDto | null;
 }
 
+export class AuthMessageDto {
+  @ApiProperty({ example: 'If an account exists for that email, a recovery link has been sent.' })
+  message!: string;
+}
+
 export class AuthenticatedUserDto {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440001' })
   id!: string;

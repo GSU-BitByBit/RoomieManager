@@ -1,4 +1,12 @@
-import type { ApiResponse, LoginResponse, MeResponse, RegisterResponse } from '@/types/api';
+import type {
+  ApiResponse,
+  AuthEmailActionType,
+  AuthMessageResponse,
+  EmailActionExchangeResponse,
+  LoginResponse,
+  MeResponse,
+  RegisterResponse
+} from '@/types/api';
 
 const configuredApiBase = import.meta.env.VITE_API_BASE_URL?.trim();
 const API_BASE = (configuredApiBase || '/api/v1').replace(/\/$/, '');
@@ -85,6 +93,23 @@ export const auth = {
 
   login(email: string, password: string) {
     return request<LoginResponse>('POST', '/auth/login', { email, password }, false);
+  },
+
+  requestPasswordReset(email: string) {
+    return request<AuthMessageResponse>('POST', '/auth/password/recovery', { email }, false);
+  },
+
+  exchangeEmailAction(tokenHash: string, type: AuthEmailActionType) {
+    return request<EmailActionExchangeResponse>(
+      'POST',
+      '/auth/email-action/exchange',
+      { tokenHash, type },
+      false,
+    );
+  },
+
+  updatePassword(password: string) {
+    return request<AuthMessageResponse>('POST', '/auth/password/update', { password });
   },
 
   me() {

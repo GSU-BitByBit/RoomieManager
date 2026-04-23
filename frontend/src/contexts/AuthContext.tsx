@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import type { ReactNode } from 'react';
 import { auth as authApi, ApiError } from '@/lib/api';
 import { resolveIdentityLabel } from '@/lib/identity';
-import type { MeResponse } from '@/types/api';
+import type { AuthSession, MeResponse } from '@/types/api';
 
 interface User {
   id: string;
@@ -15,6 +15,10 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName?: string) => Promise<void>;
+  acceptSession: (
+    session: AuthSession,
+    source?: { id: string; email?: string | null; userMetadata?: MeResponse['userMetadata'] },
+  ) => Promise<void>;
   logout: () => void;
 }
 
@@ -56,6 +60,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const clearStoredSession = useCallback(() => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+  }, []);
+
+  const persistSession = useCallback((session: AuthSession) => {
+    localStorage.setItem('access_token', session.accessToken);
+    localStorage.setItem('refresh_token', session.refreshToken);
+  }, []);
+
   const checkAuth = useCallback(async () => {
     const token = localStorage.getItem('access_token');
     if (!token) {
@@ -67,13 +81,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const me = await authApi.me();
       setUser(buildUserIdentity(me));
     } catch {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      clearStoredSession();
       setUser(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clearStoredSession]);
+
+  const acceptSession = useCallback(
+    async (
+      session: AuthSession,
+      source?: { id: string; email?: string | null; userMetadata?: MeResponse['userMetadata'] },
+    ) => {
+      persistSession(session);
+      if (source) {
+        setUser(buildUserIdentity(source));
+      }
+      setLoading(true);
+
+      try {
+        const me = await authApi.me();
+        setUser(buildUserIdentity(me));
+      } catch (error) {
+        clearStoredSession();
+        setUser(null);
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [clearStoredSession, persistSession],
+  );
 
   useEffect(() => {
     checkAuth();
@@ -81,29 +119,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const data = await authApi.login(email, password);
-    localStorage.setItem('access_token', data.session.accessToken);
-    localStorage.setItem('refresh_token', data.session.refreshToken);
-    setUser(buildUserIdentity(data.user));
+    await acceptSession(data.session, data.user);
   };
 
   const register = async (email: string, password: string, fullName?: string) => {
     const data = await authApi.register(email, password, fullName);
     if (data.session) {
-      const session = data.session;
-      localStorage.setItem('access_token', session.accessToken);
-      localStorage.setItem('refresh_token', session.refreshToken);
-      setUser(buildUserIdentity(data.user, fullName));
+      await acceptSession(data.session, {
+        ...data.user,
+        userMetadata: fullName ? { full_name: fullName } : undefined,
+      });
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    clearStoredSession();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, acceptSession, logout }}>
       {children}
     </AuthContext.Provider>
   );

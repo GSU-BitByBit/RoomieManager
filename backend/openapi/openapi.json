@@ -71,6 +71,18 @@
         ],
         "type": "object"
       },
+      "AuthMessageDto": {
+        "properties": {
+          "message": {
+            "example": "If an account exists for that email, a recovery link has been sent.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
       "AuthResultDto": {
         "properties": {
           "session": {
@@ -950,6 +962,31 @@
         ],
         "type": "object"
       },
+      "ExchangeEmailActionDto": {
+        "properties": {
+          "tokenHash": {
+            "example": "<token-hash-from-supabase-email-link>",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "email",
+              "signup",
+              "recovery",
+              "magiclink",
+              "invite",
+              "email_change"
+            ],
+            "example": "recovery",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tokenHash",
+          "type"
+        ],
+        "type": "object"
+      },
       "GroupBalancesResponseDto": {
         "properties": {
           "balances": {
@@ -1585,6 +1622,32 @@
         ],
         "type": "object"
       },
+      "PasswordRecoveryRequestDto": {
+        "properties": {
+          "email": {
+            "example": "alex@example.com",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
+      "PasswordUpdateDto": {
+        "properties": {
+          "password": {
+            "example": "NewStrongPass123!",
+            "maxLength": 128,
+            "minLength": 8,
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "type": "object"
+      },
       "PaymentSummaryDto": {
         "properties": {
           "amount": {
@@ -1839,6 +1902,75 @@
   },
   "openapi": "3.0.0",
   "paths": {
+    "/api/v1/auth/email-action/exchange": {
+      "post": {
+        "operationId": "AuthController_exchangeEmailAction",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExchangeEmailActionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuthResultDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "session": {
+                        "accessToken": "<jwt-access-token>",
+                        "expiresIn": 3600,
+                        "refreshToken": "<refresh-token>",
+                        "tokenType": "bearer"
+                      },
+                      "user": {
+                        "createdAt": "2026-03-05T16:10:00.000Z",
+                        "email": "alex@example.com",
+                        "emailConfirmedAt": "2026-03-05T16:11:00.000Z",
+                        "id": "550e8400-e29b-41d4-a716-446655440001",
+                        "phone": null
+                      }
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Returns Supabase user and session for email verification or recovery links."
+          }
+        },
+        "summary": "Exchange a Supabase email action token hash for a session",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "operationId": "AuthController_login",
@@ -1965,6 +2097,125 @@
           }
         ],
         "summary": "Return current authenticated user from access token claims",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/password/recovery": {
+      "post": {
+        "operationId": "AuthController_requestPasswordRecovery",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordRecoveryRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuthMessageDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "message": "If an account exists for that email, a recovery link has been sent."
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Returns a generic success message to avoid leaking account existence."
+          }
+        },
+        "summary": "Send a password recovery email via Supabase Auth",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/password/update": {
+      "post": {
+        "operationId": "AuthController_updatePassword",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordUpdateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuthMessageDto"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "example": {
+                    "data": {
+                      "message": "Password updated successfully."
+                    },
+                    "meta": {
+                      "requestId": "ad86d8f4-8f30-4383-9534-dbc56f5aa1af",
+                      "timestamp": "2026-03-05T16:06:00.000Z"
+                    },
+                    "success": true
+                  }
+                }
+              }
+            },
+            "description": "Password updated successfully."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update the authenticated user password via Supabase Auth",
         "tags": [
           "Auth"
         ]

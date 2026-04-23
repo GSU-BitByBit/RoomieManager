@@ -1,0 +1,19 @@
+[Unit]
+Description=RoomieManager Backend Docker Runtime
+After=network-online.target docker.service
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/etc/roomiemanager/compose.env
+ExecStart=/usr/bin/docker compose --env-file /etc/roomiemanager/compose.env -f /srv/roomiemanager/backend/deploy/docker/docker-compose.prod.yml up -d
+ExecStop=/usr/bin/docker compose --env-file /etc/roomiemanager/compose.env -f /srv/roomiemanager/backend/deploy/docker/docker-compose.prod.yml down
+ExecReload=/usr/bin/docker compose --env-file /etc/roomiemanager/compose.env -f /srv/roomiemanager/backend/deploy/docker/docker-compose.prod.yml pull backend
+ExecReload=/usr/bin/docker compose --env-file /etc/roomiemanager/compose.env -f /srv/roomiemanager/backend/deploy/docker/docker-compose.prod.yml up -d backend
+TimeoutStartSec=0
+SyslogIdentifier=roomiemanager-backend-docker
+
+[Install]
+WantedBy=multi-user.target

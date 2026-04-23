@@ -1118,9 +1118,7 @@ describe('GroupsService', () => {
 
     const service = new GroupsService(prismaMock as any);
 
-    await expect(service.leaveGroup('user-2', 'group-1')).rejects.toBeInstanceOf(
-      ConflictException
-    );
+    await expect(service.leaveGroup('user-2', 'group-1')).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('blocks leaving when the member still participates in active round-robin templates', async () => {
@@ -1153,9 +1151,7 @@ describe('GroupsService', () => {
 
     const service = new GroupsService(prismaMock as any);
 
-    await expect(service.leaveGroup('user-2', 'group-1')).rejects.toBeInstanceOf(
-      ConflictException
-    );
+    await expect(service.leaveGroup('user-2', 'group-1')).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('blocks leaving when the member still has unsettled finance balances', async () => {
@@ -1197,9 +1193,7 @@ describe('GroupsService', () => {
       financeServiceMock as any
     );
 
-    await expect(service.leaveGroup('user-2', 'group-1')).rejects.toBeInstanceOf(
-      ConflictException
-    );
+    await expect(service.leaveGroup('user-2', 'group-1')).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('allows the sole remaining active admin to destroy the group', async () => {

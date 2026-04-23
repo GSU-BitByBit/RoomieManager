@@ -17,3 +17,7 @@ export interface AuthResult {
   user: AuthUserProfile | null;
   session: AuthSession | null;
 }
+
+export interface AuthMessageResult {
+  message: string;
+}

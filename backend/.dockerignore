@@ -1,0 +1,14 @@
+node_modules
+dist
+.pnpm-store
+coverage
+.turbo
+.cache
+.DS_Store
+test-results
+.env
+.env.*
+*.log
+pnpm-debug.log*
+Dockerfile*
+docs
