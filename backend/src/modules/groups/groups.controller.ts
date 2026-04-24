@@ -421,8 +421,7 @@ export class GroupsController {
   })
   @ApiBadRequestResponse({ description: 'Invalid group ID format.' })
   @ApiConflictResponse({
-    description:
-      'Destroying is blocked when other active members still remain in the group.'
+    description: 'Destroying is blocked when other active members still remain in the group.'
   })
   @ApiForbiddenResponse({ description: 'Caller is not an active admin of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })

@@ -4,10 +4,7 @@ type AuthIdentityInput = {
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const EMAIL_NAME_NOISE_TOKENS = new Set([
-  'roomiemanager',
-  'roomiesyncai',
-]);
+const EMAIL_NAME_NOISE_TOKENS = new Set(['roomiemanager', 'roomiesyncai']);
 
 function collapseWhitespace(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
@@ -41,7 +38,10 @@ function prettifyEmailLocalPart(email: string | null | undefined): string | null
 
   const [rawLocalPart] = email.trim().split('@');
   const tokens = collapseWhitespace(
-    rawLocalPart.replace(/\+.*$/, '').replace(/[._-]+/g, ' ').replace(/\d+/g, (match) => ` ${match} `),
+    rawLocalPart
+      .replace(/\+.*$/, '')
+      .replace(/[._-]+/g, ' ')
+      .replace(/\d+/g, (match) => ` ${match} `)
   )
     .split(' ')
     .filter(Boolean);
@@ -52,9 +52,7 @@ function prettifyEmailLocalPart(email: string | null | undefined): string | null
   });
 
   const cleanedTokens =
-    filteredTokens.length > 0
-      ? filteredTokens
-      : tokens.filter((token) => !/^\d+$/.test(token));
+    filteredTokens.length > 0 ? filteredTokens : tokens.filter((token) => !/^\d+$/.test(token));
   const cleaned = collapseWhitespace(cleanedTokens.join(' '));
 
   if (!cleaned) {
@@ -82,7 +80,7 @@ function getMetadataName(userMetadata?: Record<string, unknown>): string | null 
 
 export function resolveAuthIdentityDisplayName({
   email,
-  userMetadata,
+  userMetadata
 }: AuthIdentityInput): string | null {
   const metadataName = getMetadataName(userMetadata);
   if (metadataName) {

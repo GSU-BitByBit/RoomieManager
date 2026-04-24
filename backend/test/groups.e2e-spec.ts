@@ -392,11 +392,7 @@ describe('Groups endpoints (e2e)', () => {
     });
     expect(response.body.data.finance.billCount).toBe(4);
     expect(response.body.data.contract.publishedVersion).toBe(2);
-    expect(groupsServiceMock.getGroupDashboard).toHaveBeenCalledWith(
-      'user-1',
-      groupId,
-      'Alex'
-    );
+    expect(groupsServiceMock.getGroupDashboard).toHaveBeenCalledWith('user-1', groupId, 'Alex');
   });
 
   it('GET /api/v1/groups/:groupId/dashboard rejects non-app-id groupId', async () => {

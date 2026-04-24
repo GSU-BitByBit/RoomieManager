@@ -613,12 +613,7 @@ export class GroupsService {
           await this.assertNotLastAdmin(tx, groupId);
         }
 
-        await this.assertNoBlockingMembershipExitDependencies(
-          tx,
-          groupId,
-          memberUserId,
-          'remove'
-        );
+        await this.assertNoBlockingMembershipExitDependencies(tx, groupId, memberUserId, 'remove');
 
         const updatedMembership = await tx.groupMember.update({
           where: { id: membership.id },
