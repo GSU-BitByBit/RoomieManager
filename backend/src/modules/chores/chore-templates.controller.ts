@@ -118,7 +118,7 @@ export class ChoreTemplatesController {
     example: CHORE_TEMPLATE_EXAMPLE
   })
   @ApiBadRequestResponse({ description: 'Invalid group ID or template payload.' })
-  @ApiForbiddenResponse({ description: 'Only admins can manage recurring chore templates.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   createTemplate(
     @CurrentUser() user: AuthenticatedUser,
@@ -142,7 +142,7 @@ export class ChoreTemplatesController {
     }
   })
   @ApiBadRequestResponse({ description: 'Invalid IDs or template payload.' })
-  @ApiForbiddenResponse({ description: 'Only admins can manage recurring chore templates.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   updateTemplate(
     @CurrentUser() user: AuthenticatedUser,
@@ -168,7 +168,7 @@ export class ChoreTemplatesController {
     }
   })
   @ApiBadRequestResponse({ description: 'Invalid IDs.' })
-  @ApiForbiddenResponse({ description: 'Only admins can manage recurring chore templates.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   pauseTemplate(
     @CurrentUser() user: AuthenticatedUser,
@@ -191,7 +191,7 @@ export class ChoreTemplatesController {
     }
   })
   @ApiBadRequestResponse({ description: 'Invalid IDs.' })
-  @ApiForbiddenResponse({ description: 'Only admins can manage recurring chore templates.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   resumeTemplate(
     @CurrentUser() user: AuthenticatedUser,
@@ -216,7 +216,7 @@ export class ChoreTemplatesController {
     }
   })
   @ApiBadRequestResponse({ description: 'Invalid IDs.' })
-  @ApiForbiddenResponse({ description: 'Only admins can manage recurring chore templates.' })
+  @ApiForbiddenResponse({ description: 'Caller is not an active member of this group.' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   archiveTemplate(
     @CurrentUser() user: AuthenticatedUser,

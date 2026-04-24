@@ -10,7 +10,6 @@ import {
   ChoreStatus,
   ChoreTemplateAssignmentStrategy,
   ChoreTemplateStatus,
-  GroupMemberRole,
   GroupMemberStatus,
   Prisma,
   type GroupMember
@@ -85,7 +84,7 @@ export class ChoreTemplatesService {
     options: Pick<MaintainChoreGenerationOptions, 'today'> = {}
   ): Promise<ChoreTemplateSummary> {
     return this.withSerializableTransaction(async (tx) => {
-      await this.assertAdminMembership(tx, actorUserId, groupId);
+      await this.assertActiveMembership(tx, actorUserId, groupId);
 
       const startsOn = toDateOnlyUtc(payload.startsOn);
       const endsOn = payload.endsOn ? toDateOnlyUtc(payload.endsOn) : null;
@@ -139,7 +138,7 @@ export class ChoreTemplatesService {
     options: Pick<MaintainChoreGenerationOptions, 'today'> = {}
   ): Promise<ChoreTemplateSummary> {
     return this.withSerializableTransaction(async (tx) => {
-      await this.assertAdminMembership(tx, actorUserId, groupId);
+      await this.assertActiveMembership(tx, actorUserId, groupId);
 
       const existing = await this.findTemplateOrThrow(tx, groupId, templateId);
       if (existing.status === ChoreTemplateStatus.ARCHIVED) {
@@ -241,7 +240,7 @@ export class ChoreTemplatesService {
     options: Pick<MaintainChoreGenerationOptions, 'today'> = {}
   ): Promise<ChoreTemplateSummary> {
     return this.withSerializableTransaction(async (tx) => {
-      await this.assertAdminMembership(tx, actorUserId, groupId);
+      await this.assertActiveMembership(tx, actorUserId, groupId);
 
       const existing = await this.findTemplateOrThrow(tx, groupId, templateId);
       if (existing.status === ChoreTemplateStatus.ARCHIVED) {
@@ -283,7 +282,7 @@ export class ChoreTemplatesService {
     options: Pick<MaintainChoreGenerationOptions, 'today'> = {}
   ): Promise<ChoreTemplateSummary> {
     return this.withSerializableTransaction(async (tx) => {
-      await this.assertAdminMembership(tx, actorUserId, groupId);
+      await this.assertActiveMembership(tx, actorUserId, groupId);
 
       const existing = await this.findTemplateOrThrow(tx, groupId, templateId);
       if (existing.status === ChoreTemplateStatus.ARCHIVED) {
@@ -331,7 +330,7 @@ export class ChoreTemplatesService {
     options: Pick<MaintainChoreGenerationOptions, 'today'> = {}
   ): Promise<ChoreTemplateSummary> {
     return this.withSerializableTransaction(async (tx) => {
-      await this.assertAdminMembership(tx, actorUserId, groupId);
+      await this.assertActiveMembership(tx, actorUserId, groupId);
 
       const existing = await this.findTemplateOrThrow(tx, groupId, templateId);
       if (existing.status === ChoreTemplateStatus.ARCHIVED) {
@@ -482,22 +481,6 @@ export class ChoreTemplatesService {
       throw new ForbiddenException({
         code: ErrorCode.Forbidden,
         message: 'You do not have access to this group.'
-      });
-    }
-
-    return membership;
-  }
-
-  private async assertAdminMembership(
-    tx: Prisma.TransactionClient,
-    userId: string,
-    groupId: string
-  ): Promise<GroupMember> {
-    const membership = await this.assertActiveMembership(tx, userId, groupId);
-    if (membership.role !== GroupMemberRole.ADMIN) {
-      throw new ForbiddenException({
-        code: ErrorCode.Forbidden,
-        message: 'Only admins can manage recurring chore templates.'
       });
     }
 

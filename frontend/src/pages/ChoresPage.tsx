@@ -345,12 +345,6 @@ export default function ChoresPage() {
   }, [newAssigneeUserId, user?.id]);
 
   useEffect(() => {
-    if (!isAdmin && viewMode === 'templates') {
-      setViewMode('occurrences');
-    }
-  }, [isAdmin, viewMode]);
-
-  useEffect(() => {
     if (viewMode !== 'occurrences' && showCreate) {
       if (viewMode === 'templates') {
         setShowCreate(false);
@@ -470,7 +464,7 @@ export default function ChoresPage() {
     : '';
   const showActionWindowNote = statusFilter === 'ALL' || statusFilter === 'PENDING';
   const pageSubtitle = isTemplatesView
-    ? 'Weekly recurring templates stay separate from one-off occurrences so recurring setup remains easy to manage.'
+    ? 'Recurring templates stay separate from one-off occurrences so schedule setup stays easy to manage.'
     : isCalendarView
       ? 'Month view of assigned chore occurrences, with ownership and status visible at a glance.'
       : statusFilter === 'COMPLETED'
@@ -528,20 +522,18 @@ export default function ChoresPage() {
           <CalendarDays size={15} />
           Calendar
         </button>
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => setViewMode('templates')}
-            className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
-              viewMode === 'templates'
-                ? 'bg-sage-100 text-sage-700'
-                : 'text-slate-500 hover:bg-sage-50 hover:text-charcoal'
-            }`}
-          >
-            <Repeat size={15} />
-            Recurring Templates
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setViewMode('templates')}
+          className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
+            viewMode === 'templates'
+              ? 'bg-sage-100 text-sage-700'
+              : 'text-slate-500 hover:bg-sage-50 hover:text-charcoal'
+          }`}
+        >
+          <Repeat size={15} />
+          Recurring Templates
+        </button>
       </div>
 
       {directoryWarning && (

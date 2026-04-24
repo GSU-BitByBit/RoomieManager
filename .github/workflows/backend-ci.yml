@@ -1,4 +1,4 @@
-name: Backend CI
+name: Backend CI/CD
 
 on:
   push:
@@ -10,8 +10,12 @@ on:
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  backend:
+  verify:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -103,3 +107,86 @@ jobs:
 
       - name: Verify (lint + tests + build + OpenAPI contract)
         run: pnpm verify
+
+  build_image:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/roomiemanager-backend
+          tags: |
+            type=raw,value=main
+            type=sha,prefix=sha-
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy_oci:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build_image
+    runs-on: ubuntu-latest
+
+    env:
+      OCI_HOST: ${{ secrets.OCI_DEPLOY_HOST }}
+      OCI_USER: ${{ secrets.OCI_DEPLOY_USER }}
+      OCI_SSH_KEY: ${{ secrets.OCI_DEPLOY_SSH_KEY }}
+      BACKEND_PUBLIC_HEALTHCHECK_URL: https://api.roomiemanager.site/api/v1/health/ready
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate deployment secrets
+        run: |
+          test -n "$OCI_HOST"
+          test -n "$OCI_USER"
+          test -n "$OCI_SSH_KEY"
+
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$OCI_SSH_KEY" > ~/.ssh/oci_deploy_key
+          chmod 600 ~/.ssh/oci_deploy_key
+          ssh-keyscan -H "$OCI_HOST" >> ~/.ssh/known_hosts
+
+      - name: Sync deployment assets to OCI
+        run: |
+          ssh -i ~/.ssh/oci_deploy_key "$OCI_USER@$OCI_HOST" "mkdir -p /srv/roomiemanager/backend/deploy"
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/oci_deploy_key" \
+            backend/deploy/ \
+            "$OCI_USER@$OCI_HOST:/srv/roomiemanager/backend/deploy/"
+
+      - name: Roll out backend on OCI
+        run: |
+          ssh -i ~/.ssh/oci_deploy_key "$OCI_USER@$OCI_HOST" \
+            "bash /srv/roomiemanager/backend/deploy/scripts/oci-deploy.sh"
+
+      - name: Verify public production readiness
+        run: curl --fail --silent --show-error "$BACKEND_PUBLIC_HEALTHCHECK_URL"

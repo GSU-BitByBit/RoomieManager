@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -10,11 +19,14 @@ import {
 import { ApiSuccessResponse } from '../../common/http/api-success-response.decorator';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { AuthenticatedUserDto, AuthResultDto } from './dto/auth-response.dto';
+import { AuthenticatedUserDto, AuthMessageDto, AuthResultDto } from './dto/auth-response.dto';
+import { ExchangeEmailActionDto } from './dto/exchange-email-action.dto';
 import { LoginDto } from './dto/login.dto';
+import { PasswordRecoveryRequestDto } from './dto/password-recovery-request.dto';
+import { PasswordUpdateDto } from './dto/password-update.dto';
 import { RegisterDto } from './dto/register.dto';
 import { SupabaseJwtAuthGuard } from './guards/supabase-jwt-auth.guard';
-import type { AuthResult } from './interfaces/auth-response.interface';
+import type { AuthMessageResult, AuthResult } from './interfaces/auth-response.interface';
 import type { AuthenticatedUser } from './interfaces/auth-user.interface';
 
 const REGISTER_RESULT_EXAMPLE = {
@@ -55,6 +67,10 @@ const AUTHENTICATED_USER_EXAMPLE = {
   userMetadata: {}
 } as const;
 
+const AUTH_MESSAGE_EXAMPLE = {
+  message: 'If an account exists for that email, a recovery link has been sent.'
+} as const;
+
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -87,6 +103,56 @@ export class AuthController {
     return this.authService.login(payload);
   }
 
+  @Post('password/recovery')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a password recovery email via Supabase Auth' })
+  @ApiBody({ type: PasswordRecoveryRequestDto })
+  @ApiSuccessResponse({
+    description: 'Returns a generic success message to avoid leaking account existence.',
+    type: AuthMessageDto,
+    example: AUTH_MESSAGE_EXAMPLE
+  })
+  async requestPasswordRecovery(
+    @Body() payload: PasswordRecoveryRequestDto
+  ): Promise<AuthMessageResult> {
+    return this.authService.requestPasswordRecovery(payload);
+  }
+
+  @Post('email-action/exchange')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Exchange a Supabase email action token hash for a session'
+  })
+  @ApiBody({ type: ExchangeEmailActionDto })
+  @ApiSuccessResponse({
+    description: 'Returns Supabase user and session for email verification or recovery links.',
+    type: AuthResultDto,
+    example: LOGIN_RESULT_EXAMPLE
+  })
+  async exchangeEmailAction(@Body() payload: ExchangeEmailActionDto): Promise<AuthResult> {
+    return this.authService.exchangeEmailAction(payload);
+  }
+
+  @Post('password/update')
+  @UseGuards(SupabaseJwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Update the authenticated user password via Supabase Auth' })
+  @ApiBody({ type: PasswordUpdateDto })
+  @ApiSuccessResponse({
+    description: 'Password updated successfully.',
+    type: AuthMessageDto,
+    example: {
+      message: 'Password updated successfully.'
+    }
+  })
+  async updatePassword(
+    @Headers('authorization') authorization: string | undefined,
+    @Body() payload: PasswordUpdateDto
+  ): Promise<AuthMessageResult> {
+    return this.authService.updatePassword(this.extractBearerToken(authorization), payload);
+  }
+
   @Get('me')
   @UseGuards(SupabaseJwtAuthGuard)
   @ApiBearerAuth('bearer')
@@ -99,5 +165,13 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
   getMe(@CurrentUser() user: AuthenticatedUser): AuthenticatedUser {
     return user;
+  }
+
+  private extractBearerToken(header: string | undefined): string {
+    if (!header) {
+      return '';
+    }
+
+    return header.replace(/^Bearer\s+/i, '').trim();
   }
 }

@@ -13,7 +13,8 @@ export const envSchema = z.object({
   SUPABASE_URL: z.string().url().optional().or(z.literal('')),
   SUPABASE_ANON_KEY: z.string().optional().or(z.literal('')),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional().or(z.literal('')),
-  SUPABASE_JWT_AUDIENCE: z.string().optional().or(z.literal(''))
+  SUPABASE_JWT_AUDIENCE: z.string().optional().or(z.literal('')),
+  SUPABASE_AUTH_REDIRECT_URL: z.string().url().optional().or(z.literal(''))
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

@@ -1,0 +1,12 @@
+Subject: Your RoomieManager home is almost ready
+
+Your home is almost ready
+
+Thanks for joining RoomieManager. Confirm your email so we can finish setting up your account and keep {{ .Email }} connected to the right household, chores, bills, and shared agreements.
+
+Verify your email:
+{{ .ConfirmationURL }}
+
+If you did not create a RoomieManager account, you can ignore this email.
+
+RoomieManager helps shared homes stay calm, fair, and organized.

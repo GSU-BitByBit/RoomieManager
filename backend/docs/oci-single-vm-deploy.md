@@ -1,5 +1,9 @@
 # RoomieManager Backend on OCI
 
+This document describes the original host-Node plus systemd deployment model.
+
+For the recommended production setup going forward, use [oci-docker-cicd-deploy.md](./oci-docker-cicd-deploy.md), which keeps Caddy on the host but runs the backend in Docker and deploys automatically from GitHub Actions.
+
 This backend is designed to run on a single Ubuntu VM behind Caddy:
 
 - NestJS listens on `127.0.0.1:3000`

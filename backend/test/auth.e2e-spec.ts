@@ -31,6 +31,24 @@ describe('Auth endpoints (e2e)', () => {
         expiresIn: 3600,
         tokenType: 'bearer'
       }
+    })),
+    requestPasswordRecovery: jest.fn(async () => ({
+      message: 'If an account exists for that email, a recovery link has been sent.'
+    })),
+    exchangeEmailAction: jest.fn(async () => ({
+      user: {
+        id: 'user-1',
+        email: 'alex@example.com'
+      },
+      session: {
+        accessToken: 'email-access-token',
+        refreshToken: 'email-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer'
+      }
+    })),
+    updatePassword: jest.fn(async () => ({
+      message: 'Password updated successfully.'
     }))
   };
 
@@ -135,6 +153,65 @@ describe('Auth endpoints (e2e)', () => {
       expect.objectContaining({
         email: 'alex@example.com',
         password: 'StrongPass123!'
+      })
+    );
+  });
+
+  it('POST /api/v1/auth/password/recovery returns wrapped response', async () => {
+    const response = await request(app!.getHttpServer())
+      .post('/api/v1/auth/password/recovery')
+      .send({
+        email: 'alex@example.com'
+      })
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toEqual({
+      message: 'If an account exists for that email, a recovery link has been sent.'
+    });
+    expect(authServiceMock.requestPasswordRecovery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'alex@example.com'
+      })
+    );
+  });
+
+  it('POST /api/v1/auth/email-action/exchange returns wrapped response', async () => {
+    const response = await request(app!.getHttpServer())
+      .post('/api/v1/auth/email-action/exchange')
+      .send({
+        tokenHash: 'token-hash',
+        type: 'recovery'
+      })
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.session.accessToken).toBe('email-access-token');
+    expect(authServiceMock.exchangeEmailAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tokenHash: 'token-hash',
+        type: 'recovery'
+      })
+    );
+  });
+
+  it('POST /api/v1/auth/password/update returns wrapped response for valid bearer token', async () => {
+    const response = await request(app!.getHttpServer())
+      .post('/api/v1/auth/password/update')
+      .set('Authorization', 'Bearer valid-token')
+      .send({
+        password: 'NewStrongPass123!'
+      })
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toEqual({
+      message: 'Password updated successfully.'
+    });
+    expect(authServiceMock.updatePassword).toHaveBeenCalledWith(
+      'valid-token',
+      expect.objectContaining({
+        password: 'NewStrongPass123!'
       })
     );
   });

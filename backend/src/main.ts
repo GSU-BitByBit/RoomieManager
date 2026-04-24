@@ -27,6 +27,10 @@ function parseCorsOrigins(raw: string): string[] | boolean {
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const httpAdapter = app.getHttpAdapter().getInstance();
+  if (typeof httpAdapter.disable === 'function') {
+    httpAdapter.disable('x-powered-by');
+  }
 
   const logger = app.get(PinoLogger);
   app.useLogger(logger);

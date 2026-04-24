@@ -56,8 +56,8 @@ const buildRoundRobinTemplate = (overrides: Record<string, unknown> = {}) =>
   });
 
 describe('ChoreTemplatesService', () => {
-  it('creates an active fixed recurring template as admin and generates its horizon', async () => {
-    const createdTemplate = buildTemplate({ createdBy: 'admin-1', updatedBy: 'admin-1' });
+  it('creates an active fixed recurring template as an active member and generates its horizon', async () => {
+    const createdTemplate = buildTemplate({ createdBy: 'member-1', updatedBy: 'member-1' });
 
     const txMock = {
       groupMember: {
@@ -65,8 +65,8 @@ describe('ChoreTemplatesService', () => {
           .fn()
           .mockResolvedValueOnce({
             groupId: 'group-1',
-            userId: 'admin-1',
-            role: GroupMemberRole.ADMIN,
+            userId: 'member-1',
+            role: GroupMemberRole.MEMBER,
             status: GroupMemberStatus.ACTIVE
           })
           .mockResolvedValueOnce({
@@ -92,7 +92,7 @@ describe('ChoreTemplatesService', () => {
     };
 
     const service = new ChoreTemplatesService(prismaMock as any, generationMock as any);
-    const result = await service.createTemplate('admin-1', 'group-1', {
+    const result = await service.createTemplate('member-1', 'group-1', {
       title: 'Trash',
       assignmentStrategy: ChoreTemplateAssignmentStrategy.FIXED,
       startsOn: new Date('2026-04-06T00:00:00.000Z'),
@@ -120,15 +120,18 @@ describe('ChoreTemplatesService', () => {
     );
   });
 
-  it('creates an active round-robin template and preserves participant order', async () => {
-    const createdTemplate = buildRoundRobinTemplate({ createdBy: 'admin-1', updatedBy: 'admin-1' });
+  it('creates an active round-robin template as an active member and preserves participant order', async () => {
+    const createdTemplate = buildRoundRobinTemplate({
+      createdBy: 'member-1',
+      updatedBy: 'member-1'
+    });
 
     const txMock = {
       groupMember: {
         findUnique: jest.fn().mockResolvedValue({
           groupId: 'group-1',
-          userId: 'admin-1',
-          role: GroupMemberRole.ADMIN,
+          userId: 'member-1',
+          role: GroupMemberRole.MEMBER,
           status: GroupMemberStatus.ACTIVE
         }),
         findMany: jest.fn().mockResolvedValue([{ userId: 'user-2' }, { userId: 'user-3' }])
@@ -149,7 +152,7 @@ describe('ChoreTemplatesService', () => {
     };
 
     const service = new ChoreTemplatesService(prismaMock as any, generationMock as any);
-    const result = await service.createTemplate('admin-1', 'group-1', {
+    const result = await service.createTemplate('member-1', 'group-1', {
       title: 'Bathroom reset',
       assignmentStrategy: ChoreTemplateAssignmentStrategy.ROUND_ROBIN,
       startsOn: new Date('2026-04-06T00:00:00.000Z'),
@@ -179,14 +182,14 @@ describe('ChoreTemplatesService', () => {
     );
   });
 
-  it('blocks non-admins from creating recurring templates', async () => {
+  it('blocks inactive members from creating recurring templates', async () => {
     const txMock = {
       groupMember: {
         findUnique: jest.fn().mockResolvedValue({
           groupId: 'group-1',
           userId: 'user-1',
           role: GroupMemberRole.MEMBER,
-          status: GroupMemberStatus.ACTIVE
+          status: GroupMemberStatus.INACTIVE
         })
       }
     };

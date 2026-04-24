@@ -1,0 +1,34 @@
+services:
+  backend:
+    image: ${ROOMIEMANAGER_IMAGE:?ROOMIEMANAGER_IMAGE must be set in /etc/roomiemanager/compose.env}
+    container_name: roomiemanager-backend
+    restart: unless-stopped
+    init: true
+    env_file:
+      - /etc/roomiemanager/backend.env
+    ports:
+      - '${BACKEND_BIND_HOST:-127.0.0.1}:${BACKEND_HOST_PORT:-3000}:3000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "const prefix=(process.env.API_PREFIX ?? 'api/v1').replace(/^\\/+|\\/+$/g,''); fetch(`http://127.0.0.1:${process.env.PORT ?? 3000}/${prefix}/health/live`).then((response)=>{ if (!response.ok) process.exit(1); }).catch(() => process.exit(1));"
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+    stop_grace_period: 20s
+    networks:
+      - roomiemanager
+
+networks:
+  roomiemanager:
+    name: roomiemanager
