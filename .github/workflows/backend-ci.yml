@@ -131,7 +131,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ github.repository_owner }}/roomiemanager-backend
+          images: ghcr.io/gsu-bitbybit/roomiemanager-backend
           tags: |
             type=raw,value=main
             type=sha,prefix=sha-
@@ -156,6 +156,7 @@ jobs:
       OCI_HOST: ${{ secrets.OCI_DEPLOY_HOST }}
       OCI_USER: ${{ secrets.OCI_DEPLOY_USER }}
       OCI_SSH_KEY: ${{ secrets.OCI_DEPLOY_SSH_KEY }}
+      GHCR_IMAGE: ghcr.io/gsu-bitbybit/roomiemanager-backend:main
       BACKEND_PUBLIC_HEALTHCHECK_URL: https://api.roomiemanager.site/api/v1/health/ready
 
     steps:
@@ -182,6 +183,16 @@ jobs:
             -e "ssh -i ~/.ssh/oci_deploy_key" \
             backend/deploy/ \
             "$OCI_USER@$OCI_HOST:/srv/roomiemanager/backend/deploy/"
+
+      - name: Prepare GHCR image on OCI
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s\n' "$GHCR_TOKEN" | ssh -i ~/.ssh/oci_deploy_key "$OCI_USER@$OCI_HOST" \
+            "docker login ghcr.io -u '$GHCR_USER' --password-stdin"
+          ssh -i ~/.ssh/oci_deploy_key "$OCI_USER@$OCI_HOST" \
+            "sudo sed -i 's|^ROOMIEMANAGER_IMAGE=.*|ROOMIEMANAGER_IMAGE=$GHCR_IMAGE|' /etc/roomiemanager/compose.env"
 
       - name: Roll out backend on OCI
         run: |
