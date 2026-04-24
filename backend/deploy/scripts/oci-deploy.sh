@@ -25,6 +25,13 @@ if [[ ! -f "$APP_ENV_FILE" ]]; then
   exit 1
 fi
 
+APP_HOST="$(grep -E '^HOST=' "$APP_ENV_FILE" | tail -n 1 | cut -d= -f2- || true)"
+if [[ -z "$APP_HOST" || "$APP_HOST" == "127.0.0.1" || "$APP_HOST" == "localhost" ]]; then
+  echo "Docker backend HOST must be reachable through the container port mapping." >&2
+  echo "Set HOST=0.0.0.0 in $APP_ENV_FILE before deploying." >&2
+  exit 1
+fi
+
 set -a
 source "$COMPOSE_ENV_FILE"
 set +a
