@@ -1,92 +1,99 @@
-# RoomieManager Backend on OCI with Docker, Caddy, and GitHub Actions
+# OCI Docker + CI/CD Deployment
 
-This is the recommended production model for RoomieManager:
+This document captures the current production deployment model for RoomieManager's backend.
 
-- frontend stays on Vercel
-- backend stays on the OCI VM
-- the NestJS backend runs in Docker
-- host-level Caddy keeps terminating HTTPS
-- GitHub Actions builds and ships the backend automatically on pushes to `main`
-- Supabase remains the source of truth for Postgres and Auth
+## Current Production State
 
-Keeping Caddy on the host is deliberate. It preserves the live TLS setup that already works today while moving the backend process itself into a reproducible Docker runtime.
+- Frontend: Vercel at `https://roomiemanager.site`.
+- Backend API: OCI VM at `https://api.roomiemanager.site/api/v1`.
+- Reverse proxy: Caddy terminates HTTPS and proxies to the Docker backend.
+- Backend runtime: Docker Compose, bound to `127.0.0.1:3001`.
+- Image source: GHCR image built by GitHub Actions from `main`.
+- Database/Auth: Supabase Postgres and Supabase Auth.
+- Email: Supabase Auth SMTP configured with Resend for verification and password recovery.
+- Legacy host-process backend: retired after the Docker cutover and no longer serving public traffic.
 
-## Runtime layout
+## Runtime Paths On OCI
 
-- Runtime root on OCI: `/srv/roomiemanager/backend`
-- Docker compose file: `/srv/roomiemanager/backend/deploy/docker/docker-compose.prod.yml`
-- Deploy helper script: `/srv/roomiemanager/backend/deploy/scripts/oci-deploy.sh`
-- App env file: `/etc/roomiemanager/backend.env`
-- Compose env file: `/etc/roomiemanager/compose.env`
-- systemd unit: `/etc/systemd/system/roomiemanager-backend-docker.service`
-- Caddy config: `/etc/caddy/Caddyfile`
+```text
+/srv/roomiemanager/backend/deploy/        # synced deployment assets
+/etc/roomiemanager/backend.env            # production backend env
+/etc/roomiemanager/compose.env            # image tag and host binding env
+/etc/systemd/system/roomiemanager-backend-docker.service
+/etc/caddy/Caddyfile
+```
 
-## One-time OCI bootstrap
+The Docker service should be the backend process that stays enabled:
 
-1. Install runtime packages:
-   - `sudo apt-get update`
-   - `sudo apt-get install -y docker.io docker-compose-plugin caddy rsync`
-2. Allow the deploy user to run Docker:
-   - `sudo usermod -aG docker ubuntu`
-   - sign out and back in before continuing
-3. Create runtime directories:
-   - `sudo mkdir -p /srv/roomiemanager/backend/deploy`
-   - `sudo mkdir -p /etc/roomiemanager`
-   - `sudo chown -R ubuntu:ubuntu /srv/roomiemanager/backend`
-4. Copy the repo deployment assets into `/srv/roomiemanager/backend/deploy/`.
-5. Create `/etc/roomiemanager/backend.env` from [`deploy/docker/backend.env.example`](../deploy/docker/backend.env.example).
-6. Create `/etc/roomiemanager/compose.env` from [`deploy/docker/compose.env.example`](../deploy/docker/compose.env.example).
-7. Install the Docker systemd unit from [`deploy/systemd/roomiemanager-backend-docker.service`](../deploy/systemd/roomiemanager-backend-docker.service).
-8. Install the host Caddy config from [`deploy/caddy/Caddyfile.example`](../deploy/caddy/Caddyfile.example).
-9. Enable services:
-   - `sudo systemctl daemon-reload`
-   - `sudo systemctl enable --now docker`
-   - `sudo systemctl enable --now roomiemanager-backend-docker`
-   - `sudo systemctl enable --now caddy`
+```bash
+sudo systemctl status roomiemanager-backend-docker
+sudo docker ps --filter name=roomiemanager-backend
+```
 
-## Compose env file
+## Docker Compose Model
 
-`/etc/roomiemanager/compose.env` should contain:
+The container listens on internal port `3000`. The host binds it to localhost port `3001` so Caddy can proxy to it without exposing the Node process directly.
 
-- `ROOMIEMANAGER_IMAGE=ghcr.io/<github-owner>/roomiemanager-backend:main`
-- `BACKEND_BIND_HOST=127.0.0.1`
-- `BACKEND_HOST_PORT=3000`
+`/etc/roomiemanager/compose.env` should look like:
 
-For the first migration from the current systemd-based Node process, you can temporarily use `BACKEND_HOST_PORT=3001`, verify the container locally, then point Caddy to `127.0.0.1:3001` for the cutover.
+```bash
+ROOMIEMANAGER_IMAGE=ghcr.io/<owner>/roomiemanager-backend:main
+BACKEND_BIND_HOST=127.0.0.1
+BACKEND_HOST_PORT=3001
+```
 
-## App env file
+`/etc/roomiemanager/backend.env` should include production values for:
 
-`/etc/roomiemanager/backend.env` should contain the production Nest/Supabase variables. The Docker-specific example already sets:
-
-- `HOST=0.0.0.0`
+- `NODE_ENV=production`
 - `PORT=3000`
+- `API_PREFIX=api/v1`
+- `DATABASE_URL`
+- `CORS_ORIGINS=https://roomiemanager.site,https://www.roomiemanager.site`
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_JWT_AUDIENCE=authenticated`
 - `SUPABASE_AUTH_REDIRECT_URL=https://roomiemanager.site/auth/callback`
 - `RUN_MIGRATIONS_ON_START=true`
 
-## Caddy
+Do not commit production secrets.
 
-Caddy stays on the host VM and reverse-proxies the Dockerized backend over localhost. This keeps certificate management stable and limits the blast radius of the migration.
+## Caddy Runtime
 
-Expected upstream:
+Production Caddy should proxy the API domain to Docker:
 
-- `reverse_proxy 127.0.0.1:3000`
+```caddy
+api.roomiemanager.site {
+  encode zstd gzip
 
-If you use the safer first-cutover path, point Caddy to `127.0.0.1:3001` until the legacy process is retired.
+  header {
+    -Server
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Permissions-Policy "camera=(), geolocation=(), microphone=()"
+  }
 
-## GitHub Actions deployment flow
+  reverse_proxy 127.0.0.1:3001
+}
+```
 
-On pushes to `main` that affect the backend:
+Validate and reload safely:
 
-1. GitHub Actions runs the backend verify job.
-2. If verify passes, Actions builds the Docker image from [`backend/Dockerfile`](../Dockerfile).
-3. The image is pushed to GHCR with a rolling `main` tag and a commit-specific `sha-*` tag.
-4. Actions syncs the deployment assets under `backend/deploy/` to the OCI VM.
-5. Actions runs [`deploy/scripts/oci-deploy.sh`](../deploy/scripts/oci-deploy.sh) over SSH.
-6. The OCI script pulls the latest image, starts the backend container, and blocks until `/api/v1/health/ready` passes.
+```bash
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+```
 
-## GitHub Actions secrets
+## GitHub Actions Pipeline
 
-Repository secrets required by the workflow:
+[`../../.github/workflows/backend-ci.yml`](../../.github/workflows/backend-ci.yml) performs three production steps on pushes to `main`:
+
+1. Verify backend quality with pnpm, Prisma, linting, tests, build, OpenAPI, and generated type checks.
+2. Build and publish the backend Docker image to GHCR.
+3. SSH into OCI, sync deploy assets, run the deployment script, and verify public readiness.
+
+Required GitHub secrets:
 
 - `SUPABASE_DATABASE_URL`
 - `SUPABASE_URL`
@@ -96,47 +103,68 @@ Repository secrets required by the workflow:
 - `OCI_DEPLOY_USER`
 - `OCI_DEPLOY_SSH_KEY`
 
-The deploy job does not need Docker build secrets beyond the default GitHub Actions token because the image is published to GHCR from the workflow itself.
+GHCR visibility is public for the backend image, so the OCI VM does not need a registry login to pull the production image.
 
-## Supabase email and SMTP configuration
+## Supabase Auth + Resend SMTP
 
-The application now supports:
+Supabase Auth is configured for production email verification and password recovery:
 
-- signup confirmation that returns to `roomiemanager.site`
-- password recovery emails that return to `roomiemanager.site`
-- reset-password completion inside the web app
-- email-link callback handling for both session-fragment links and token-hash exchange links
+- Site URL: `https://roomiemanager.site/auth/callback`
+- Redirect URLs:
+  - `https://roomiemanager.site/auth/callback`
+  - `http://localhost:5173/auth/callback`
+  - `http://127.0.0.1:5173/auth/callback`
+- SMTP host: `smtp.resend.com`
+- SMTP port: `465`
+- SMTP user: `resend`
+- Sender email: `no-reply@roomiemanager.site`
+- Sender name: `RoomieManager`
+- Email autoconfirm: disabled
+- Unverified email sign-ins: disabled
 
-To finish the production setup, configure the Supabase dashboard:
+The branded confirmation email source lives in [`email-templates/`](email-templates/). Keep the Supabase template placeholders intact, especially `{{ .ConfirmationURL }}`.
 
-1. In Auth URL configuration:
-   - set Site URL to `https://roomiemanager.site/auth/callback`
-   - allow `https://roomiemanager.site/auth/callback`
-   - allow `https://www.roomiemanager.site/auth/callback`
-   - optionally allow `http://localhost:5173/auth/callback` for local development
-2. In Auth Providers → Email:
-   - keep email confirmations enabled
-   - configure your custom SMTP host, port, username, password, sender name, and sender email
-3. In the backend runtime env:
-   - set `SUPABASE_AUTH_REDIRECT_URL=https://roomiemanager.site/auth/callback`
+## Health Verification
 
-If you customize the Supabase email templates later, prefer `{{ .RedirectTo }}` over hard-coded site URLs so the backend-supplied redirect stays consistent across environments.
+Local on OCI:
 
-## Rollback
+```bash
+curl http://127.0.0.1:3001/api/v1/health/live
+curl http://127.0.0.1:3001/api/v1/health/ready
+```
 
-Rollback is intentionally simple:
+Public:
 
-1. Edit `/etc/roomiemanager/compose.env`
-2. Change `ROOMIEMANAGER_IMAGE` from `:main` to the last known-good `:sha-...` tag
-3. Run:
-   - `docker compose --env-file /etc/roomiemanager/compose.env -f /srv/roomiemanager/backend/deploy/docker/docker-compose.prod.yml pull backend`
-   - `docker compose --env-file /etc/roomiemanager/compose.env -f /srv/roomiemanager/backend/deploy/docker/docker-compose.prod.yml up -d backend`
+```bash
+curl https://api.roomiemanager.site/api/v1/health/live
+curl https://api.roomiemanager.site/api/v1/health/ready
+```
 
-## Verification checklist
+Auth endpoint exposure:
 
-- `docker compose --env-file /etc/roomiemanager/compose.env -f /srv/roomiemanager/backend/deploy/docker/docker-compose.prod.yml ps`
-- `docker compose --env-file /etc/roomiemanager/compose.env -f /srv/roomiemanager/backend/deploy/docker/docker-compose.prod.yml logs --tail=100 backend`
-- `curl http://127.0.0.1:3000/api/v1/health/live`
-- `curl http://127.0.0.1:3000/api/v1/health/ready`
-- `curl https://api.roomiemanager.site/api/v1/health/live`
-- `curl https://api.roomiemanager.site/api/v1/health/ready`
+```bash
+curl --request POST \
+  https://api.roomiemanager.site/api/v1/auth/password/recovery \
+  --header 'Content-Type: application/json' \
+  --data '{"email":"not-an-email"}'
+```
+
+The expected response for the invalid email payload is a wrapped `BAD_REQUEST`, not a `404`. That proves public traffic is on the auth-enabled Docker backend.
+
+## Rollback Notes
+
+Preferred rollback is image-based:
+
+1. Set `ROOMIEMANAGER_IMAGE` in `/etc/roomiemanager/compose.env` to a known-good GHCR tag, such as a previous `sha-...` image.
+2. Restart `roomiemanager-backend-docker`.
+3. Verify localhost health on `127.0.0.1:3001`.
+4. Verify public health through Caddy.
+
+Emergency legacy rollback should only be used if the old host-process runtime is intentionally kept available on the VM:
+
+1. Start the legacy service.
+2. Change Caddy upstream back to `127.0.0.1:3000`.
+3. Validate and reload Caddy.
+4. Verify public health.
+
+Do not delete Docker assets, Caddy config, or production env files during rollback.

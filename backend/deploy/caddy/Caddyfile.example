@@ -1,4 +1,4 @@
-api.example.com {
+api.roomiemanager.site {
   encode zstd gzip
 
   header {
@@ -10,9 +10,9 @@ api.example.com {
     Permissions-Policy "camera=(), geolocation=(), microphone=()"
   }
 
-  # Default Docker runtime upstream. During the first migration cutover,
-  # you can temporarily point this to 127.0.0.1:3001 instead.
-  reverse_proxy 127.0.0.1:3000
+  # Docker runtime upstream. The container listens on port 3000 internally
+  # and is bound to localhost port 3001 on the OCI host.
+  reverse_proxy 127.0.0.1:3001
 
   log {
     output file /var/log/caddy/roomiemanager-api.access.log

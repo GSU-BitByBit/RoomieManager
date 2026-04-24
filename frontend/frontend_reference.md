@@ -1,8 +1,10 @@
-# Frontend Integration Reference (RoomieManager Backend)
+# Frontend API Integration Reference
 
-Last updated: 2026-04-07
-Owner: Backend team
-Scope: Practical integration guide for frontend engineers and frontend AI agents.
+Last updated: 2026-04-24
+Owner: RoomieManager project
+Scope: Detailed backend API contract notes for the web and Android clients.
+
+For the web app setup guide, start with [`README.md`](README.md). This file remains the deeper integration reference for response shapes, route behavior, auth expectations, and generated OpenAPI types.
 
 ## 1) What exists right now
 
@@ -20,12 +22,19 @@ Current backend implementation level:
 - Module 10 (Reliability): PARTIAL (65%) -- server-side error logging, hardened health probes
 - Module 11 (Testing): PARTIAL (94%) -- 54 unit + 57 e2e tests passing, plus 2 optional live Supabase e2e suites skipped by default
 
+Current production state:
+
+- Web frontend is live at `https://roomiemanager.site`.
+- Backend API is live at `https://api.roomiemanager.site/api/v1`.
+- Backend traffic is served by the Dockerized NestJS runtime on OCI through Caddy.
+- Supabase Auth uses Resend SMTP for verification and password recovery email.
+
 This means:
 
 - Implemented API endpoints right now: health + auth + groups + member management + chores + finance + contracts.
 - Member-management endpoints are implemented, migrated, and validated in Supabase-backed smoke runs.
 - Backend-wide security and quality hardening audit completed on `2026-03-05` (see changelog).
-- Latest `pnpm verify` pipeline passed end-to-end on `2026-03-05` (57 e2e tests passing; live suites are opt-in).
+- GitHub Actions runs the backend verification pipeline and deploys the Docker image to OCI on `main`.
 
 Source-of-truth files:
 
@@ -59,6 +68,10 @@ Source-of-truth files:
 
 ## 2) Base URL and docs
 
+Backend base URL (production):
+
+- `https://api.roomiemanager.site`
+
 Backend base URL (local):
 
 - `http://localhost:3000`
@@ -67,13 +80,16 @@ Global API prefix:
 
 - `/api/v1`
 
-Effective API base URL for frontend calls:
+Effective API base URLs for frontend calls:
 
-- `http://localhost:3000/api/v1`
+- Production: `https://api.roomiemanager.site/api/v1`
+- Local backend: `http://localhost:3000/api/v1`
+- Local frontend proxy: `/api/v1`
 
 Swagger docs:
 
 - `http://localhost:3000/api/docs`
+- `https://api.roomiemanager.site/api/docs`
 
 ## 3) Response contract (already enforced globally)
 

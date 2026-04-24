@@ -1,175 +1,80 @@
 # RoomieManager
 
-RoomieManager is a roommate management platform for shared households. The project is designed to support account creation, household groups, role-based membership management, chores, shared bills and payments, balance tracking, and roommate contracts with version history.
+RoomieManager is a calm shared-home management app for roommates who want the house to feel organized without turning daily life into a spreadsheet. It brings household groups, chores, shared bills, payments, balances, contracts, and member roles into one warm, practical workspace.
 
-The repository is currently backend-first. The NestJS API is implemented across the core product modules, while the frontend application has not been built yet and currently exists as a reference document only.
+[Live web app](https://roomiemanager.site) | [Production API](https://api.roomiemanager.site/api/v1/health/live) | [Swagger docs](https://api.roomiemanager.site/api/docs)
 
-## Current Status
+## At A Glance
 
-Status below reflects the latest project docs verified on `2026-03-05`.
+- Web app: Vite, React, TypeScript, Tailwind, deployed on Vercel.
+- Backend API: NestJS, Prisma, Supabase Postgres/Auth, deployed on OCI in Docker behind Caddy.
+- Android app: Flutter companion app in the sibling `RoomieManager Android Port` project.
+- Auth: Supabase Auth with Resend-backed SMTP email verification and password recovery.
+- CI/CD: GitHub Actions verifies the backend, builds a GHCR image, and deploys to OCI on `main`.
+- Quality: backend verification covers linting, unit tests, e2e tests, build checks, OpenAPI drift checks, and generated frontend API types.
 
-| Area | Status | Notes |
-| --- | --- | --- |
-| Backend core product modules | Strongly complete | Modules 1-8 are complete and validated |
-| Frontend application | Not started | `frontend/` currently contains planning and integration reference only |
-| Security hardening | In progress | Module 9 is at `30%` |
-| Reliability and observability | In progress | Module 10 is at `65%` |
-| Testing and quality gates | Nearly complete | Module 11 is at `94%` |
+## Why It Matters
 
-### Phase Snapshot
+Shared homes work best when expectations are visible and fair. RoomieManager gives a household one place to answer everyday questions like "Who has dishes tonight?", "Who paid for groceries?", "What do I owe?", and "What did we agree to?" without a group chat archaeology dig.
 
-| Phase | Scope | Status |
-| --- | --- | --- |
-| Phase 1 | Platform foundation, auth, groups, RBAC | `COMPLETE` |
-| Phase 2 | Chores, contracts, API UX improvements | `COMPLETE` |
-| Phase 3 | Bills, payments, balances | `COMPLETE` |
-| Phase 4 | Security, reliability, operations, final hardening | `PARTIAL` |
+The project is intentionally practical: it is live, deployed, tested, and designed around the real workflows roommates hit every week.
 
-## What Is Working Now
+## Product Highlights
 
-The backend currently supports:
+- Household groups with join codes, membership lifecycle, admin/member roles, and safe leave/remove flows.
+- Chore management with one-off chores, recurring templates, assignments, completion rules, and calendar views.
+- Shared finance workflows for bills, splits, payments, group balances, and settlement suggestions.
+- Group contracts with editable drafts, publishing, and version history.
+- Email verification, password recovery, and reset flows through Supabase Auth.
+- Consistent API response envelopes, request IDs, health checks, and generated OpenAPI types.
 
-- User registration, login, and current-user lookup
-- Roommate group creation and join-by-code flows
-- Member listing, role updates, and member removal with RBAC protections
-- Chore creation, assignment, completion, and filtered listing
-- Bill creation, payment recording, and balance settlement views
-- Contract draft editing, publishing, and version history
-- Standardized response envelopes, pagination, sorting, and OpenAPI-backed API contracts
-- Health and readiness probes, structured logging, and CI verification
+## System Map
 
-Current automated verification documented in the repo:
-
-- `54` unit tests passing
-- `57` e2e tests passing
-- `2` optional live Supabase e2e suites available but skipped by default
-- `pnpm verify` passing end-to-end
-
-## Architecture
-
-```text
-Frontend (planned, Vite)
-    -> HTTP / JSON / Bearer JWT
-Backend API (NestJS, /api/v1, port 3000)
-    -> Prisma ORM
-Supabase Postgres + Supabase Auth
+```mermaid
+flowchart LR
+  Web["Web app<br/>Vercel + React"] --> API["API domain<br/>Caddy on OCI"]
+  Android["Android app<br/>Flutter"] --> API
+  API --> Docker["Docker backend<br/>NestJS on port 3001"]
+  Docker --> DB["Supabase Postgres<br/>Prisma"]
+  Docker --> Auth["Supabase Auth<br/>JWT + Resend SMTP"]
+  Actions["GitHub Actions"] --> GHCR["GHCR image"]
+  GHCR --> Docker
 ```
 
-Key backend choices:
+## Repository Guide
 
-- `Node.js 20`
-- `TypeScript`
-- `NestJS 10`
-- `Prisma 5`
-- `Supabase Postgres`
-- `Supabase Auth`
-- `Zod` + `class-validator`
-- `Jest` + `Supertest`
-- `Swagger / OpenAPI`
-
-## Repository Layout
-
-```text
-RoomieManager/
-|-- backend/                         # NestJS API (primary codebase)
-|-- frontend/                        # Frontend reference only for now
-|-- Use case diagram and requirements/
-|-- AGENTS.md
-`-- README.md
-```
-
-Useful project documents:
-
-- [`backend/backend_planning.md`](backend/backend_planning.md) - backend roadmap, module status, verification evidence
-- [`frontend/frontend_reference.md`](frontend/frontend_reference.md) - frontend integration guide against the live backend
-- [`AGENTS.md`](AGENTS.md) - project reference, architecture, workflow, and conventions
-- [`Use case diagram and requirements/requirements.txt.txt`](Use%20case%20diagram%20and%20requirements/requirements.txt.txt) - functional and non-functional requirements
-
-## Progress Against Requirements
-
-### Completed product scope
-
-- Accounts and authentication
-- Group creation and join codes
-- Member management and admin-only role controls
-- Chores workflow
-- Bills, payments, and balance calculation
-- Contract draft and publish workflow
-- API documentation and frontend-ready response contracts
-
-### Remaining product and delivery scope
-
-- Frontend implementation
-- Join-code expiration enforcement at the application layer
-- Secure headers baseline
-- Abuse-focused auth and RBAC regression coverage
-- Additional frontend-ready finance fixtures
-- Remaining production hardening for security and observability
-
-## Current Plan
-
-The next documented milestone is Phase 4 baseline hardening, with frontend support work happening alongside it.
-
-Planned next steps from the repo docs:
-
-1. Enforce `JoinCode.expiresAt` during the join flow and cover it with tests.
-2. Add secure HTTP headers using `helmet` with environment-aware configuration.
-3. Expand auth and RBAC abuse regression coverage.
-4. Add frontend-ready finance seed fixtures for multi-member split and payment scenarios.
-5. Keep frontend integration moving against the existing backend contract and OpenAPI output.
-
-Important note: rate limiting is intentionally deferred for now according to the backend planning doc.
-
-## Current Timeline
-
-This repository documents milestone dates for completed work, but it does not currently commit to future calendar ETAs. The timeline below reflects what is verified in the docs today.
-
-| Date | Milestone |
+| Path | Purpose |
 | --- | --- |
-| `2026-02-23` | Modules 1-3 were established in the documented project history: platform foundation, auth, groups, health endpoints, and the standard response envelope were all in place |
-| `2026-02-24` | Module 4 member-management and RBAC migration deployed and validated |
-| `2026-02-25` | Full backend regression audit re-passed end-to-end |
-| `2026-03-05` | Modules 5, 6, 7, and 8 documented as complete; backend-wide hardening audit completed; latest verify pipeline passed |
-| `Current` | Backend feature delivery is functionally complete through core product scope; Phase 4 hardening remains in progress; frontend app is still pending implementation |
-| `Next` | Phase 4 baseline hardening and frontend delivery support are the next planned milestones, but no fixed completion date is documented in the repo |
+| [`backend/`](backend/) | NestJS REST API, Prisma schema, migrations, OpenAPI contract, Docker runtime assets, backend tests. |
+| [`frontend/`](frontend/) | Vite React web app, shared API client, auth pages, dashboard and household workflows. |
+| [`backend/docs/oci-docker-cicd-deploy.md`](backend/docs/oci-docker-cicd-deploy.md) | Production deployment notes for OCI, Docker, Caddy, GHCR, GitHub Actions, and Supabase SMTP. |
+| [`backend/docs/email-templates/`](backend/docs/email-templates/) | RoomieManager-branded Supabase email template source. |
+| [`frontend/frontend_reference.md`](frontend/frontend_reference.md) | Detailed backend API integration reference for frontend work. |
+| [`Use case diagram and requirements/`](Use%20case%20diagram%20and%20requirements/) | Original requirements, use-case diagram source, and early wireframes. |
+| [`AGENTS.md`](AGENTS.md) | Contributor and coding-agent reference for architecture, commands, conventions, and module status. |
+| `../RoomieManager Android Port/` | Flutter Android companion app that talks to the same backend API. |
 
-## Frontend Status
+## Demo And Design Assets
 
-There is no implemented frontend code yet. The `frontend/` directory currently contains a backend integration reference rather than a runnable application.
+The live web app is the best current preview of the product experience. Early wireframes and requirements are preserved in [`Use case diagram and requirements/`](Use%20case%20diagram%20and%20requirements/), and the production Supabase email template source lives in [`backend/docs/email-templates/`](backend/docs/email-templates/).
 
-That means the project is ready for frontend implementation against a live API with:
+## Tech Stack
 
-- stable `/api/v1` versioning
-- a standard success/error envelope
-- documented pagination and sorting conventions
-- generated backend API types
-- a documented QA checklist for frontend integration
+| Layer | Stack |
+| --- | --- |
+| Web | React 18, Vite 6, TypeScript, Tailwind CSS, React Router |
+| Mobile | Flutter, Provider, GoRouter, Secure Storage |
+| API | NestJS 10, TypeScript, Prisma, Zod, class-validator, Pino |
+| Data/Auth | Supabase Postgres, Supabase Auth, JWT verification with `jose` |
+| Email | Resend SMTP through Supabase Auth templates |
+| Deployment | Vercel frontend, OCI VM backend, Docker Compose, Caddy, GHCR |
+| CI/CD | GitHub Actions, pnpm 9, Node 20 |
 
-## Backend API Snapshot
+## Run Locally
 
-Live endpoint groups documented today:
+This repository is not a monorepo workspace. Run backend and frontend commands from their own directories.
 
-- Health: `/health/live`, `/health/ready`
-- Auth: `/auth/register`, `/auth/login`, `/auth/me`
-- Groups and members: `/groups`, `/groups/join`, `/groups/:groupId`, `/groups/:groupId/members`
-- Dashboard: `/groups/:groupId/dashboard`
-- Chores: `/groups/:groupId/chores`, `/chores/:choreId/assign`, `/chores/:choreId/complete`
-- Finance: `/groups/:groupId/bills`, `/groups/:groupId/payments`, `/groups/:groupId/balances`
-- Contracts: `/groups/:groupId/contract`, `/groups/:groupId/contract/publish`, `/groups/:groupId/contract/versions`
-
-Base local API URL:
-
-- `http://localhost:3000/api/v1`
-
-Swagger docs:
-
-- `http://localhost:3000/api/docs`
-
-## Local Development
-
-There is no root workspace runner. Work inside `backend/`.
-
-### Backend setup
+### Backend
 
 ```bash
 cd backend
@@ -177,27 +82,71 @@ cp .env.example .env
 pnpm install
 pnpm prisma:generate
 pnpm prisma:migrate:deploy
-pnpm prisma:seed
 pnpm dev
 ```
 
-### Verification
+The local API runs at `http://localhost:3000/api/v1` by default. Fill `.env` with Supabase database/auth values before running migrations or auth-backed flows.
+
+### Frontend
+
+```bash
+cd frontend
+cp .env.example .env
+pnpm install
+pnpm dev
+```
+
+The local web app runs at `http://localhost:5173`. Remove or leave `VITE_API_BASE_URL` blank to use the Vite `/api/v1` proxy against a local backend. Keep `VITE_API_BASE_URL=https://api.roomiemanager.site/api/v1` if you want the local frontend to call production.
+
+### Android Port
+
+```bash
+cd ../RoomieManager\ Android\ Port
+flutter pub get
+flutter run --dart-define=ROOMIE_API_BASE_URL=https://api.roomiemanager.site/api/v1
+```
+
+For Android emulator local-backend testing, the app defaults to `http://10.0.2.2:3000/api/v1`.
+
+## Verification
+
+Backend quality gate:
 
 ```bash
 cd backend
-pnpm lint
-pnpm test
-pnpm test:e2e
-pnpm build
-pnpm openapi:check
 pnpm verify
 ```
 
-## Recommended Near-Term Project Direction
+Frontend build check:
 
-For the next iteration, the project should focus on two tracks in parallel:
+```bash
+cd frontend
+pnpm build
+```
 
-- finish Phase 4 hardening so the backend is safer and easier to operate in production
-- begin the frontend implementation using the existing API, OpenAPI contract, and fixture guidance
+Production smoke checks:
 
-That is the most direct path from a strong backend foundation to a usable end-to-end product.
+```bash
+curl https://api.roomiemanager.site/api/v1/health/live
+curl https://api.roomiemanager.site/api/v1/health/ready
+```
+
+## Production Deployment
+
+RoomieManager is currently deployed with:
+
+- Frontend on Vercel at `https://roomiemanager.site`.
+- Backend on an OCI VM at `https://api.roomiemanager.site/api/v1`.
+- Caddy as the public HTTPS reverse proxy.
+- Docker Compose running the NestJS backend on localhost port `3001`.
+- GHCR as the backend image registry.
+- GitHub Actions deploying backend changes automatically after `main` passes verification.
+- Supabase Auth using Resend SMTP for verification and password recovery emails.
+
+See [`backend/docs/oci-docker-cicd-deploy.md`](backend/docs/oci-docker-cicd-deploy.md) for the operational notes.
+
+## For Evaluators
+
+RoomieManager is built to show both product thinking and production-minded engineering. The app has a real deployed web experience, a shared backend consumed by web and mobile clients, a tested API contract, cloud database/auth integration, and a Dockerized OCI deployment with CI/CD.
+
+If you are reviewing quickly, start with the live web app, then skim the system map above, the backend README, and the deployment doc.
