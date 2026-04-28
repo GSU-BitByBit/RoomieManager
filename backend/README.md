@@ -1,101 +1,116 @@
-# RoomieManager Backend
+<div align="center">
 
-The backend is the source of truth for RoomieManager's household workflows. It owns auth integration, group membership, RBAC, chores, shared finance, contracts, response envelopes, OpenAPI generation, and deployment-ready runtime behavior for both the web and Android apps.
+# ⚙️ RoomieManager Backend
 
-**Production API:** [api.roomiemanager.site/api/v1](https://api.roomiemanager.site/api/v1)<br>
-**Swagger docs:** [api.roomiemanager.site/api/docs](https://api.roomiemanager.site/api/docs)<br>
-**Deployment guide:** [docs/oci-docker-cicd-deploy.md](docs/oci-docker-cicd-deploy.md)
+*The rules of the house, expressed in TypeScript.*
 
-## What It Owns
+[![NestJS](https://img.shields.io/badge/NestJS-10-3F7D4E?logo=nestjs&logoColor=white)](https://nestjs.com)
+[![Prisma](https://img.shields.io/badge/Prisma-5-3F7D4E?logo=prisma&logoColor=white)](https://prisma.io)
+[![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-6B8E5A?logo=supabase&logoColor=white)](https://supabase.com)
+[![Swagger](https://img.shields.io/badge/Swagger-live-A8C09A)](https://api.roomiemanager.site/api/docs)
 
-- Supabase Auth integration for register, login, current user, email-action exchange, password recovery, and password updates.
-- Group membership lifecycle with join codes, admin/member RBAC, safe removal, and leave flows.
-- Chores, recurring chore templates, calendar-ready occurrence data, and completion activity.
-- Shared finances with bills, member splits, payments, ledger entries, balances, and settlement views.
-- Group contracts with editable drafts, published versions, and history.
-- Health probes, request IDs, wrapped responses, OpenAPI generation, and generated frontend API types.
+</div>
 
-## Stack
+---
 
-| Layer | Technology |
+> **What this is.** A NestJS 10 service that owns groups, chores, finance, contracts, and the auth boundary against Supabase. Validation is strict, logs are structured, and the OpenAPI document is a first-class artifact.
+
+— · — · — · —
+
+## 🧱 What's In The Box
+
+| Concern | Tool |
 | --- | --- |
-| Framework | NestJS 10 |
-| Language | TypeScript |
-| ORM | Prisma 5 |
-| Database | Supabase Postgres |
-| Auth | Supabase Auth, JWT verification with `jose` |
-| Validation | Zod, class-validator, global ValidationPipe |
-| Logging | Pino through `nestjs-pino` |
+| Framework | **NestJS 10** |
+| ORM and migrations | **Prisma 5** |
+| Database | **Supabase Postgres** |
+| Identity | **Supabase Auth**, verified server-side with **`jose`** and JWKS |
+| Validation | **class-validator** DTOs and **Zod** config validation |
+| Logging | **Pino** through `nestjs-pino` |
+| API docs | **Swagger / OpenAPI**, generated and checked |
 
-## API Contract
+— · — · — · —
 
-Local API base: `http://localhost:3000/api/v1`<br>
-Local Swagger docs: `http://localhost:3000/api/docs`
+## 🚀 Run It Locally
 
-Every response uses the same envelope:
-
-```json
-{
-  "success": true,
-  "data": {},
-  "meta": {
-    "requestId": "string",
-    "timestamp": "ISO-8601"
-  }
-}
-```
-
-Errors use the same wrapper with `success: false`, a stable error code, a message, optional details, and the same metadata. OpenAPI is generated into [openapi/openapi.json](openapi/openapi.json), and frontend types are generated into [../frontend/generated/backend-api.types.ts](../frontend/generated/backend-api.types.ts).
-
-## Local Setup
+> **Prereqs:** Node 20+, **pnpm 9**, and a reachable Supabase project.
 
 ```bash
-cp .env.example .env
+cd backend
 pnpm install
+cp .env.example .env
 pnpm prisma:generate
 pnpm prisma:migrate:deploy
 pnpm dev
 ```
 
+API: `http://localhost:3000/api/v1`<br />
+Swagger: `http://localhost:3000/api/docs`
+
 Fill `.env` with Supabase database and auth values before running migrations or auth-backed flows.
 
-## Environment
+— · — · — · —
 
-Use [.env.example](.env.example) as the full reference. The key production-shaped values are:
+## 🛠 Commands
 
-| Variable | Purpose |
+| Command | What it does |
 | --- | --- |
-| `DATABASE_URL` | Supabase Postgres connection string. |
-| `SUPABASE_URL` | Supabase project URL for auth and JWKS discovery. |
-| `SUPABASE_ANON_KEY` | Public Supabase key used for auth requests. |
-| `SUPABASE_JWT_AUDIENCE` | Expected JWT audience, typically `authenticated`. |
-| `CORS_ORIGINS` | Web origins allowed to call the API. |
-| `SUPABASE_AUTH_REDIRECT_URL` | Email action callback URL, production value is `https://roomiemanager.site/auth/callback`. |
+| `pnpm dev` | Start the API in watch mode |
+| `pnpm build` | Compile the production bundle |
+| `pnpm lint` | Lint with zero warnings |
+| `pnpm test` | Unit tests |
+| `pnpm test:e2e` | End-to-end tests |
+| `pnpm prisma:generate` | Regenerate the Prisma client |
+| `pnpm prisma:migrate:deploy` | Apply migrations to the configured database |
+| `pnpm openapi:generate` | Emit OpenAPI and generated frontend types |
+| `pnpm openapi:check` | Fail if the OpenAPI document drifted |
+| `pnpm verify` | The full backend confidence gate |
 
-Do not commit production secrets.
+— · — · — · —
 
-## Quality Commands
+## 🧩 Domain Modules
 
-```bash
-pnpm lint
-pnpm test
-pnpm test:e2e
-pnpm build
-pnpm openapi:generate
-pnpm openapi:check
-pnpm verify
+```text
+src/
+├── modules/
+│   ├── auth/        JWT verification, email actions, password recovery
+│   ├── groups/      Households, join codes, members, RBAC
+│   ├── chores/      One-off chores, recurring templates, calendar
+│   ├── finance/     Bills, splits, payments, balances, settlements
+│   ├── contracts/   Drafts, published versions, history
+│   └── health/      Liveness and readiness probes
+└── common/          Prisma, Supabase URL helpers, response envelope, filters
 ```
 
-`pnpm verify` is the main backend confidence gate. It generates Prisma, checks migration status, lints, runs unit and e2e tests, builds, verifies OpenAPI drift, and checks generated frontend API types.
+Each module keeps controllers thin and puts business rules in services. Multi-step admin mutations use Prisma transactions where the domain needs consistency.
 
-## Production Shape
+— · — · — · —
 
-Production runs as a Dockerized NestJS service on OCI:
+## 🔐 How Auth Works
 
-- GitHub Actions builds and publishes the backend Docker image to GHCR.
-- Docker Compose runs the backend behind Caddy on localhost port `3001`.
-- Caddy terminates HTTPS for `api.roomiemanager.site`.
-- Supabase handles Postgres and Auth.
-- Supabase Auth uses Resend SMTP for verification and password recovery email.
+1. The web or Android client signs in through the backend auth endpoints backed by **Supabase Auth**.
+2. The client stores the returned session and attaches the access token on protected API requests.
+3. A **NestJS guard** uses **`jose`** to verify the token against Supabase's **JWKS** endpoint.
+4. The backend resolves group membership and role before protected household actions run.
 
-Runtime assets live in [deploy/](deploy/). The full deployment walkthrough is [docs/oci-docker-cicd-deploy.md](docs/oci-docker-cicd-deploy.md).
+No protected controller handler runs before authentication and authorization have been checked.
+
+— · — · — · —
+
+## 🧪 Verification And CI
+
+`pnpm verify` runs Prisma generation, migration status, linting, unit tests, e2e tests, TypeScript build, OpenAPI drift checks, and generated frontend type checks.
+
+The GitHub Actions pipeline runs the backend verification path and supports the production image/deploy flow.
+
+— · — · — · —
+
+## 🚢 Production Shape
+
+- Docker image built and published to **GHCR**.
+- Backend service run by **Docker Compose** on an **OCI VM**.
+- **Caddy** terminates HTTPS for `api.roomiemanager.site`.
+- **Supabase** provides Postgres and Auth.
+- Supabase Auth uses production email verification and password recovery flows.
+
+See [../ARCHITECTURE.md](../ARCHITECTURE.md) for the full system topology and [docs/oci-docker-cicd-deploy.md](docs/oci-docker-cicd-deploy.md) for operational notes.

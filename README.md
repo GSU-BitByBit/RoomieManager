@@ -1,98 +1,160 @@
-# RoomieManager
+<div align="center">
 
-A calm shared-home management app for roommates who want the house to feel organized without turning daily life into a spreadsheet. RoomieManager brings chores, shared bills, payments, balances, contracts, dashboards, and household roles into one warm, practical workspace.
+<img src="docs/assets/roomiemanager-showcase.svg" alt="RoomieManager shared-home management showcase" width="860" />
 
-![RoomieManager web login screen](docs/assets/roomiemanager-web-login.png)
+# 🌿 RoomieManager
 
-**Live web app:** [roomiemanager.site](https://roomiemanager.site)<br>
-**API base:** [api.roomiemanager.site/api/v1](https://api.roomiemanager.site/api/v1)<br>
-**Swagger docs:** [api.roomiemanager.site/api/docs](https://api.roomiemanager.site/api/docs)
+**The calm, shared home - organized.**
 
-## For Reviewers
+*Chores, bills, contracts, members, and the quiet rhythms of living together in one warm, green place.*
 
-RoomieManager is built to show both product thinking and production-minded engineering. The project has a live web app, a shared backend consumed by web and Android clients, Supabase-backed auth and data, a Dockerized OCI backend deployment, Vercel frontend deployment, CI/CD, OpenAPI contract generation, and focused test coverage around the core roommate workflows.
+[![Live App](https://img.shields.io/badge/web-roomiemanager.site-3F7D4E?style=for-the-badge)](https://roomiemanager.site)
+[![API](https://img.shields.io/badge/api-v1-6B8E5A?style=for-the-badge)](https://api.roomiemanager.site/api/v1)
+[![Swagger](https://img.shields.io/badge/docs-swagger-A8C09A?style=for-the-badge)](https://api.roomiemanager.site/api/docs)
 
-If you are reviewing quickly, start with the live web app, skim the architecture map below, then visit the backend and frontend READMEs for implementation details.
+</div>
 
-## What It Covers
+---
 
-- **Households and members:** create groups, join with codes, manage membership, and enforce admin/member roles.
-- **Chores:** create one-off chores, manage recurring templates, assign work, complete tasks, and view calendar-ready data.
-- **Shared finances:** add bills, split costs, record payments, calculate balances, and suggest settlements.
-- **Contracts:** maintain a group agreement draft, publish versions, and keep version history.
-- **Dashboard:** give each household a quick view of what needs attention.
-- **Auth:** support email/password registration, login, email verification, password recovery, and current-user identity.
+> **What is this?** RoomieManager is a full-stack product for roommates who want to stop negotiating chores in chat threads, stop doing bill math in their heads, and keep house agreements somewhere more dependable than memory. One group, one source of truth, one cozy interface.
 
-## How It Fits Together
+<div align="center">
+  <img src="docs/assets/roomiemanager-web-login.png" alt="RoomieManager web sign-in screen" width="780" />
+  <br />
+  <sub><em>The front door. Sign in, join a group, settle in.</em></sub>
+</div>
 
-```mermaid
-flowchart LR
-  Web["Web app<br/>React + Vite<br/>Vercel"] --> Caddy["HTTPS API<br/>Caddy on OCI"]
-  Android["Android app<br/>Flutter + Material 3"] --> Caddy
-  Caddy --> Backend["NestJS API<br/>Docker on OCI"]
-  Backend --> Database["Supabase Postgres<br/>Prisma"]
-  Backend --> Auth["Supabase Auth<br/>JWT + email flows"]
-  Actions["GitHub Actions"] --> GHCR["GHCR backend image"]
-  GHCR --> Backend
+— · — · — · —
+
+## ✨ What's Inside
+
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <h3>🏠 Groups</h3>
+      Join codes, member roles, active memberships, and a household-shaped permission model.
+    </td>
+    <td width="33%" valign="top">
+      <h3>📋 Chores</h3>
+      One-off tasks, recurring templates, assignments, completion rules, and calendar-ready views.
+    </td>
+    <td width="33%" valign="top">
+      <h3>💸 Finance</h3>
+      Bills, splits, payments, running balances, and settlement suggestions without the spreadsheet ritual.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h3>📜 Contracts</h3>
+      Editable drafts, published versions, and history for the agreements that keep a house clear.
+    </td>
+    <td valign="top">
+      <h3>🔐 Auth</h3>
+      Supabase-backed registration, login, email verification, password recovery, and JWT verification.
+    </td>
+    <td valign="top">
+      <h3>📊 Dashboard</h3>
+      The morning glance: what is due, what is owed, and what needs attention next.
+    </td>
+  </tr>
+</table>
+
+— · — · — · —
+
+## 🧱 Stack At A Glance
+
+**Web** &nbsp;
+![React](https://img.shields.io/badge/React-18-3F7D4E?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3F7D4E?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-6-3F7D4E?logo=vite&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind-CSS-3F7D4E?logo=tailwindcss&logoColor=white)
+
+**API** &nbsp;
+![NestJS](https://img.shields.io/badge/NestJS-10-6B8E5A?logo=nestjs&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-5-6B8E5A?logo=prisma&logoColor=white)
+![Zod](https://img.shields.io/badge/Zod-validated-6B8E5A)
+![jose](https://img.shields.io/badge/jose-JWT-6B8E5A)
+
+**Platform** &nbsp;
+![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-A8C09A?logo=supabase&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-A8C09A?logo=docker&logoColor=white)
+![Caddy](https://img.shields.io/badge/Caddy-HTTPS-A8C09A)
+![OCI](https://img.shields.io/badge/Oracle%20Cloud-VM-A8C09A?logo=oracle&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-frontend-A8C09A?logo=vercel&logoColor=white)
+
+— · — · — · —
+
+## 🌐 One Product, Three Surfaces
+
+```text
+roomiemanager.site
+  React + TypeScript + Vite + Tailwind
+  deployed on Vercel
+        |
+        | HTTPS + Bearer JWT
+        v
+api.roomiemanager.site/api/v1
+  NestJS + Prisma in Docker on OCI
+  Caddy handles HTTPS
+        |
+        v
+Supabase
+  Postgres + Auth
+
+RoomieManager Android Port
+  Flutter + Material 3
+  same API, mobile-first UX
 ```
 
-Two clients, one source of truth: the NestJS API owns the business rules, Prisma owns database access, and Supabase owns identity and persistence.
+The backend owns the business rules. Web and Android share the same auth model, group data, chores, bills, balances, contracts, and response envelope.
 
-For the expanded system walkthrough, see [ARCHITECTURE.md](ARCHITECTURE.md).
+— · — · — · —
 
-## Tech Stack
+## 🚀 Quickstart
 
-| Layer | Technology |
-| --- | --- |
-| Web frontend | React 18, Vite 6, TypeScript, Tailwind CSS, React Router |
-| Backend API | NestJS 10, TypeScript, Prisma 5, Zod, class-validator, Pino |
-| Data and auth | Supabase Postgres, Supabase Auth, JWT verification with `jose` |
-| Mobile | Flutter, Material 3, Provider, GoRouter, Secure Storage |
-| Deployment | Vercel frontend, OCI VM backend, Docker Compose, Caddy, GHCR |
-| CI/CD | GitHub Actions, pnpm 9, Node 20 |
+> **Prereqs:** Node 20+, **pnpm 9**, and Supabase database/auth credentials.
 
-## Repository Guide
+```bash
+git clone https://github.com/GSU-BitByBit/RoomieManager.git
+cd RoomieManager
+```
 
-| Path | Purpose |
-| --- | --- |
-| [backend/](backend/) | NestJS REST API, Prisma schema, migrations, OpenAPI contract, Docker runtime assets, and backend tests. |
-| [frontend/](frontend/) | Vite React web app, shared API client, auth pages, dashboard, and household workflows. |
-| [docs/](docs/) | Project-level documentation and README assets. |
-| [backend/docs/](backend/docs/) | Production deployment notes for OCI, Docker, Caddy, GHCR, GitHub Actions, and Supabase email flows. |
-| [frontend/frontend_reference.md](frontend/frontend_reference.md) | Deeper backend API integration reference for frontend and mobile work. |
-| [Use case diagram and requirements/](Use%20case%20diagram%20and%20requirements/) | Original requirements, use-case diagram source, early wireframes, and testing notes. |
-| [AGENTS.md](AGENTS.md) | Contributor and coding-agent reference for architecture, commands, conventions, and module status. |
-| `../RoomieManager Android Port/` | Flutter Android companion app that talks to the same backend API. |
+<table>
+  <tr>
+    <td width="50%" valign="top">
 
-## Run It Yourself
-
-This repository is not a workspace monorepo. Run backend and frontend commands from their own directories.
-
-### Backend
+### 🟢 Backend
 
 ```bash
 cd backend
-cp .env.example .env
 pnpm install
+cp .env.example .env
 pnpm prisma:generate
 pnpm prisma:migrate:deploy
 pnpm dev
 ```
 
-The local API runs at `http://localhost:3000/api/v1`. Fill `.env` with Supabase database and auth values before running migrations or auth-backed flows.
+API: `http://localhost:3000/api/v1`
 
-### Frontend
+  </td>
+  <td width="50%" valign="top">
+
+### 🟢 Frontend
 
 ```bash
 cd frontend
-cp .env.example .env
 pnpm install
+cp .env.example .env
 pnpm dev
 ```
 
-The local web app runs at `http://localhost:5173`. Leave `VITE_API_BASE_URL` blank to use the Vite `/api/v1` proxy against a local backend, or set it to `https://api.roomiemanager.site/api/v1` to call production.
+Web: `http://localhost:5173`
 
-### Android Port
+  </td>
+  </tr>
+</table>
+
+For Android:
 
 ```bash
 cd ../RoomieManager\ Android\ Port
@@ -100,48 +162,53 @@ flutter pub get
 flutter run --dart-define=ROOMIE_API_BASE_URL=https://api.roomiemanager.site/api/v1
 ```
 
-For Android emulator local-backend testing, the app defaults to `http://10.0.2.2:3000/api/v1`.
+— · — · — · —
 
-## Verification
+## 🗺️ Repository Map
 
-Backend confidence gate:
+```text
+RoomieManager/
+├── frontend/        React 18 + Vite 6 + Tailwind - the cozy interface
+├── backend/         NestJS 10 + Prisma 5 - the rules of the house
+├── docs/            Visual assets, docs index, and project notes
+├── ARCHITECTURE.md  How a request travels through the system
+├── AGENTS.md        Contributor and coding-agent reference
+└── README.md        You are here
+```
+
+— · — · — · —
+
+## 📚 Read More
+
+| | |
+| --- | --- |
+| 🏛 **Architecture** | [ARCHITECTURE.md](ARCHITECTURE.md) - the story of a request |
+| 🧩 **Frontend** | [frontend/README.md](frontend/README.md) - the interface |
+| ⚙️ **Backend** | [backend/README.md](backend/README.md) - the engine |
+| 📖 **Docs index** | [docs/README.md](docs/README.md) - assets and references |
+| 📱 **Android port** | [RoomieManager-Android-Port](https://github.com/Harry830/RoomieManager-Android-Port) - the same home, in your pocket |
+
+— · — · — · —
+
+## 🧪 Verification
 
 ```bash
 cd backend
 pnpm verify
 ```
 
-Frontend build check:
-
 ```bash
 cd frontend
 pnpm build
 ```
-
-Production smoke checks:
 
 ```bash
 curl https://api.roomiemanager.site/api/v1/health/live
 curl https://api.roomiemanager.site/api/v1/health/ready
 ```
 
-## Production Shape
+— · — · — · —
 
-| Surface | Deployment |
-| --- | --- |
-| Web app | Vercel at [roomiemanager.site](https://roomiemanager.site) |
-| Backend API | OCI VM at [api.roomiemanager.site/api/v1](https://api.roomiemanager.site/api/v1) |
-| HTTPS proxy | Caddy terminating TLS and proxying to Docker |
-| Backend runtime | Docker Compose running the NestJS service on localhost port `3001` |
-| Image registry | GHCR backend image built by GitHub Actions |
-| Data and auth | Supabase Postgres and Supabase Auth |
-
-The operational walkthrough lives in [backend/docs/oci-docker-cicd-deploy.md](backend/docs/oci-docker-cicd-deploy.md).
-
-## Demo And Design Assets
-
-The live web app is the best current preview of the product experience. Early wireframes and requirements are preserved in [Use case diagram and requirements/](Use%20case%20diagram%20and%20requirements/), and project README assets live in [docs/assets/](docs/assets/).
-
-## Contributing
-
-Use [AGENTS.md](AGENTS.md) as the main contributor reference. It captures the architecture, commands, coding conventions, RBAC rules, environment expectations, and current module status.
+<div align="center">
+  <sub>Built with care for calmer shared homes.</sub>
+</div>

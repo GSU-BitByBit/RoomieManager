@@ -1,107 +1,164 @@
-# Architecture
+<div align="center">
 
-RoomieManager is a multi-client household management system built around one NestJS REST API. The web app and Android app share the same backend, auth provider, data model, and business rules, so chores, balances, members, and contracts stay consistent no matter where a roommate signs in.
+# 🏛 Architecture
 
-## System Map
+*How a quiet click in a cozy interface becomes a durable fact in the database.*
 
-```mermaid
-flowchart TD
-  subgraph Clients
-    Web["Web app<br/>React + Vite + Tailwind<br/>Vercel"]
-    Android["Android app<br/>Flutter + Material 3"]
-  end
+</div>
 
-  subgraph OCI["OCI VM"]
-    Caddy["Caddy<br/>HTTPS reverse proxy"]
-    Api["NestJS API<br/>Docker Compose"]
-  end
+---
 
-  subgraph Supabase["Supabase"]
-    Postgres["Postgres database"]
-    Auth["Auth and JWT identity"]
-  end
+> **The shape of the system.** RoomieManager is a small constellation: a Vite-built React app on Vercel, a NestJS API on an OCI VM behind Caddy, and Supabase holding identity and data. Every piece is intentionally straightforward so the product can feel calm.
 
-  Web -->|Bearer JWT over HTTPS| Caddy
-  Android -->|Bearer JWT over HTTPS| Caddy
-  Caddy --> Api
-  Api -->|Prisma| Postgres
-  Api -->|JWKS + Auth API| Auth
+— · — · — · —
+
+## 🌿 The Journey Of A Single Request
+
+Imagine a roommate marks a chore complete.
+
+```text
+Browser or Android app
+  |
+  | HTTPS + Bearer JWT
+  v
+Caddy on OCI
+  |
+  | reverse proxy
+  v
+NestJS API in Docker
+  |-- validates DTOs and route params
+  |-- verifies Supabase JWT with jose/JWKS
+  |-- enforces group membership and RBAC
+  |-- logs request context with Pino
+  |
+  | Prisma
+  v
+Supabase Postgres
 ```
 
-## Request Flow
+1. **The click** travels from web or Android to `https://api.roomiemanager.site/api/v1`.
+2. **Caddy** terminates HTTPS for the API domain and forwards to the NestJS container.
+3. **NestJS guards** verify the Supabase-issued JWT with `jose` and JWKS.
+4. **Validation** rejects malformed input before it reaches business logic.
+5. **RBAC** checks the caller's active group membership and role.
+6. **Prisma** writes the state change to Supabase Postgres.
+7. **The response envelope** returns with `success`, `data`, request ID, and timestamp.
 
-1. A user signs in through the web or Android client and receives a Supabase Auth JWT.
-2. The client sends JSON requests to `https://api.roomiemanager.site/api/v1` with `Authorization: Bearer <token>`.
-3. Caddy terminates HTTPS for `api.roomiemanager.site` and proxies traffic to the Dockerized NestJS service on the OCI VM.
-4. The NestJS guard verifies the JWT, resolves the caller, and checks membership/role rules for protected household actions.
-5. Services execute business logic and use Prisma to read or write Supabase Postgres.
-6. Responses return through the standard envelope with a request ID and timestamp.
+— · — · — · —
 
-The API does not keep server-side session state. Each protected request is authenticated from the bearer token and authorized against the current group membership data.
+## 🧱 The Pieces, By Responsibility
 
-## Data And Auth Model
+<table>
+  <tr>
+    <th width="22%">Layer</th>
+    <th width="30%">Tech</th>
+    <th>Why it belongs here</th>
+  </tr>
+  <tr>
+    <td><strong>Web client</strong></td>
+    <td>React 18, TypeScript, Vite 6, Tailwind, React Router, lucide-react</td>
+    <td>Fast local feedback, a soft design system, and route-level screens for household workflows.</td>
+  </tr>
+  <tr>
+    <td><strong>Android client</strong></td>
+    <td>Flutter, Material 3, Provider, GoRouter, secure storage, http</td>
+    <td>The same product model in a mobile-first shell, without a separate mobile backend.</td>
+  </tr>
+  <tr>
+    <td><strong>API</strong></td>
+    <td>NestJS 10, class-validator, Zod, Pino</td>
+    <td>Domain modules map cleanly to product areas: groups, chores, finance, contracts, and auth.</td>
+  </tr>
+  <tr>
+    <td><strong>Data</strong></td>
+    <td>Prisma 5, Supabase Postgres</td>
+    <td>Prisma owns schema and migrations; Supabase owns the managed Postgres cluster.</td>
+  </tr>
+  <tr>
+    <td><strong>Identity</strong></td>
+    <td>Supabase Auth, jose</td>
+    <td>Supabase issues tokens; the backend independently verifies JWTs server-side.</td>
+  </tr>
+  <tr>
+    <td><strong>Runtime</strong></td>
+    <td>Docker Compose on OCI, Caddy, GHCR</td>
+    <td>Reproducible backend image, simple VM operations, automatic HTTPS at the edge.</td>
+  </tr>
+  <tr>
+    <td><strong>Frontend hosting</strong></td>
+    <td>Vercel</td>
+    <td>Static SPA delivery for the web app with a deployment workflow that stays out of the way.</td>
+  </tr>
+</table>
 
-Supabase owns identity and persistence:
+— · — · — · —
 
-- **Supabase Auth** handles registration, login, verification email, password recovery, and JWT issuance.
-- **NestJS** verifies Supabase-issued JWTs with `jose` and enforces application RBAC.
-- **Supabase Postgres** stores the application data.
-- **Prisma** defines the schema, migrations, and typed database access.
+## 🎯 Product Domains
 
-Core domain objects include:
+The API is organized around the way roommates live, not around generic CRUD buckets.
 
-| Area | Main entities |
+| Domain | What lives here |
 | --- | --- |
-| Households | `Group`, `GroupMember`, `JoinCode`, `GroupAuditLog` |
-| Chores | `Chore`, `ChoreTemplate`, `ChoreActivity` |
-| Finance | `Bill`, `BillSplit`, `Payment`, `LedgerEntry` |
-| Contracts | `Contract`, `ContractVersion` |
+| **Groups and members** | Join codes, active memberships, role-based access, safe leave/remove flows |
+| **Chores** | One-off chores, recurring templates, assignments, completion, activity, calendar views |
+| **Finance** | Bills, splits, payments, ledger entries, balances, settlement suggestions |
+| **Contracts** | Drafts, published versions, and version history |
+| **Auth** | Register, login, current user, email verification, password recovery |
 
-All household data is scoped by group membership. Admin-only actions, such as resetting join codes, changing roles, removing members, and publishing contracts, are checked in the backend service layer.
+Each domain has NestJS controllers, services, DTOs, and tests. Shared infrastructure lives under `src/common/`.
 
-## Deployment Shape
+— · — · — · —
 
-```mermaid
-flowchart LR
-  Push["Push to main"] --> Actions["GitHub Actions"]
-  Actions --> Verify["lint + tests + build + OpenAPI check"]
-  Verify --> Image["Build backend image"]
-  Image --> GHCR["Publish to GHCR"]
-  GHCR --> OCI["OCI VM pulls image"]
-  OCI --> Compose["Docker Compose restarts API"]
-  Compose --> Caddy["Caddy serves HTTPS"]
+## 🔐 Trust Boundaries
+
+```text
+[ Web / Android ]
+       |
+       | Authorization: Bearer <Supabase JWT>
+       v
+[ NestJS Guard ] -- verifies signature via JWKS --> [ Supabase Auth ]
+       |
+       | membership + role lookup
+       v
+[ Prisma ] --------------------------------------> [ Supabase Postgres ]
 ```
 
-Production currently runs as:
+- Tokens are issued by **Supabase Auth** and verified by the backend before protected routes run.
+- Group-level permissions are enforced from persisted membership records.
+- Database access goes through **Prisma**.
+- Responses are wrapped consistently for web and Android clients.
 
-- Frontend on Vercel at `https://roomiemanager.site`.
-- Backend API on an OCI VM at `https://api.roomiemanager.site/api/v1`.
-- Caddy as the public HTTPS reverse proxy.
-- Docker Compose running the NestJS backend on localhost port `3001`.
-- GHCR as the backend image registry.
-- Supabase Auth configured with production email verification and password recovery.
+— · — · — · —
 
-The detailed deployment guide is [backend/docs/oci-docker-cicd-deploy.md](backend/docs/oci-docker-cicd-deploy.md).
+## 🚢 How A Change Ships
 
-## API Contract
-
-Every JSON response is wrapped by the backend:
-
-```json
-{
-  "success": true,
-  "data": {},
-  "meta": {
-    "requestId": "string",
-    "timestamp": "ISO-8601"
-  }
-}
+```text
+push / PR
+  |
+  v
+GitHub Actions
+  |-- Prisma generate
+  |-- migration status
+  |-- lint
+  |-- unit + e2e tests
+  |-- build
+  |-- OpenAPI drift check
+  |-- generated frontend type check
+  |
+  v
+backend image to GHCR
+  |
+  v
+OCI VM + Docker Compose + Caddy
 ```
 
-Errors use the same envelope shape with an `error` object. This keeps web and mobile error handling consistent and makes request IDs available for debugging.
+The web frontend deploys to Vercel. The backend runs as a Dockerized NestJS service on OCI, fronted by Caddy for HTTPS, with Supabase providing managed Postgres and Auth.
 
-The OpenAPI source of truth is generated into [backend/openapi/openapi.json](backend/openapi/openapi.json), and TypeScript API types are generated for the frontend in [frontend/generated/backend-api.types.ts](frontend/generated/backend-api.types.ts).
+— · — · — · —
 
-## Quality Gates
+## 📚 Where To Go Next
 
-The backend `pnpm verify` pipeline covers Prisma generation, migration status, linting, unit tests, e2e tests, TypeScript build, OpenAPI drift checks, and generated frontend type checks. The frontend has a production build check through `pnpm build`, and the Android repo has Flutter unit/widget plus smoke-test commands.
+- [backend/README.md](backend/README.md) - the API in detail
+- [frontend/README.md](frontend/README.md) - the interface in detail
+- [docs/README.md](docs/README.md) - assets and reference links
+- [Live Swagger](https://api.roomiemanager.site/api/docs) - current API contract

@@ -1,31 +1,64 @@
-# RoomieManager Documentation
+<div align="center">
 
-This directory is the small project-level docs landing page for RoomieManager. The goal is fast navigation: live links, architecture, deployment notes, API references, and presentation assets.
+# 📖 RoomieManager Docs
 
-## Quick Links
+*Notes, screenshots, and the long-form story behind the product.*
 
-| Resource | Link |
+</div>
+
+---
+
+This folder is the slower lane: the things that do not belong in a code comment or a top-level hero, but still matter when you are trying to understand why the system feels the way it does.
+
+— · — · — · —
+
+## 🗂 What's In Here
+
+| Path | What it is |
 | --- | --- |
-| Live web app | [roomiemanager.site](https://roomiemanager.site) |
-| Live API base | [api.roomiemanager.site/api/v1](https://api.roomiemanager.site/api/v1) |
-| Swagger docs | [api.roomiemanager.site/api/docs](https://api.roomiemanager.site/api/docs) |
-| Architecture overview | [../ARCHITECTURE.md](../ARCHITECTURE.md) |
-| Contributor guide | [../AGENTS.md](../AGENTS.md) |
+| [assets/roomiemanager-showcase.svg](assets/roomiemanager-showcase.svg) | The web hero illustration used in the root README. |
+| [assets/roomiemanager-web-login.png](assets/roomiemanager-web-login.png) | Real screenshot of the live web app sign-in screen. |
+| [assets/](assets/) | Supporting visuals used across the repo presentation. |
 
-## Documentation Index
+> 🌿 If you add a screenshot, prefer the live app at [roomiemanager.site](https://roomiemanager.site) over a local dev capture when possible. It keeps the public repo aligned with the deployed product.
 
-| Document | Purpose |
+— · — · — · —
+
+## 🌐 Live Surfaces
+
+| Surface | URL |
 | --- | --- |
-| [../README.md](../README.md) | First-stop project overview, live links, stack, setup, and deployment summary. |
-| [../ARCHITECTURE.md](../ARCHITECTURE.md) | System map, request flow, deployment shape, data/auth model, and API contract. |
-| [../backend/README.md](../backend/README.md) | Backend setup, API contract, quality commands, and deployment shape. |
-| [../frontend/README.md](../frontend/README.md) | Web app setup, routes, API client notes, and Vercel deployment notes. |
-| [../backend/docs/oci-docker-cicd-deploy.md](../backend/docs/oci-docker-cicd-deploy.md) | OCI, Docker, Caddy, GHCR, GitHub Actions, and Supabase email deployment guide. |
-| [../frontend/frontend_reference.md](../frontend/frontend_reference.md) | Detailed API integration guide for web and mobile client work. |
-| [../Use case diagram and requirements/](../Use%20case%20diagram%20and%20requirements/) | Original requirements, use-case diagrams, wireframes, and testing scenarios. |
+| Web app | [roomiemanager.site](https://roomiemanager.site) |
+| API v1 | [api.roomiemanager.site/api/v1](https://api.roomiemanager.site/api/v1) |
+| Swagger | [api.roomiemanager.site/api/docs](https://api.roomiemanager.site/api/docs) |
 
-## Assets
+— · — · — · —
 
-| Asset | Used by |
+## 🧭 Reading Order
+
+If this is your first time in the repo, read in this order:
+
+1. [README.md](../README.md) - what the product is.
+2. [ARCHITECTURE.md](../ARCHITECTURE.md) - how the system is shaped.
+3. [backend/README.md](../backend/README.md) - the API.
+4. [frontend/README.md](../frontend/README.md) - the interface.
+5. This folder - assets and supporting reference.
+
+— · — · — · —
+
+## 🧪 Local Environments At A Glance
+
+| Service | Default local URL |
 | --- | --- |
-| [assets/roomiemanager-web-login.png](assets/roomiemanager-web-login.png) | Root README and frontend README visual preview. |
+| Web (Vite) | `http://localhost:5173` |
+| API (NestJS) | `http://localhost:3000/api/v1` |
+| Swagger (local) | `http://localhost:3000/api/docs` |
+
+— · — · — · —
+
+## 📷 Asset Guidelines
+
+- **Format:** prefer SVG for illustration; PNG for actual UI captures.
+- **Width:** target wide screenshots so README rendering stays crisp.
+- **Naming:** `roomiemanager-<surface>-<scene>.{svg,png}`, for example `roomiemanager-web-dashboard.png`.
+- **Theme:** keep the warm, green, homey palette consistent with the live product.
